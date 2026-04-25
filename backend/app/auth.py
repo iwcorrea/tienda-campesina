@@ -10,22 +10,13 @@ SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def safe_truncate(password: str) -> str:
-    """Trunca la contraseña a 72 bytes (límite de bcrypt)."""
-    encoded = password.encode('utf-8')
-    if len(encoded) > 72:
-        encoded = encoded[:72]
-        return encoded.decode('utf-8', errors='ignore')
-    return password
+# Cambiamos a pbkdf2_sha256, que es puro Python y no tiene límite de 72 bytes
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def hash_password(password: str) -> str:
-    password = safe_truncate(password)
     return pwd_context.hash(password)
 
 def verify_password(plain: str, hashed: str) -> bool:
-    plain = safe_truncate(plain)
     return pwd_context.verify(plain, hashed)
 
 def create_token(data: dict) -> str:
