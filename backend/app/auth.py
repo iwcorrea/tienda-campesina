@@ -5,6 +5,10 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from . import models, database
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
@@ -26,16 +30,18 @@ def create_token(data: dict) -> str:
 
 def obtener_usuario_actual(request: Request, db: Session = Depends(database.get_db)):
     token = request.cookies.get("access_token")
+    logger.info(f"Cookie recibida: {token[:20] if token else 'None'}...")
     if not token:
-        raise HTTPException(status_code=401, detail="No autenticado (cookie no encontrada)")
+        raise HTTPException(status_code=401, detail="No autenticado: cookie no encontrada")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Token inválido (sin sub)")
+            raise HTTPException(status_code=401, detail="Token inválido: sin sub")
         usuario = db.query(models.Asociacion).filter(models.Asociacion.id == int(user_id)).first()
         if usuario is None:
             raise HTTPException(status_code=401, detail="Usuario no encontrado")
         return usuario
     except JWTError as e:
+        logger.error(f"Error decodificando token: {e}")
         raise HTTPException(status_code=401, detail=f"Token inválido o expirado: {str(e)}")

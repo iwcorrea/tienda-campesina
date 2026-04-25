@@ -35,3 +35,8 @@ def perfil_publico(request: Request, asociacion_id: int, db: Session = Depends(g
     productos = db.query(models.Producto).filter(models.Producto.asociacion_id == asociacion_id).all()
     template = templates.env.get_template("perfil_publico.html")
     return HTMLResponse(content=template.render({"request": request, "asociacion": asociacion, "productos": productos}))
+
+@router.get("/check-cookie")
+def check_cookie(request: Request):
+    token = request.cookies.get("access_token")
+    return {"token_present": token is not None, "token_preview": (token[:20] + "...") if token else None}    

@@ -5,8 +5,12 @@ from ..database import get_db
 from .. import models
 from ..auth import hash_password, verify_password, create_token, obtener_usuario_actual
 from ..dependencies import templates
+import os
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# Determinar si estamos en producción por variable de entorno
+IS_PRODUCTION = os.getenv("RENDER", "false").lower() == "true"
 
 @router.get("/registro", response_class=HTMLResponse)
 def registro_form(request: Request):
@@ -24,7 +28,6 @@ def registro(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Validación de longitud (opcional, pbkdf2 no tiene límite)
     if len(password.encode('utf-8')) > 72:
         template = templates.env.get_template("registro.html")
         return HTMLResponse(
@@ -82,15 +85,15 @@ def login(
         )
     
     token = create_token({"sub": str(asociacion.id)})
-    # Configuración robusta de cookie para HTTPS
+    # Configuración robusta para entornos HTTPS (Render)
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
         max_age=604800,          # 7 días
-        secure=True,             # Solo HTTPS (necesario en Render)
-        samesite="lax",          # Protege contra CSRF
-        path="/"                 # Disponible en toda la app
+        secure=IS_PRODUCTION,    # Solo HTTPS en producción
+        samesite="lax",          # Importante para que el navegador envíe la cookie en redirecciones
+        path="/"                 # Disponible en toda la aplicación
     )
     return RedirectResponse(url="/asociaciones/dashboard", status_code=303)
 
