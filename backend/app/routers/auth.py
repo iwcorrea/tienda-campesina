@@ -1,53 +1,12 @@
-import os
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import APIRouter, Request, Depends, HTTPException, status, Response, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from . import models, database
+from ..database import get_db
+from .. import models
+from ..auth import hash_password, verify_password, create_token, get_current_user
+from ..dependencies import templates
 
-# Configuración desde variables de entorno o valores por defecto
-SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
+router = APIRouter(prefix="/auth", tags=["auth"])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def hash_password(password: str) -> str:
-    """Genera un hash seguro de la contraseña."""
-    return pwd_context.hash(password)
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifica si la contraseña en texto plano coincide con el hash almacenado."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-def create_token(data: dict) -> str:
-    """Crea un token JWT con una fecha de expiración."""
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def obtener_usuario_actual(request: Request, db: Session = Depends(database.get_db)):
-    """
-    Dependencia de FastAPI que obtiene el usuario autenticado desde la cookie.
-    Lanza una excepción 401 si el token es inválido o el usuario no existe.
-    """
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No autenticado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Token inválido")
-        usuario = db.query(models.Asociacion).filter(models.Asociacion.id == int(user_id)).first()
-        if usuario is None:
-            raise HTTPException(status_code=401, detail="Usuario no encontrado")
-        return usuario
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+# Aquí van tus endpoints: /registro, /login, /logout
+# Asegúrate de que `get_current_user` se usa correctamente.

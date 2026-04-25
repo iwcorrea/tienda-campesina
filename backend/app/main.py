@@ -10,12 +10,10 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Archivos estáticos
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
-# Routers
 app.include_router(auth.router)
 app.include_router(publico.router)
 app.include_router(asociaciones.router)
