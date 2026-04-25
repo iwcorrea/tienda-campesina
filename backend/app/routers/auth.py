@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, status, Response, Form
+from fastapi import APIRouter, Request, Depends, Form, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -10,7 +10,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.get("/registro", response_class=HTMLResponse)
 def registro_form(request: Request):
-    return templates.TemplateResponse("registro.html", {"request": request})
+    template = templates.env.get_template("registro.html")
+    return HTMLResponse(content=template.render({"request": request}))
 
 @router.post("/registro", response_class=HTMLResponse)
 def registro(
@@ -25,7 +26,8 @@ def registro(
 ):
     usuario_existente = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
     if usuario_existente:
-        return templates.TemplateResponse("registro.html", {"request": request, "error": "El email ya está registrado"})
+        template = templates.env.get_template("registro.html")
+        return HTMLResponse(content=template.render({"request": request, "error": "El email ya está registrado"}), status_code=400)
     hashed = hash_password(password)
     nueva_asociacion = models.Asociacion(
         email=email,
@@ -41,7 +43,8 @@ def registro(
 
 @router.get("/login", response_class=HTMLResponse)
 def login_form(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    template = templates.env.get_template("login.html")
+    return HTMLResponse(content=template.render({"request": request}))
 
 @router.post("/login")
 def login(
@@ -53,7 +56,8 @@ def login(
 ):
     asociacion = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
     if not asociacion or not verify_password(password, asociacion.hashed_password):
-        return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales inválidas"})
+        template = templates.env.get_template("login.html")
+        return HTMLResponse(content=template.render({"request": request, "error": "Credenciales inválidas"}), status_code=401)
     token = create_token({"sub": str(asociacion.id)})
     response.set_cookie(key="access_token", value=token, httponly=True, max_age=604800)
     return RedirectResponse(url="/dashboard", status_code=303)
