@@ -24,11 +24,11 @@ def registro(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Validar longitud de contraseña (bcrypt max 72 bytes)
+    # Validar longitud en bytes (bcrypt max 72)
     if len(password.encode('utf-8')) > 72:
         template = templates.env.get_template("registro.html")
         return HTMLResponse(
-            content=template.render({"request": request, "error": "La contraseña no puede superar los 72 caracteres."}),
+            content=template.render({"request": request, "error": "La contraseña no puede superar los 72 bytes (caracteres especiales ocupan más). Por favor, usa una contraseña más corta."}),
             status_code=400
         )
     
@@ -66,11 +66,10 @@ def login(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Validar longitud de contraseña para evitar errores internos
     if len(password.encode('utf-8')) > 72:
         template = templates.env.get_template("login.html")
         return HTMLResponse(
-            content=template.render({"request": request, "error": "La contraseña no puede superar los 72 caracteres."}),
+            content=template.render({"request": request, "error": "La contraseña es demasiado larga. Máximo 72 bytes."}),
             status_code=400
         )
     
