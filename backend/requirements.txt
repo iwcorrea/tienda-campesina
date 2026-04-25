@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+sqlalchemy
+passlib[bcrypt]
+python-jose[cryptography]
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
+jinja2
+python-dotenv

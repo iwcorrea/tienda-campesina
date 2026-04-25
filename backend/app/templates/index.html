@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio | Tienda Campesina{% endblock %}
+
+{% block content %}
+<section class="p-4 p-md-5 bg-white rounded-4 shadow-sm">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <h1 class="display-6 fw-bold">Asociaciones de productores campesinos</h1>
+            <p class="lead text-muted mt-3">
+                Plataforma para visibilizar asociaciones rurales, publicar productos y conectar
+                directamente con compradores.
+            </p>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <a href="/catalogo" class="btn btn-success btn-lg">Ver catalogo</a>
+                <a href="/registro" class="btn btn-outline-success btn-lg">Registrar asociacion</a>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card border-0 bg-success-subtle">
+                <div class="card-body p-4">
+                    <h5 class="card-title">Impulsa tu produccion local</h5>
+                    <p class="card-text mb-0">
+                        Comparte tu historia, exhibe tus productos y fortalece la economia campesina.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

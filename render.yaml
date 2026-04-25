@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: tienda-campesina
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -c "import os,base64,pathlib; d=os.getenv('GOOGLE_CREDENTIALS_JSON_BASE64'); p=pathlib.Path('google_drive/credentials.json'); p.parent.mkdir(parents=True, exist_ok=True); p.write_bytes(base64.b64decode(d)) if d else None" && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: ALGORITHM
+        value: HS256
+      - key: GOOGLE_DRIVE_FOLDER_ID
+        sync: false
+      - key: GOOGLE_CREDENTIALS_JSON_BASE64
+        sync: false

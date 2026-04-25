@@ -1,0 +1,198 @@
+import io
+from pathlib import Path
+from typing import Optional
+
+from fastapi import HTTPException, UploadFile, status
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseUpload
+
+# Scope minimo para crear/leer/editar archivos creados por la app.
+SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+
+# Ruta al archivo de credenciales del Service Account.
+BASE_DIR = Path(__file__).resolve().parents[2]
+CREDENTIALS_PATH = BASE_DIR / "google_drive" / "credentials.json"
+
+
+def load_drive_service():
+    """Carga credenciales y construye el cliente de Google Drive."""
+    try:
+        if not CREDENTIALS_PATH.exists():
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"No existe el archivo de credenciales en {CREDENTIALS_PATH}",
+            )
+
+        credentials = service_account.Credentials.from_service_account_file(
+            str(CREDENTIALS_PATH),
+            scopes=SCOPES,
+        )
+        return build("drive", "v3", credentials=credentials)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al cargar servicio de Google Drive: {exc}",
+        ) from exc
+
+
+def crear_carpeta_si_no_existe(nombre_carpeta: str, parent_id: Optional[str] = None) -> str:
+    """
+    Busca una carpeta por nombre en el nivel indicado.
+    Si no existe, la crea y retorna su ID.
+    """
+    service = load_drive_service()
+
+    try:
+        # Filtro por nombre exacto, tipo carpeta y que no este eliminada.
+        query_parts = [
+            "mimeType='application/vnd.google-apps.folder'",
+            f"name='{nombre_carpeta}'",
+            "trashed=false",
+        ]
+        if parent_id:
+            query_parts.append(f"'{parent_id}' in parents")
+
+        query = " and ".join(query_parts)
+        resultado = (
+            service.files()
+            .list(q=query, spaces="drive", fields="files(id, name)", pageSize=1)
+            .execute()
+        )
+
+        carpetas = resultado.get("files", [])
+        if carpetas:
+            return carpetas[0]["id"]
+
+        metadata = {
+            "name": nombre_carpeta,
+            "mimeType": "application/vnd.google-apps.folder",
+        }
+        if parent_id:
+            metadata["parents"] = [parent_id]
+
+        carpeta = service.files().create(body=metadata, fields="id").execute()
+        return carpeta["id"]
+    except HttpError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Error de Google Drive al buscar/crear carpeta: {exc}",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error inesperado al crear carpeta en Drive: {exc}",
+        ) from exc
+
+
+async def subir_archivo(
+    archivo: UploadFile, carpeta_id: str, nombre_archivo: Optional[str] = None
+) -> str:
+    """
+    Sube un archivo a Google Drive usando MediaIoBaseUpload y retorna el file_id.
+    """
+    service = load_drive_service()
+
+    try:
+        contenido = await archivo.read()
+        if not contenido:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El archivo esta vacio.",
+            )
+
+        file_stream = io.BytesIO(contenido)
+        media = MediaIoBaseUpload(
+            file_stream,
+            mimetype=archivo.content_type or "application/octet-stream",
+            resumable=True,
+        )
+
+        metadata = {
+            "name": nombre_archivo or archivo.filename or "archivo_sin_nombre",
+            "parents": [carpeta_id],
+        }
+
+        creado = service.files().create(body=metadata, media_body=media, fields="id").execute()
+        return creado["id"]
+    except HTTPException:
+        raise
+    except HttpError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Error de Google Drive al subir archivo: {exc}",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error inesperado al subir archivo a Drive: {exc}",
+        ) from exc
+    finally:
+        await archivo.close()
+
+
+def eliminar_archivo(file_id: str):
+    """Elimina un archivo de Google Drive por su ID."""
+    service = load_drive_service()
+    try:
+        service.files().delete(fileId=file_id).execute()
+    except HttpError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Error de Google Drive al eliminar archivo: {exc}",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error inesperado al eliminar archivo de Drive: {exc}",
+        ) from exc
+
+
+def hacer_publico(file_id: str):
+    """Asigna permiso publico de lectura (anyone/reader)."""
+    service = load_drive_service()
+    try:
+        permiso = {"type": "anyone", "role": "reader"}
+        service.permissions().create(fileId=file_id, body=permiso).execute()
+    except HttpError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Error de Google Drive al cambiar permisos: {exc}",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error inesperado al hacer publico el archivo: {exc}",
+        ) from exc
+
+
+def obtener_url_imagen(file_id: str) -> str:
+    """
+    Hace publico el archivo y retorna el enlace webViewLink.
+    """
+    service = load_drive_service()
+    try:
+        hacer_publico(file_id)
+        archivo = service.files().get(fileId=file_id, fields="webViewLink").execute()
+        url = archivo.get("webViewLink")
+        if not url:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No se pudo obtener webViewLink del archivo.",
+            )
+        return url
+    except HTTPException:
+        raise
+    except HttpError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Error de Google Drive al obtener URL de imagen: {exc}",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error inesperado al obtener URL de imagen: {exc}",
+        ) from exc

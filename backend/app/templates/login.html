@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Login | Tienda Campesina{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4 p-md-5">
+                <h2 class="h4 mb-4">Iniciar sesion</h2>
+                {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                <form method="post" action="/login" class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="col-12 d-grid gap-2">
+                        <button type="submit" class="btn btn-success">Entrar</button>
+                        <a href="/registro" class="btn btn-outline-secondary">Crear cuenta</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
