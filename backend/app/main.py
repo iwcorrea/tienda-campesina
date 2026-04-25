@@ -1,68 +1,27 @@
-from pathlib import Path
-
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
-from . import models
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+from .routers import auth, publico, asociaciones, productos
 from .database import engine
-from .routers.asociaciones import router as asociaciones_router
-from .routers.auth import router as auth_router
-from .routers.productos import router as productos_router
-from .routers.publico import router as publico_router
+from . import models
 
-BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR.parent / ".env")
-
-app = FastAPI(title="Asociaciones de Productores Campesinos")
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-app.state.templates = templates
-
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
-
-# Configuracion CORS basica para despliegues web separados.
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Crea las tablas al iniciar la aplicacion.
+# Crear tablas
 models.Base.metadata.create_all(bind=engine)
 
-app.include_router(publico_router, prefix="")
-app.include_router(auth_router, prefix="")
-app.include_router(asociaciones_router, prefix="")
-app.include_router(productos_router, prefix="")
+app = FastAPI()
 
+# Configuración de templates y estáticos
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-@app.get("/inicio", include_in_schema=False)
-def root_redirect():
-    return RedirectResponse(url="/", status_code=307)
+# Incluir routers
+app.include_router(auth.router)
+app.include_router(publico.router)
+app.include_router(asociaciones.router)
+app.include_router(productos.router)
 
-
-@app.exception_handler(StarletteHTTPException)
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    if exc.status_code == 404:
-        return templates.TemplateResponse(
-            "404.html",
-            {"request": request},
-            status_code=404,
-        )
-    raise exc
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    return templates.TemplateResponse(
-        "404.html",
-        {"request": request},
-        status_code=404,
-    )
+# Para que los routers puedan usar templates, los exponemos
+# Opcional: puedes pasar templates a los routers como dependencia, pero lo más simple es importar app en cada router.
+# En cada router, haz: from ..main import templates
