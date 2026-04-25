@@ -24,7 +24,7 @@ def registro(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Validar longitud (pbkdf2 no tiene límite, pero se mantiene por consistencia)
+    # Validación de longitud (opcional, pbkdf2 no tiene límite)
     if len(password.encode('utf-8')) > 72:
         template = templates.env.get_template("registro.html")
         return HTMLResponse(
@@ -82,11 +82,19 @@ def login(
         )
     
     token = create_token({"sub": str(asociacion.id)})
-    response.set_cookie(key="access_token", value=token, httponly=True, max_age=604800)
-    # 🔁 CAMBIO IMPORTANTE: ahora redirige a /asociaciones/dashboard
+    # Configuración robusta de cookie para HTTPS
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        max_age=604800,          # 7 días
+        secure=True,             # Solo HTTPS (necesario en Render)
+        samesite="lax",          # Protege contra CSRF
+        path="/"                 # Disponible en toda la app
+    )
     return RedirectResponse(url="/asociaciones/dashboard", status_code=303)
 
 @router.post("/logout")
 def logout(response: Response):
-    response.delete_cookie("access_token")
+    response.delete_cookie("access_token", path="/")
     return RedirectResponse(url="/", status_code=303)

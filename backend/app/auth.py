@@ -27,15 +27,15 @@ def create_token(data: dict) -> str:
 def obtener_usuario_actual(request: Request, db: Session = Depends(database.get_db)):
     token = request.cookies.get("access_token")
     if not token:
-        raise HTTPException(status_code=401, detail="No autenticado")
+        raise HTTPException(status_code=401, detail="No autenticado (cookie no encontrada)")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id = payload.get("sub")
         if user_id is None:
-            raise HTTPException(status_code=401, detail="Token inválido")
+            raise HTTPException(status_code=401, detail="Token inválido (sin sub)")
         usuario = db.query(models.Asociacion).filter(models.Asociacion.id == int(user_id)).first()
         if usuario is None:
             raise HTTPException(status_code=401, detail="Usuario no encontrado")
         return usuario
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+    except JWTError as e:
+        raise HTTPException(status_code=401, detail=f"Token inválido o expirado: {str(e)}")
