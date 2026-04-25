@@ -10,7 +10,6 @@ SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 
-# Cambiamos a pbkdf2_sha256, que es puro Python y no tiene límite de 72 bytes
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def hash_password(password: str) -> str:

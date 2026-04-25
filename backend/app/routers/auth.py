@@ -24,11 +24,11 @@ def registro(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Validar longitud en bytes (bcrypt max 72)
+    # Validar longitud (pbkdf2 no tiene límite, pero se mantiene por consistencia)
     if len(password.encode('utf-8')) > 72:
         template = templates.env.get_template("registro.html")
         return HTMLResponse(
-            content=template.render({"request": request, "error": "La contraseña no puede superar los 72 bytes (caracteres especiales ocupan más). Por favor, usa una contraseña más corta."}),
+            content=template.render({"request": request, "error": "La contraseña es demasiado larga (máximo 72 bytes)."}),
             status_code=400
         )
     
@@ -69,7 +69,7 @@ def login(
     if len(password.encode('utf-8')) > 72:
         template = templates.env.get_template("login.html")
         return HTMLResponse(
-            content=template.render({"request": request, "error": "La contraseña es demasiado larga. Máximo 72 bytes."}),
+            content=template.render({"request": request, "error": "La contraseña es demasiado larga."}),
             status_code=400
         )
     
@@ -83,7 +83,8 @@ def login(
     
     token = create_token({"sub": str(asociacion.id)})
     response.set_cookie(key="access_token", value=token, httponly=True, max_age=604800)
-    return RedirectResponse(url="/dashboard", status_code=303)
+    # 🔁 CAMBIO IMPORTANTE: ahora redirige a /asociaciones/dashboard
+    return RedirectResponse(url="/asociaciones/dashboard", status_code=303)
 
 @router.post("/logout")
 def logout(response: Response):
