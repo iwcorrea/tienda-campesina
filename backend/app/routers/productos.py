@@ -10,13 +10,11 @@ import os
 
 router = APIRouter(prefix="/productos", tags=["productos"])
 
-# Obtener ID de carpeta raíz desde variable de entorno
 ROOT_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
 
 @router.get("/", response_class=HTMLResponse)
 def lista_productos(request: Request, db: Session = Depends(get_db), usuario=Depends(obtener_usuario_actual)):
     productos = db.query(models.Producto).filter(models.Producto.asociacion_id == usuario.id).all()
-    # Agregar URL de imagen a cada producto
     for producto in productos:
         if producto.imagen_file_id:
             producto.imagen_url = obtener_url_directa(producto.imagen_file_id)
@@ -38,11 +36,10 @@ async def crear_producto(
     db: Session = Depends(get_db),
     usuario=Depends(obtener_usuario_actual)
 ):
-    # Crear carpeta para la asociación en Drive
-    carpeta_asociacion = await crear_carpeta_si_no_existe(f"asociacion_{usuario.id}", parent_id=ROOT_FOLDER_ID)
+    carpeta_usuario = await crear_carpeta_si_no_existe(f"asociacion_{usuario.id}", parent_id=ROOT_FOLDER_ID)
     imagen_id = None
     if imagen and imagen.filename:
-        imagen_id = await subir_archivo(imagen, carpeta_asociacion)
+        imagen_id = await subir_archivo(imagen, carpeta_usuario)
     nuevo_producto = models.Producto(
         asociacion_id=usuario.id,
         nombre=nombre,
@@ -81,12 +78,10 @@ async def editar_producto(
     producto.precio = precio
     producto.disponible = disponible
     if imagen and imagen.filename:
-        # Eliminar imagen anterior si existe
         if producto.imagen_file_id:
             eliminar_archivo(producto.imagen_file_id)
-        # Subir nueva
-        carpeta_asociacion = await crear_carpeta_si_no_existe(f"asociacion_{usuario.id}", parent_id=ROOT_FOLDER_ID)
-        imagen_id = await subir_archivo(imagen, carpeta_asociacion)
+        carpeta_usuario = await crear_carpeta_si_no_existe(f"asociacion_{usuario.id}", parent_id=ROOT_FOLDER_ID)
+        imagen_id = await subir_archivo(imagen, carpeta_usuario)
         producto.imagen_file_id = imagen_id
     db.commit()
     return RedirectResponse(url="/productos", status_code=303)
