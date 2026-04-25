@@ -1,152 +1,106 @@
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
-from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Request, Depends, Form, UploadFile, File, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-
-from ..auth import get_current_user
 from ..database import get_db
-from ..models import Asociacion, Producto
-from ..services.google_drive import crear_carpeta_si_no_existe, eliminar_archivo, subir_archivo
+from ..auth import obtener_usuario_actual
+from .. import models
+from ..dependencies import templates
+from ..services.google_drive import crear_carpeta_si_no_existe, subir_archivo, eliminar_archivo, obtener_url_directa
+import os
 
-router = APIRouter(tags=["productos"])
-templates = Jinja2Templates(directory="backend/app/templates")
+router = APIRouter(prefix="/productos", tags=["productos"])
 
+# Obtener ID de carpeta raíz desde variable de entorno
+ROOT_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
 
-def current_user_dependency(request: Request, db: Session = Depends(get_db)) -> Asociacion:
-    return get_current_user(request, db)
+@router.get("/", response_class=HTMLResponse)
+def lista_productos(request: Request, db: Session = Depends(get_db), usuario=Depends(obtener_usuario_actual)):
+    productos = db.query(models.Producto).filter(models.Producto.asociacion_id == usuario.id).all()
+    # Agregar URL de imagen a cada producto
+    for producto in productos:
+        if producto.imagen_file_id:
+            producto.imagen_url = obtener_url_directa(producto.imagen_file_id)
+        else:
+            producto.imagen_url = None
+    return templates.TemplateResponse("lista_productos.html", {"request": request, "productos": productos})
 
+@router.get("/crear", response_class=HTMLResponse)
+def crear_producto_form(request: Request, usuario=Depends(obtener_usuario_actual)):
+    return templates.TemplateResponse("crear_producto.html", {"request": request})
 
-@router.get("/productos")
-def lista_productos(
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: Asociacion = Depends(current_user_dependency),
-):
-    productos = db.query(Producto).filter(Producto.asociacion_id == current_user.id).all()
-    return templates.TemplateResponse(
-        "lista_productos.html",
-        {"request": request, "usuario": current_user, "productos": productos},
-    )
-
-
-@router.get("/productos/crear")
-def crear_producto_form(
-    request: Request,
-    current_user: Asociacion = Depends(current_user_dependency),
-):
-    return templates.TemplateResponse(
-        "crear_producto.html",
-        {"request": request, "usuario": current_user},
-    )
-
-
-@router.post("/productos/crear")
-async def crear_producto_post(
+@router.post("/crear")
+async def crear_producto(
     request: Request,
     nombre: str = Form(...),
     descripcion: str = Form(None),
     precio: int = Form(None),
-    disponible: int = Form(1),
     imagen: UploadFile = File(None),
     db: Session = Depends(get_db),
-    current_user: Asociacion = Depends(current_user_dependency),
+    usuario=Depends(obtener_usuario_actual)
 ):
-    imagen_file_id = None
+    # Crear carpeta para la asociación en Drive
+    carpeta_asociacion = await crear_carpeta_si_no_existe(f"asociacion_{usuario.id}", parent_id=ROOT_FOLDER_ID)
+    imagen_id = None
     if imagen and imagen.filename:
-        carpeta_id = crear_carpeta_si_no_existe(f"asociacion_{current_user.id}")
-        imagen_file_id = await subir_archivo(imagen, carpeta_id, imagen.filename)
-
-    producto = Producto(
-        asociacion_id=current_user.id,
+        imagen_id = await subir_archivo(imagen, carpeta_asociacion)
+    nuevo_producto = models.Producto(
+        asociacion_id=usuario.id,
         nombre=nombre,
         descripcion=descripcion,
         precio=precio,
-        disponible=disponible,
-        imagen_file_id=imagen_file_id,
+        imagen_file_id=imagen_id
     )
-    db.add(producto)
+    db.add(nuevo_producto)
     db.commit()
+    return RedirectResponse(url="/productos", status_code=303)
 
-    return RedirectResponse(url="/productos", status_code=status.HTTP_303_SEE_OTHER)
+@router.get("/editar/{producto_id}", response_class=HTMLResponse)
+def editar_producto_form(request: Request, producto_id: int, db: Session = Depends(get_db), usuario=Depends(obtener_usuario_actual)):
+    producto = db.query(models.Producto).filter(models.Producto.id == producto_id, models.Producto.asociacion_id == usuario.id).first()
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return templates.TemplateResponse("editar_producto.html", {"request": request, "producto": producto})
 
-
-@router.get("/productos/editar/{id}")
-def editar_producto_form(
-    id: int,
+@router.post("/editar/{producto_id}")
+async def editar_producto(
     request: Request,
-    db: Session = Depends(get_db),
-    current_user: Asociacion = Depends(current_user_dependency),
-):
-    producto = (
-        db.query(Producto)
-        .filter(Producto.id == id, Producto.asociacion_id == current_user.id)
-        .first()
-    )
-    return templates.TemplateResponse(
-        "editar_producto.html",
-        {"request": request, "usuario": current_user, "producto": producto},
-    )
-
-
-@router.post("/productos/editar/{id}")
-async def editar_producto_post(
-    id: int,
-    request: Request,
+    producto_id: int,
     nombre: str = Form(...),
     descripcion: str = Form(None),
     precio: int = Form(None),
     disponible: int = Form(1),
     imagen: UploadFile = File(None),
     db: Session = Depends(get_db),
-    current_user: Asociacion = Depends(current_user_dependency),
+    usuario=Depends(obtener_usuario_actual)
 ):
-    producto = (
-        db.query(Producto)
-        .filter(Producto.id == id, Producto.asociacion_id == current_user.id)
-        .first()
-    )
-
+    producto = db.query(models.Producto).filter(models.Producto.id == producto_id, models.Producto.asociacion_id == usuario.id).first()
     if not producto:
-        return RedirectResponse(url="/productos", status_code=status.HTTP_303_SEE_OTHER)
-
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
     producto.nombre = nombre
     producto.descripcion = descripcion
     producto.precio = precio
     producto.disponible = disponible
-
     if imagen and imagen.filename:
-        carpeta_id = crear_carpeta_si_no_existe(f"asociacion_{current_user.id}")
-        nueva_imagen_file_id = await subir_archivo(imagen, carpeta_id, imagen.filename)
+        # Eliminar imagen anterior si existe
         if producto.imagen_file_id:
-            try:
-                eliminar_archivo(producto.imagen_file_id)
-            except Exception:
-                pass
-        producto.imagen_file_id = nueva_imagen_file_id
-
+            eliminar_archivo(producto.imagen_file_id)
+        # Subir nueva
+        carpeta_asociacion = await crear_carpeta_si_no_existe(f"asociacion_{usuario.id}", parent_id=ROOT_FOLDER_ID)
+        imagen_id = await subir_archivo(imagen, carpeta_asociacion)
+        producto.imagen_file_id = imagen_id
     db.commit()
-    return RedirectResponse(url="/productos", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/productos", status_code=303)
 
-
-@router.post("/productos/eliminar/{id}")
+@router.post("/eliminar/{producto_id}")
 def eliminar_producto(
-    id: int,
+    producto_id: int,
     db: Session = Depends(get_db),
-    current_user: Asociacion = Depends(current_user_dependency),
+    usuario=Depends(obtener_usuario_actual)
 ):
-    producto = (
-        db.query(Producto)
-        .filter(Producto.id == id, Producto.asociacion_id == current_user.id)
-        .first()
-    )
-
+    producto = db.query(models.Producto).filter(models.Producto.id == producto_id, models.Producto.asociacion_id == usuario.id).first()
     if producto:
         if producto.imagen_file_id:
-            try:
-                eliminar_archivo(producto.imagen_file_id)
-            except Exception:
-                pass
+            eliminar_archivo(producto.imagen_file_id)
         db.delete(producto)
         db.commit()
-
-    return RedirectResponse(url="/productos", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/productos", status_code=303)

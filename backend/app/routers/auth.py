@@ -1,88 +1,64 @@
-from fastapi import APIRouter, Depends, Form, Request, status
-from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Request, Depends, HTTPException, status, Response, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-
-from ..auth import create_token, hash_password, verify_password
 from ..database import get_db
-from ..models import Asociacion
+from .. import models
+from ..auth import hash_password, verify_password, create_token
+from ..dependencies import templates
 
-router = APIRouter(tags=["auth"])
-templates = Jinja2Templates(directory="backend/app/templates")
+router = APIRouter(prefix="/auth", tags=["auth"])
 
-
-@router.get("/registro")
+@router.get("/registro", response_class=HTMLResponse)
 def registro_form(request: Request):
     return templates.TemplateResponse("registro.html", {"request": request})
 
-
-@router.post("/registro")
-def registro_post(
+@router.post("/registro", response_class=HTMLResponse)
+def registro(
     request: Request,
     email: str = Form(...),
     nombre_asociacion: str = Form(...),
-    password: str = Form(...),
     descripcion: str = Form(None),
     direccion: str = Form(None),
     telefono: str = Form(None),
-    db: Session = Depends(get_db),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
 ):
-    existente = db.query(Asociacion).filter(Asociacion.email == email).first()
-    if existente:
-        return templates.TemplateResponse(
-            "registro.html",
-            {"request": request, "error": "El email ya esta registrado."},
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
-
-    asociacion = Asociacion(
+    usuario_existente = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
+    if usuario_existente:
+        return templates.TemplateResponse("registro.html", {"request": request, "error": "El email ya está registrado"})
+    hashed = hash_password(password)
+    nueva_asociacion = models.Asociacion(
         email=email,
         nombre_asociacion=nombre_asociacion,
         descripcion=descripcion,
         direccion=direccion,
         telefono=telefono,
-        hashed_password=hash_password(password),
+        hashed_password=hashed
     )
-    db.add(asociacion)
+    db.add(nueva_asociacion)
     db.commit()
+    return RedirectResponse(url="/auth/login", status_code=303)
 
-    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-
-
-@router.get("/login")
+@router.get("/login", response_class=HTMLResponse)
 def login_form(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
-
 @router.post("/login")
-def login_post(
+def login(
     request: Request,
+    response: Response,
     email: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db)
 ):
-    user = db.query(Asociacion).filter(Asociacion.email == email).first()
-    if not user or not verify_password(password, user.hashed_password):
-        return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "Credenciales invalidas."},
-            status_code=status.HTTP_401_UNAUTHORIZED,
-        )
-
-    token = create_token({"sub": user.email})
-    response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie(
-        key="access_token",
-        value=f"Bearer {token}",
-        httponly=True,
-        samesite="lax",
-        max_age=60 * 60 * 24 * 7,
-    )
-    return response
-
+    asociacion = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
+    if not asociacion or not verify_password(password, asociacion.hashed_password):
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales inválidas"})
+    token = create_token({"sub": str(asociacion.id)})
+    response.set_cookie(key="access_token", value=token, httponly=True, max_age=604800)  # 7 días
+    return RedirectResponse(url="/dashboard", status_code=303)
 
 @router.post("/logout")
-def logout():
-    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+def logout(response: Response):
     response.delete_cookie("access_token")
-    return response
+    return RedirectResponse(url="/", status_code=303)

@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models
-from ..main import templates   # Importa templates desde main
+from ..dependencies import templates
 
 router = APIRouter(tags=["publico"])
 
