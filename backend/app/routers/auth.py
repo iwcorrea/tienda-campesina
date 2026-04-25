@@ -1,48 +1,64 @@
-import os
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import APIRouter, Request, Depends, HTTPException, status, Response, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from . import models, database
+from ..database import get_db
+from .. import models
+from ..auth import hash_password, verify_password, create_token, obtener_usuario_actual
+from ..dependencies import templates
 
-# Configuración desde variables de entorno o valores por defecto
-SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 días
+router = APIRouter(prefix="/auth", tags=["auth"])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+@router.get("/registro", response_class=HTMLResponse)
+def registro_form(request: Request):
+    return templates.TemplateResponse("registro.html", {"request": request})
 
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+@router.post("/registro", response_class=HTMLResponse)
+def registro(
+    request: Request,
+    email: str = Form(...),
+    nombre_asociacion: str = Form(...),
+    descripcion: str = Form(None),
+    direccion: str = Form(None),
+    telefono: str = Form(None),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    usuario_existente = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
+    if usuario_existente:
+        return templates.TemplateResponse("registro.html", {"request": request, "error": "El email ya está registrado"})
+    hashed = hash_password(password)
+    nueva_asociacion = models.Asociacion(
+        email=email,
+        nombre_asociacion=nombre_asociacion,
+        descripcion=descripcion,
+        direccion=direccion,
+        telefono=telefono,
+        hashed_password=hashed
+    )
+    db.add(nueva_asociacion)
+    db.commit()
+    return RedirectResponse(url="/auth/login", status_code=303)
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+@router.get("/login", response_class=HTMLResponse)
+def login_form(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
-def create_token(data: dict) -> str:
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+@router.post("/login")
+def login(
+    request: Request,
+    response: Response,
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    asociacion = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
+    if not asociacion or not verify_password(password, asociacion.hashed_password):
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales inválidas"})
+    token = create_token({"sub": str(asociacion.id)})
+    response.set_cookie(key="access_token", value=token, httponly=True, max_age=604800)
+    return RedirectResponse(url="/dashboard", status_code=303)
 
-def obtener_usuario_actual(request: Request, db: Session = Depends(database.get_db)):
-    """Dependencia para obtener la asociación autenticada desde la cookie access_token."""
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No autenticado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Token inválido")
-        # Convertir a entero
-        usuario = db.query(models.Asociacion).filter(models.Asociacion.id == int(user_id)).first()
-        if usuario is None:
-            raise HTTPException(status_code=401, detail="Usuario no encontrado")
-        return usuario
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido o expirado")
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie("access_token")
+    return RedirectResponse(url="/", status_code=303)
