@@ -24,10 +24,22 @@ def registro(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    # Validar longitud de contraseña (bcrypt max 72 bytes)
+    if len(password.encode('utf-8')) > 72:
+        template = templates.env.get_template("registro.html")
+        return HTMLResponse(
+            content=template.render({"request": request, "error": "La contraseña no puede superar los 72 caracteres."}),
+            status_code=400
+        )
+    
     usuario_existente = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
     if usuario_existente:
         template = templates.env.get_template("registro.html")
-        return HTMLResponse(content=template.render({"request": request, "error": "El email ya está registrado"}), status_code=400)
+        return HTMLResponse(
+            content=template.render({"request": request, "error": "El email ya está registrado"}),
+            status_code=400
+        )
+    
     hashed = hash_password(password)
     nueva_asociacion = models.Asociacion(
         email=email,
@@ -54,10 +66,22 @@ def login(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    # Validar longitud de contraseña para evitar errores internos
+    if len(password.encode('utf-8')) > 72:
+        template = templates.env.get_template("login.html")
+        return HTMLResponse(
+            content=template.render({"request": request, "error": "La contraseña no puede superar los 72 caracteres."}),
+            status_code=400
+        )
+    
     asociacion = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
     if not asociacion or not verify_password(password, asociacion.hashed_password):
         template = templates.env.get_template("login.html")
-        return HTMLResponse(content=template.render({"request": request, "error": "Credenciales inválidas"}), status_code=401)
+        return HTMLResponse(
+            content=template.render({"request": request, "error": "Credenciales inválidas"}),
+            status_code=401
+        )
+    
     token = create_token({"sub": str(asociacion.id)})
     response.set_cookie(key="access_token", value=token, httponly=True, max_age=604800)
     return RedirectResponse(url="/dashboard", status_code=303)
