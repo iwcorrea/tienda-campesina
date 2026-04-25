@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models
@@ -7,9 +7,16 @@ from ..dependencies import templates
 
 router = APIRouter(tags=["publico"])
 
+@router.get("/registro")
+async def redirect_registro():
+    return RedirectResponse(url="/auth/registro")
+
+@router.get("/login")
+async def redirect_login():
+    return RedirectResponse(url="/auth/login")
+
 @router.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    # Forzar la carga directa sin usar caché
     template = templates.env.get_template("index.html")
     return HTMLResponse(content=template.render({"request": request}))
 

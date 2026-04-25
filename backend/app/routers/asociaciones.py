@@ -10,11 +10,13 @@ router = APIRouter(prefix="/asociaciones", tags=["asociaciones"])
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, usuario=Depends(obtener_usuario_actual)):
-    return templates.TemplateResponse("dashboard.html", {"request": request, "usuario": usuario})
+    template = templates.env.get_template("dashboard.html")
+    return HTMLResponse(content=template.render({"request": request, "usuario": usuario}))
 
 @router.get("/mi-perfil", response_class=HTMLResponse)
 def editar_perfil_form(request: Request, usuario=Depends(obtener_usuario_actual)):
-    return templates.TemplateResponse("editar_perfil.html", {"request": request, "usuario": usuario})
+    template = templates.env.get_template("editar_perfil.html")
+    return HTMLResponse(content=template.render({"request": request, "usuario": usuario}))
 
 @router.post("/mi-perfil")
 def editar_perfil(
