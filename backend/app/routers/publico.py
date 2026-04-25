@@ -39,4 +39,4 @@ def perfil_publico(request: Request, asociacion_id: int, db: Session = Depends(g
 @router.get("/check-cookie")
 def check_cookie(request: Request):
     token = request.cookies.get("access_token")
-    return {"token_present": token is not None, "token_preview": (token[:20] + "...") if token else None}    
+    return {"token_present": token is not None, "preview": token[:20] + "..." if token else None}

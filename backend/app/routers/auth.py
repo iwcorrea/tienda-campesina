@@ -9,7 +9,7 @@ import os
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Determinar si estamos en producción por variable de entorno
+# Detectamos si estamos en producción (Render) para secure=True
 IS_PRODUCTION = os.getenv("RENDER", "false").lower() == "true"
 
 @router.get("/registro", response_class=HTMLResponse)
@@ -85,15 +85,14 @@ def login(
         )
     
     token = create_token({"sub": str(asociacion.id)})
-    # Configuración robusta para entornos HTTPS (Render)
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
         max_age=604800,          # 7 días
-        secure=IS_PRODUCTION,    # Solo HTTPS en producción
-        samesite="lax",          # Importante para que el navegador envíe la cookie en redirecciones
-        path="/"                 # Disponible en toda la aplicación
+        secure=IS_PRODUCTION,    # True en Render, False en local
+        samesite="none" if IS_PRODUCTION else "lax",  # 'none' requiere secure=True
+        path="/"
     )
     return RedirectResponse(url="/asociaciones/dashboard", status_code=303)
 
