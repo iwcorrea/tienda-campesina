@@ -1,3 +1,5 @@
+import os
+import logging
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
@@ -6,21 +8,28 @@ from .database import engine
 from . import models
 from .dependencies import templates
 from .routers import auth, publico, asociaciones, productos
-import os
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar")
+SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar-urgente")
 IS_PRODUCTION = os.getenv("RENDER", "false").lower() == "true"
 
+logger.info(f"IS_PRODUCTION = {IS_PRODUCTION}")
+
+# Configuración robusta de la cookie de sesión para HTTPS
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
-    https_only=IS_PRODUCTION,
-    same_site="lax",
+    max_age=604800,          # 7 días
+    https_only=IS_PRODUCTION,    # Enviar solo en HTTPS en producción
+    same_site="none" if IS_PRODUCTION else "lax",
     domain=".onrender.com" if IS_PRODUCTION else None,
+    path="/"
 )
 
 static_dir = Path(__file__).resolve().parent / "static"
@@ -31,3 +40,5 @@ app.include_router(auth.router)
 app.include_router(publico.router)
 app.include_router(asociaciones.router)
 app.include_router(productos.router)
+
+logger.info("Aplicación iniciada correctamente")

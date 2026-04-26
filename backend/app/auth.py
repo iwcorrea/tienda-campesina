@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from . import models, database
 import logging
@@ -32,8 +32,8 @@ def obtener_usuario_actual(request: Request, db: Session = Depends(database.get_
     user_id = request.session.get("user_id")
     logger.info(f"Session user_id: {user_id}")
     if not user_id:
-        raise HTTPException(status_code=401, detail="No autenticado (sesión no encontrada)")
+        raise HTTPException(status_code=401, detail="No autenticado: no hay usuario en sesión")
     usuario = db.query(models.Asociacion).filter(models.Asociacion.id == int(user_id)).first()
-    if usuario is None:
+    if not usuario:
         raise HTTPException(status_code=401, detail="Usuario no encontrado")
     return usuario
