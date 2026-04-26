@@ -3,10 +3,41 @@
 {% block title %}Panel de Asociación{% endblock %}
 
 {% block content %}
-<h2>Bienvenido, {{ usuario }}</h2>
-<p>Desde aquí podrás gestionar tus productos.</p>
-<p><em>Próximamente: formulario para agregar productos con imágenes.</em></p>
+<h2>Panel de gestión</h2>
+<p class="lead">Administra tu asociación y productos.</p>
 
-<a href="/catalogo" class="btn btn-success">Ver catálogo</a>
-<a href="/" class="btn btn-secondary">Volver al inicio</a>
+<div class="row mt-4">
+    <!-- Tarjeta: Mis productos -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-success h-100">
+            <div class="card-header bg-success text-white">
+                <strong>Mis productos</strong>
+            </div>
+            <div class="card-body">
+                <p>Aquí podrás agregar, editar y eliminar los productos que ofreces.</p>
+                <button class="btn btn-outline-success" disabled>Agregar producto (próximamente)</button>
+                <p class="mt-2 text-muted"><small>Funcionalidad en desarrollo.</small></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjeta: Perfil de asociación -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-success h-100">
+            <div class="card-header bg-success text-white">
+                <strong>Perfil de la asociación</strong>
+            </div>
+            <div class="card-body">
+                <p>Actualiza tu información pública: descripción, logo, contacto.</p>
+                <button class="btn btn-outline-success" disabled>Editar perfil (próximamente)</button>
+                <p class="mt-2 text-muted"><small>Funcionalidad en desarrollo.</small></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <a href="/catalogo" class="btn btn-success">Ver catálogo</a>
+    <a href="/" class="btn btn-secondary">Inicio</a>
+</div>
 {% endblock %}

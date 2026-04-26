@@ -3,6 +3,13 @@
 {% block title %}Inicio | Tienda Campesina{% endblock %}
 
 {% block content %}
+{% if request.session.get("usuario") %}
+<div class="alert alert-success">
+    Bienvenido de nuevo, <strong>{{ request.session.get("nombre_asociacion", request.session["usuario"]) }}</strong>.
+    <a href="/panel" class="alert-link">Ir al panel</a>
+</div>
+{% endif %}
+
 <section class="p-4 p-md-5 bg-white rounded-4 shadow-sm">
     <div class="row align-items-center g-4">
         <div class="col-lg-7">
@@ -13,7 +20,6 @@
             </p>
             <div class="d-flex flex-wrap gap-2 mt-3">
                 <a href="/catalogo" class="btn btn-success btn-lg">Ver catálogo</a>
-                <!-- 🔁 Cambio: /auth/registro -->
                 <a href="/auth/registro" class="btn btn-outline-success btn-lg">Registrar asociación</a>
             </div>
         </div>

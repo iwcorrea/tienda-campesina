@@ -24,16 +24,14 @@ def login_post(
 ):
     try:
         sheet = get_sheet()
-        registros = sheet.get_all_values()[1:]  # Saltar encabezados
+        registros = sheet.get_all_values()[1:]
 
         for fila in registros:
-            # Columna 0 = email, columna 1 = hash
             if fila[0] == email:
                 hashed = fila[1].encode("utf-8")
                 password_bytes = password.encode("utf-8")[:72]
                 if bcrypt.checkpw(password_bytes, hashed):
                     request.session["usuario"] = email
-                    # Guardar también el nombre de la asociación en sesión (columna 3)
                     if len(fila) > 3:
                         request.session["nombre_asociacion"] = fila[3]
                     return RedirectResponse(url="/panel", status_code=303)
@@ -56,6 +54,13 @@ def login_post(
         )
 
 
+# ------------------- LOGOUT -------------------
+@router.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/", status_code=303)
+
+
 # ------------------- REGISTRO -------------------
 @router.get("/registro", response_class=HTMLResponse)
 def registro_get(request: Request):
@@ -76,7 +81,6 @@ def registro_post(
         sheet = get_sheet()
         registros = sheet.get_all_values()[1:]
 
-        # Verificar si el email ya existe (columna 0)
         for fila in registros:
             if fila[0] == email:
                 return templates.TemplateResponse(
@@ -84,20 +88,18 @@ def registro_post(
                     {"request": request, "error": "Este email ya está registrado."}
                 )
 
-        # Hashear contraseña
         password_bytes = password.encode("utf-8")[:72]
         hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
 
-        # Guardar nueva fila (8 columnas)
         sheet.append_row([
-            email,                         # A
-            hashed,                        # B
-            str(datetime.datetime.now()),  # C
-            nombre_asociacion,             # D
-            descripcion or "",             # E
-            direccion or "",               # F
-            telefono or "",                # G
-            ""                             # H (Logo URL, vacío por ahora)
+            email,
+            hashed,
+            str(datetime.datetime.now()),
+            nombre_asociacion,
+            descripcion or "",
+            direccion or "",
+            telefono or "",
+            ""
         ])
 
         logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)
