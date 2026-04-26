@@ -1,51 +1,39 @@
-from fastapi import APIRouter, Request, Form, HTTPException
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi import APIRouter, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
 
-# 🔥 FORMULARIO LOGIN
+templates = Jinja2Templates(directory="app/templates")
+
+
+# 🔐 LOGIN (GET)
 @router.get("/login", response_class=HTMLResponse)
-def login_form():
-    return """
-    <h2>Login</h2>
-    <form method="post">
-        <input name="email" placeholder="Email"/><br>
-        <input name="password" type="password" placeholder="Password"/><br>
-        <button type="submit">Ingresar</button>
-    </form>
-    <a href="/menu">Volver</a>
-    """
+def login_form(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
-# 🔥 LOGIN
+
+# 🔐 LOGIN (POST)
 @router.post("/login")
-def login(request: Request, email: str = Form(...), password: str = Form(...)):
+def login_user(email: str = Form(...), password: str = Form(...)):
+    # 🔴 lógica falsa por ahora
+    if email == "admin@test.com" and password == "1234":
+        return RedirectResponse(url="/menu", status_code=302)
     
-    if email != "admin@test.com" or password != "1234":
-        raise HTTPException(status_code=400, detail="Credenciales incorrectas")
-
-    request.session["user_id"] = 1
-
-    return RedirectResponse("/auth/dashboard", status_code=303)
+    return templates.TemplateResponse("login.html", {
+        "request": {},
+        "error": "Credenciales incorrectas"
+    })
 
 
-# 🔥 DASHBOARD
-@router.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
-    if not request.session.get("user_id"):
-        raise HTTPException(status_code=401, detail="No autenticado")
-
-    return """
-    <h2>Bienvenido</h2>
-    <p>Login correcto</p>
-    <a href="/menu">Ir al menú</a>
-    """
-
-
-# 🔥 REGISTRO (TEMPORAL)
+# 📝 REGISTRO (GET)
 @router.get("/registro", response_class=HTMLResponse)
-def registro():
-    return """
-    <h2>Registro</h2>
-    <p>Próximamente conexión con base de datos</p>
-    <a href="/menu">Volver</a>
-    """
+def registro_form(request: Request):
+    return templates.TemplateResponse("registro.html", {"request": request})
+
+
+# 📝 REGISTRO (POST)
+@router.post("/registro")
+def registrar_usuario(nombre: str = Form(...), email: str = Form(...)):
+    # 🔴 aquí luego conectamos Google Sheets
+    return RedirectResponse(url="/menu", status_code=302)
