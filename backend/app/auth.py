@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from passlib.hash import bcrypt
+import bcrypt
 from app.google_sheets import get_sheet
 import logging
 import datetime
@@ -23,7 +23,7 @@ def login_post(
     password: str = Form(...)
 ):
     try:
-        # ⚠️ Login temporal para pruebas (luego leeremos de la hoja)
+        # Login temporal (luego leeremos de Google Sheets)
         if email == "admin@test.com" and password == "1234":
             request.session["usuario"] = email
             return RedirectResponse(url="/catalogo", status_code=303)
@@ -53,8 +53,10 @@ def registro_post(
     password: str = Form(...)
 ):
     try:
-        # Hashear la contraseña
-        hashed = bcrypt.hash(password)
+        # Truncar contraseña a 72 bytes (límite de bcrypt) por seguridad
+        password_bytes = password.encode("utf-8")[:72]
+        # Hashear con bcrypt
+        hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
 
         # Guardar en Google Sheets
         sheet = get_sheet()
