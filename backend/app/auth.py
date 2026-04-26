@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import bcrypt
-from app.google_sheets import get_sheet
+from app.google_sheets import get_sheet, upload_to_gcs
 import logging
 import datetime
 
@@ -10,6 +10,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger("auth")
 
+# ------------------- LOGIN -------------------
 @router.get("/login", response_class=HTMLResponse)
 def login_get(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -40,6 +41,7 @@ def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/", status_code=303)
 
+# ------------------- REGISTRO -------------------
 @router.get("/registro", response_class=HTMLResponse)
 def registro_get(request: Request):
     return templates.TemplateResponse("registro.html", {"request": request})
@@ -53,6 +55,7 @@ def registro_post(
     descripcion: str = Form(None),
     direccion: str = Form(None),
     telefono: str = Form(None),
+    logo: UploadFile = File(None)   # ← Campo de archivo opcional
 ):
     try:
         sheet = get_sheet()
@@ -60,11 +63,29 @@ def registro_post(
         for fila in registros:
             if fila[0] == email:
                 return templates.TemplateResponse("registro.html", {"request": request, "error": "Este email ya está registrado."})
+
+        # Subir logo si se proporcionó
+        logo_url = ""
+        if logo and logo.filename:
+            logo_url = upload_to_gcs(logo, logo.filename, folder="logos")
+
         password_bytes = password.encode("utf-8")[:72]
         hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
-        sheet.append_row([email, hashed, str(datetime.datetime.now()), nombre_asociacion, descripcion or "", direccion or "", telefono or "", ""])
+
+        sheet.append_row([
+            email,
+            hashed,
+            str(datetime.datetime.now()),
+            nombre_asociacion,
+            descripcion or "",
+            direccion or "",
+            telefono or "",
+            logo_url    # ← Columna H: URL del logo
+        ])
+
         logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)
         return RedirectResponse(url="/auth/login", status_code=303)
+
     except Exception as e:
         logger.exception("Error al guardar en Google Sheets")
         return templates.TemplateResponse("registro.html", {"request": request, "error": "No se pudo completar el registro. Intenta más tarde."})
