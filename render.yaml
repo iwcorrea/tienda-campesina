@@ -1,16 +1,15 @@
 services:
-  - type: web
-    name: tienda-campesina
-    env: python
-    plan: free
-
-    rootDir: backend
-
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 10000
-
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: SECRET_KEY
-        sync: false
+- type: web
+  name: tienda-campesina
+  env: python
+  plan: free
+  rootDir: backend
+  buildCommand: pip install -r requirements.txt
+  startCommand: uvicorn app.main:app --host 0.0.0.0 --port 10000
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.11.0
+  - key: SECRET_KEY
+    sync: false
+  - key: WEB_CONCURRENCY
+    value: "1"
