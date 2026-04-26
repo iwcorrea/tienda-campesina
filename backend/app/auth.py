@@ -1,39 +1,29 @@
-import os
-from datetime import datetime, timedelta, timezone
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, Request
+from fastapi import APIRouter, Request, Form, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from . import models, database
-import logging
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from app.database import get_db
+from app.models import Asociacion
+from app.utils import verify_password
 
-SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_DAYS = 7
+router = APIRouter()
 
-pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+@router.post("/login")
+def login(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    asociacion = db.query(Asociacion).filter(Asociacion.email == email).first()
 
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    if not asociacion or not verify_password(password, asociacion.password):
+        raise HTTPException(status_code=400, detail="Credenciales incorrectas")
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    # 🔑 Guardar sesión
+    request.session["user_id"] = int(asociacion.id)
 
-def create_token(data: dict) -> str:
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-def obtener_usuario_actual(request: Request, db: Session = Depends(database.get_db)):
-    user_id = request.session.get("user_id")
-    logger.info(f"Session user_id: {user_id}")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="No autenticado: no hay usuario en sesión")
-    usuario = db.query(models.Asociacion).filter(models.Asociacion.id == int(user_id)).first()
-    if not usuario:
-        raise HTTPException(status_code=401, detail="Usuario no encontrado")
-    return usuario
+    return RedirectResponse(
+        url="/asociaciones/dashboard",
+        status_code=303
+    )

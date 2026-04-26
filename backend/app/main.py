@@ -1,42 +1,32 @@
-import os
-import logging
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
-from pathlib import Path
-from .database import engine
-from . import models
-from .dependencies import templates
-from .routers import auth, publico, asociaciones, productos
+import os
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-models.Base.metadata.create_all(bind=engine)
+from app.routes import router as main_router
+from app.auth import router as auth_router
 
 app = FastAPI()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar-urgente")
-IS_PRODUCTION = os.getenv("RENDER", "false").lower() == "true"
+# 🔐 Clave secreta obligatoria
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-logger.info(f"IS_PRODUCTION = {IS_PRODUCTION}")
+if not SECRET_KEY:
+    raise ValueError("Falta configurar SECRET_KEY en variables de entorno")
 
-# Configuración de sesión que funciona en Render
+# 🚀 Middleware de sesión (CORREGIDO)
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
-    max_age=604800,          # 7 días
-    https_only=IS_PRODUCTION,      # Solo HTTPS en producción
-    same_site="lax",               # Funciona bien con subdominios
+    same_site="lax",
+    https_only=True,
+    max_age=60 * 60 * 24  # 1 día
 )
 
-static_dir = Path(__file__).resolve().parent / "static"
-if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+# 📦 Rutas
+app.include_router(main_router)
+app.include_router(auth_router, prefix="/auth")
 
-app.include_router(auth.router)
-app.include_router(publico.router)
-app.include_router(asociaciones.router)
-app.include_router(productos.router)
-
-logger.info("Aplicación iniciada correctamente")
+# 🧪 Ruta base
+@app.get("/")
+def home():
+    return {"status": "ok"}
