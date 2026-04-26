@@ -23,18 +23,16 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 def create_token(data: dict) -> str:
-    """Función conservada por si se necesita en el futuro, pero no se usa en la sesión."""
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def obtener_usuario_actual(request: Request, db: Session = Depends(database.get_db)):
-    """Obtiene el usuario autenticado desde la sesión (no desde cookie JWT manual)."""
     user_id = request.session.get("user_id")
     logger.info(f"Session user_id: {user_id}")
     if not user_id:
-        raise HTTPException(status_code=401, detail="No autenticado: sesión no encontrada")
+        raise HTTPException(status_code=401, detail="No autenticado (sesión no encontrada)")
     usuario = db.query(models.Asociacion).filter(models.Asociacion.id == int(user_id)).first()
     if usuario is None:
         raise HTTPException(status_code=401, detail="Usuario no encontrado")

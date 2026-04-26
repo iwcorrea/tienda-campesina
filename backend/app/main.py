@@ -12,8 +12,17 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Middleware de sesión (usa la misma SECRET_KEY del .env)
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "clave-secreta-cambiar"))
+SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar")
+IS_PRODUCTION = os.getenv("RENDER", "false").lower() == "true"
+
+# Middleware de sesión configurado para HTTPS en Render
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    https_only=IS_PRODUCTION,          # Equivalente a secure=True para cookies
+    same_site="lax",
+    domain=".onrender.com" if IS_PRODUCTION else None,
+)
 
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():

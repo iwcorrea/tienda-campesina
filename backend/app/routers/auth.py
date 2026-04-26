@@ -80,7 +80,7 @@ def login(
             status_code=401
         )
     
-    # Guardamos el ID del usuario en la sesión (no usamos JWT manual)
+    # Guardamos el ID en la sesión
     request.session["user_id"] = asociacion.id
     return RedirectResponse(url="/asociaciones/dashboard", status_code=303)
 
