@@ -36,7 +36,8 @@ def perfil_publico(request: Request, asociacion_id: int, db: Session = Depends(g
     template = templates.env.get_template("perfil_publico.html")
     return HTMLResponse(content=template.render({"request": request, "asociacion": asociacion, "productos": productos}))
 
+# Endpoint para diagnosticar la sesión
 @router.get("/check-cookie")
 def check_cookie(request: Request):
-    token = request.cookies.get("access_token")
-    return {"token_present": token is not None, "preview": token[:20] + "..." if token else None}
+    user_id = request.session.get("user_id")
+    return {"session_user_id": user_id, "authenticated": user_id is not None}

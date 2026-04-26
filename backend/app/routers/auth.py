@@ -3,14 +3,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models
-from ..auth import hash_password, verify_password, create_token, obtener_usuario_actual
+from ..auth import hash_password, verify_password
 from ..dependencies import templates
-import os
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-# Detectamos si estamos en producción (Render) para secure=True
-IS_PRODUCTION = os.getenv("RENDER", "false").lower() == "true"
 
 @router.get("/registro", response_class=HTMLResponse)
 def registro_form(request: Request):
@@ -84,19 +80,11 @@ def login(
             status_code=401
         )
     
-    token = create_token({"sub": str(asociacion.id)})
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        max_age=604800,          # 7 días
-        secure=IS_PRODUCTION,    # True en Render, False en local
-        samesite="none" if IS_PRODUCTION else "lax",  # 'none' requiere secure=True
-        path="/"
-    )
+    # Guardamos el ID del usuario en la sesión (no usamos JWT manual)
+    request.session["user_id"] = asociacion.id
     return RedirectResponse(url="/asociaciones/dashboard", status_code=303)
 
 @router.post("/logout")
-def logout(response: Response):
-    response.delete_cookie("access_token", path="/")
+def logout(request: Request, response: Response):
+    request.session.clear()
     return RedirectResponse(url="/", status_code=303)
