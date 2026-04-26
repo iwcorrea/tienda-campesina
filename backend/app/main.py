@@ -12,7 +12,6 @@ from .routers import auth, publico, asociaciones, productos
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Crear tablas en la base de datos
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -22,21 +21,19 @@ IS_PRODUCTION = os.getenv("RENDER", "false").lower() == "true"
 
 logger.info(f"IS_PRODUCTION = {IS_PRODUCTION}")
 
-# Configuración de la cookie de sesión para Render (HTTPS)
+# Configuración de sesión que funciona en Render
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
     max_age=604800,          # 7 días
-    https_only=IS_PRODUCTION,   # Enviar solo en HTTPS en producción
-    same_site="lax"              # Funciona bien con subdominios de Render
+    https_only=IS_PRODUCTION,      # Solo HTTPS en producción
+    same_site="lax",               # Funciona bien con subdominios
 )
 
-# Archivos estáticos (CSS, JS, imágenes)
 static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
-# Incluir los routers
 app.include_router(auth.router)
 app.include_router(publico.router)
 app.include_router(asociaciones.router)
