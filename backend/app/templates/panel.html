@@ -7,30 +7,61 @@
 <p class="lead">Administra tu asociación y productos.</p>
 
 <div class="row mt-4">
-    <!-- Tarjeta: Mis productos -->
+    <!-- Formulario para agregar producto -->
+    <div class="col-md-6 mb-4">
+        <div class="card border-success h-100">
+            <div class="card-header bg-success text-white">
+                <strong>Agregar nuevo producto</strong>
+            </div>
+            <div class="card-body">
+                <form action="/panel/producto" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del producto</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Precio (COP)</label>
+                        <input type="number" name="precio" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL de la imagen (opcional)</label>
+                        <input type="url" name="imagen_url" class="form-control" placeholder="https://...">
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar producto</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de productos existentes -->
     <div class="col-md-6 mb-4">
         <div class="card border-success h-100">
             <div class="card-header bg-success text-white">
                 <strong>Mis productos</strong>
             </div>
             <div class="card-body">
-                <p>Aquí podrás agregar, editar y eliminar los productos que ofreces.</p>
-                <button class="btn btn-outline-success" disabled>Agregar producto (próximamente)</button>
-                <p class="mt-2 text-muted"><small>Funcionalidad en desarrollo.</small></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tarjeta: Perfil de asociación -->
-    <div class="col-md-6 mb-4">
-        <div class="card border-success h-100">
-            <div class="card-header bg-success text-white">
-                <strong>Perfil de la asociación</strong>
-            </div>
-            <div class="card-body">
-                <p>Actualiza tu información pública: descripción, logo, contacto.</p>
-                <button class="btn btn-outline-success" disabled>Editar perfil (próximamente)</button>
-                <p class="mt-2 text-muted"><small>Funcionalidad en desarrollo.</small></p>
+                {% if productos %}
+                <ul class="list-group">
+                    {% for p in productos %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ p.nombre }}</strong>
+                            <br><small class="text-muted">${{ p.precio }}</small>
+                            {% if p.imagen_url %}
+                            <br><img src="{{ p.imagen_url }}" width="50" class="mt-1">
+                            {% endif %}
+                        </div>
+                        <!-- Más adelante botones de editar/eliminar -->
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>Aún no tienes productos. ¡Agrega el primero!</p>
+                {% endif %}
             </div>
         </div>
     </div>
