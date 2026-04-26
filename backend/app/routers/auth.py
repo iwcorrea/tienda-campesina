@@ -30,7 +30,7 @@ def registro(
             content=template.render({"request": request, "error": "La contraseña es demasiado larga (máximo 72 bytes)."}),
             status_code=400
         )
-    
+
     usuario_existente = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
     if usuario_existente:
         template = templates.env.get_template("registro.html")
@@ -38,7 +38,7 @@ def registro(
             content=template.render({"request": request, "error": "El email ya está registrado"}),
             status_code=400
         )
-    
+
     hashed = hash_password(password)
     nueva_asociacion = models.Asociacion(
         email=email,
@@ -71,7 +71,7 @@ def login(
             content=template.render({"request": request, "error": "La contraseña es demasiado larga."}),
             status_code=400
         )
-    
+
     asociacion = db.query(models.Asociacion).filter(models.Asociacion.email == email).first()
     if not asociacion or not verify_password(password, asociacion.hashed_password):
         template = templates.env.get_template("login.html")
@@ -79,8 +79,7 @@ def login(
             content=template.render({"request": request, "error": "Credenciales inválidas"}),
             status_code=401
         )
-    
-    # Guardamos el ID en la sesión
+
     request.session["user_id"] = asociacion.id
     return RedirectResponse(url="/asociaciones/dashboard", status_code=303)
 

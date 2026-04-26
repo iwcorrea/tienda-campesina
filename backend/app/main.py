@@ -15,11 +15,10 @@ app = FastAPI()
 SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-cambiar")
 IS_PRODUCTION = os.getenv("RENDER", "false").lower() == "true"
 
-# Middleware de sesión configurado para HTTPS en Render
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
-    https_only=IS_PRODUCTION,          # Equivalente a secure=True para cookies
+    https_only=IS_PRODUCTION,
     same_site="lax",
     domain=".onrender.com" if IS_PRODUCTION else None,
 )
