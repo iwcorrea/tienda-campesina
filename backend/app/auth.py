@@ -23,15 +23,32 @@ def login_post(
     password: str = Form(...)
 ):
     try:
-        # Login temporal (luego leeremos de Google Sheets)
-        if email == "admin@test.com" and password == "1234":
-            request.session["usuario"] = email
-            return RedirectResponse(url="/catalogo", status_code=303)
+        # Buscar al usuario en Google Sheets
+        sheet = get_sheet()
+        registros = sheet.get_all_values()
 
+        for fila in registros:
+            # Suponemos columnas: 0=Email, 1=Contraseña (hash), 2=Fecha
+            if fila[0] == email:
+                hashed = fila[1].encode("utf-8")
+                password_bytes = password.encode("utf-8")[:72]
+                if bcrypt.checkpw(password_bytes, hashed):
+                    # Éxito: guardar sesión
+                    request.session["usuario"] = email
+                    return RedirectResponse(url="/catalogo", status_code=303)
+                else:
+                    # Contraseña incorrecta
+                    return templates.TemplateResponse(
+                        "login.html",
+                        {"request": request, "error": "Credenciales incorrectas"}
+                    )
+
+        # Si no se encontró el email
         return templates.TemplateResponse(
             "login.html",
             {"request": request, "error": "Credenciales incorrectas"}
         )
+
     except Exception as e:
         logger.exception("Error en login_post")
         return templates.TemplateResponse(
@@ -53,18 +70,22 @@ def registro_post(
     password: str = Form(...)
 ):
     try:
-        # Truncar contraseña a 72 bytes (límite de bcrypt) por seguridad
+        # Validación simple: evitar duplicados
+        sheet = get_sheet()
+        registros = sheet.get_all_values()
+        for fila in registros:
+            if fila[0] == email:
+                return templates.TemplateResponse(
+                    "registro.html",
+                    {"request": request, "error": "Este email ya está registrado."}
+                )
+
+        # Hashear contraseña
         password_bytes = password.encode("utf-8")[:72]
-        # Hashear con bcrypt
         hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
 
         # Guardar en Google Sheets
-        sheet = get_sheet()
-        sheet.append_row([
-            email,
-            hashed,
-            str(datetime.datetime.now())
-        ])
+        sheet.append_row([email, hashed, str(datetime.datetime.now())])
 
         logger.info("Usuario registrado en Google Sheets: %s", email)
         return RedirectResponse(url="/auth/login", status_code=303)
