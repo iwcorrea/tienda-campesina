@@ -1,11 +1,15 @@
+import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-from fastapi.middleware.cors import CORSMiddleware # <-- 1. Importa CORS
+from fastapi.middleware.cors import CORSMiddleware
 import os
 from app.auth import router as auth_router
+
+# Configurar logging para ver errores en los logs de Render
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
@@ -18,10 +22,10 @@ app.add_middleware(
     https_only=True,
 )
 
-# 2. Agrega el middleware CORS
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Cambia "*" por los orígenes específicos de tu frontend en producción
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,7 +40,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Rutas de auth
 app.include_router(auth_router, prefix="/auth")
 
-# HOME (INDEX REAL) - Cambio aquí para aceptar GET y HEAD
+# HOME (acepta GET y HEAD)
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def inicio(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
