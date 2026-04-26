@@ -1,27 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}Registro{% endblock %}
+{% block title %}Registro de Asociación{% endblock %}
 
 {% block content %}
-<h2>Registro</h2>
+<h2 class="mb-4">Registrar Asociación Campesina</h2>
 
-<form action="/auth/registro" method="post">
-
+<form action="/auth/registro" method="post" enctype="multipart/form-data">
+    <!-- Datos de acceso -->
+    <h4 class="text-success">Datos de acceso</h4>
     <div class="mb-3">
-        <label>Email</label>
+        <label>Email de la asociación</label>
         <input type="email" name="email" class="form-control" required>
     </div>
-
     <div class="mb-3">
         <label>Contraseña</label>
         <input type="password" name="password" class="form-control" maxlength="72" required>
     </div>
 
-    <button type="submit" class="btn btn-success">Registrarse</button>
+    <hr>
+
+    <!-- Datos de la asociación -->
+    <h4 class="text-success">Información de la asociación</h4>
+    <div class="mb-3">
+        <label>Nombre de la asociación</label>
+        <input type="text" name="nombre_asociacion" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label>Descripción</label>
+        <textarea name="descripcion" class="form-control" rows="3"></textarea>
+    </div>
+    <div class="mb-3">
+        <label>Dirección / Municipio</label>
+        <input type="text" name="direccion" class="form-control">
+    </div>
+    <div class="mb-3">
+        <label>Teléfono</label>
+        <input type="text" name="telefono" class="form-control">
+    </div>
+    <div class="mb-3">
+        <label>Logo de la asociación (opcional)</label>
+        <input type="file" name="logo" class="form-control" accept="image/*">
+        <small class="text-muted">Puedes subir una imagen más tarde</small>
+    </div>
+
+    <button type="submit" class="btn btn-success btn-lg">Registrar asociación</button>
 </form>
 
 {% if error %}
 <div class="alert alert-danger mt-3">{{ error }}</div>
 {% endif %}
-
 {% endblock %}

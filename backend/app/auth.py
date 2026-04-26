@@ -24,8 +24,7 @@ def login_post(
 ):
     try:
         sheet = get_sheet()
-        # Obtenemos todas las filas y saltamos la primera (encabezados)
-        registros = sheet.get_all_values()[1:]  # desde la segunda fila
+        registros = sheet.get_all_values()[1:]  # Saltar encabezados
 
         for fila in registros:
             # Columna 0 = email, columna 1 = hash
@@ -34,14 +33,16 @@ def login_post(
                 password_bytes = password.encode("utf-8")[:72]
                 if bcrypt.checkpw(password_bytes, hashed):
                     request.session["usuario"] = email
-                    return RedirectResponse(url="/catalogo", status_code=303)
+                    # Guardar también el nombre de la asociación en sesión (columna 3)
+                    if len(fila) > 3:
+                        request.session["nombre_asociacion"] = fila[3]
+                    return RedirectResponse(url="/panel", status_code=303)
                 else:
                     return templates.TemplateResponse(
                         "login.html",
                         {"request": request, "error": "Credenciales incorrectas"}
                     )
 
-        # Email no encontrado
         return templates.TemplateResponse(
             "login.html",
             {"request": request, "error": "Credenciales incorrectas"}
@@ -65,13 +66,17 @@ def registro_get(request: Request):
 def registro_post(
     request: Request,
     email: str = Form(...),
-    password: str = Form(...)
+    password: str = Form(...),
+    nombre_asociacion: str = Form(...),
+    descripcion: str = Form(None),
+    direccion: str = Form(None),
+    telefono: str = Form(None),
 ):
     try:
         sheet = get_sheet()
-        registros = sheet.get_all_values()[1:]  # sin encabezados
+        registros = sheet.get_all_values()[1:]
 
-        # Verificar si el email ya existe
+        # Verificar si el email ya existe (columna 0)
         for fila in registros:
             if fila[0] == email:
                 return templates.TemplateResponse(
@@ -79,12 +84,23 @@ def registro_post(
                     {"request": request, "error": "Este email ya está registrado."}
                 )
 
-        # Hashear y guardar
+        # Hashear contraseña
         password_bytes = password.encode("utf-8")[:72]
         hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
-        sheet.append_row([email, hashed, str(datetime.datetime.now())])
 
-        logger.info("Usuario registrado en Google Sheets: %s", email)
+        # Guardar nueva fila (8 columnas)
+        sheet.append_row([
+            email,                         # A
+            hashed,                        # B
+            str(datetime.datetime.now()),  # C
+            nombre_asociacion,             # D
+            descripcion or "",             # E
+            direccion or "",               # F
+            telefono or "",                # G
+            ""                             # H (Logo URL, vacío por ahora)
+        ])
+
+        logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)
         return RedirectResponse(url="/auth/login", status_code=303)
 
     except Exception as e:

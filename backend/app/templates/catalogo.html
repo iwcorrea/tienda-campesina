@@ -1,13 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Catálogo{% endblock %}
+{% block title %}Catálogo de Productos{% endblock %}
 
 {% block content %}
-<h2>Catálogo de productos</h2>
+<h2 class="mb-4">Productos campesinos</h2>
+<p class="lead">Pronto aquí verás los productos de las asociaciones registradas.</p>
 
-<div class="card p-3">
-    <p>Aquí se mostrarán los productos.</p>
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for producto in productos %}
+    <div class="col">
+        <div class="card h-100">
+            <img src="{{ producto.imagen }}" class="card-img-top" alt="{{ producto.nombre }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ producto.nombre }}</h5>
+                <p class="card-text">{{ producto.descripcion }}</p>
+                <p class="text-success fw-bold">${{ producto.precio }}</p>
+                <small class="text-muted">Por: {{ producto.asociacion }}</small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
-
-<a href="/" class="btn btn-secondary mt-3">Volver</a>
 {% endblock %}
