@@ -44,25 +44,34 @@ def inicio(request: Request):
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO (datos desde Google Sheets hoja Productos) ─
+# ─── CATÁLOGO (mejorado con logs y validación de columnas) ─
 @app.get("/catalogo", response_class=HTMLResponse)
 def catalogo(request: Request):
     try:
         sheet_prod = get_products_sheet()
-        registros = sheet_prod.get_all_values()[1:]  # sin cabecera
-    except Exception:
-        registros = []
+        registros = sheet_prod.get_all_values()
+        if len(registros) > 1:
+            datos = registros[1:]  # sin encabezados
+        else:
+            datos = []
+        logging.info(f"Catálogo: {len(datos)} filas encontradas en Productos")
+    except Exception as e:
+        logging.exception("Error al leer la hoja Productos")
+        datos = []
 
     productos = []
-    for fila in registros:
-        if fila and fila[0]:  # email de asociación no vacío
+    for fila in datos:
+        # Solo procesar filas con al menos email y nombre
+        if len(fila) >= 2 and fila[0].strip():
             productos.append({
                 "nombre": fila[1] if len(fila) > 1 else "",
                 "descripcion": fila[2] if len(fila) > 2 else "",
                 "precio": fila[3] if len(fila) > 3 else "",
-                "imagen": fila[4] if len(fila) > 4 else "https://placehold.co/300x200/5B8C51/white?text=Producto",
+                "imagen": (fila[4].strip() if len(fila) > 4 and fila[4].strip() else
+                           "https://placehold.co/300x200/5B8C51/white?text=Producto"),
                 "asociacion": fila[0]
             })
+    logging.info(f"Catálogo: {len(productos)} productos listos para mostrar")
     return templates.TemplateResponse("catalogo.html", {"request": request, "productos": productos})
 
 # ─── PANEL (protegido) ───────────────────────────────
@@ -74,8 +83,9 @@ def panel(request: Request):
     email = request.session["usuario"]
     try:
         sheet_prod = get_products_sheet()
-        todos = sheet_prod.get_all_values()[1:]
-        mis_productos = [fila for fila in todos if fila[0] == email]
+        todos = sheet_prod.get_all_values()
+        datos = todos[1:] if len(todos) > 1 else []
+        mis_productos = [fila for fila in datos if fila[0] == email]
     except Exception:
         mis_productos = []
 
@@ -94,14 +104,14 @@ def panel(request: Request):
         "productos": productos_obj
     })
 
-# ─── CREAR PRODUCTO (POST, acepta imagen) ─────────────
+# ─── CREAR PRODUCTO (acepta imagen) ─────────────────
 @app.post("/panel/producto")
 def crear_producto(
     request: Request,
     nombre: str = Form(...),
     descripcion: str = Form(None),
     precio: int = Form(...),
-    imagen: UploadFile = File(None)   # ← Campo de archivo opcional
+    imagen: UploadFile = File(None)
 ):
     if "usuario" not in request.session:
         return RedirectResponse(url="/auth/login", status_code=303)
@@ -117,6 +127,10 @@ def crear_producto(
 
     try:
         sheet_prod = get_products_sheet()
+        # Agregar los encabezados si la hoja está vacía (primera fila vacía o no tiene encabezados)
+        todos = sheet_prod.get_all_values()
+        if not todos or not any(todos[0]):
+            sheet_prod.append_row(["email", "nombre", "descripcion", "precio", "imagen_url", "fecha"])
         sheet_prod.append_row([
             email,
             nombre,
