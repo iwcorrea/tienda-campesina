@@ -1,19 +1,13 @@
 {% extends "base.html" %}
 
+{% block title %}Menú | Tienda Campesina{% endblock %}
+
 {% block content %}
-<h1 class="mb-4">🌾 Tienda Campesina</h1>
+<h2 class="mb-4">Menú principal</h2>
 
-<div class="list-group">
-    <a href="/auth/login" class="list-group-item list-group-item-action">
-        🔐 Iniciar sesión
-    </a>
-
-    <a href="/auth/registro" class="list-group-item list-group-item-action">
-        📝 Registrarse
-    </a>
-
-    <a href="/catalogo" class="list-group-item list-group-item-action">
-        🛒 Ver catálogo
-    </a>
+<div class="d-flex flex-column gap-3">
+    <a href="/catalogo" class="btn btn-success">Ver catálogo</a>
+    <a href="/auth/login" class="btn btn-primary">Iniciar sesión</a>
+    <a href="/auth/registro" class="btn btn-outline-primary">Registrarse</a>
 </div>
 {% endblock %}
