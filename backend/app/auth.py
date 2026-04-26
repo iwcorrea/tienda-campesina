@@ -3,37 +3,44 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
+templates = Jinja2Templates(directory="backend/app/templates")
 
-templates = Jinja2Templates(directory="app/templates")
 
-
-# 🔐 LOGIN (GET)
+# 🔐 LOGIN
 @router.get("/login", response_class=HTMLResponse)
-def login_form(request: Request):
+def login_get(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 
-# 🔐 LOGIN (POST)
 @router.post("/login")
-def login_user(email: str = Form(...), password: str = Form(...)):
-    # 🔴 lógica falsa por ahora
+def login_post(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...)
+):
+    # ⚠️ Aquí luego validamos con DB o Google Sheets
     if email == "admin@test.com" and password == "1234":
-        return RedirectResponse(url="/menu", status_code=302)
-    
-    return templates.TemplateResponse("login.html", {
-        "request": {},
-        "error": "Credenciales incorrectas"
-    })
+        return RedirectResponse(url="/inicio", status_code=303)
+
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "error": "Credenciales incorrectas"}
+    )
 
 
-# 📝 REGISTRO (GET)
+# 📝 REGISTRO
 @router.get("/registro", response_class=HTMLResponse)
-def registro_form(request: Request):
+def registro_get(request: Request):
     return templates.TemplateResponse("registro.html", {"request": request})
 
 
-# 📝 REGISTRO (POST)
 @router.post("/registro")
-def registrar_usuario(nombre: str = Form(...), email: str = Form(...)):
-    # 🔴 aquí luego conectamos Google Sheets
-    return RedirectResponse(url="/menu", status_code=302)
+def registro_post(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...)
+):
+    # ⚠️ Aquí luego guardamos en Google Sheets
+    print("Nuevo usuario:", email)
+
+    return RedirectResponse(url="/auth/login", status_code=303)
