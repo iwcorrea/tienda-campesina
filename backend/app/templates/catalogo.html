@@ -1,53 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Catalogo | Tienda Campesina{% endblock %}
+{% block title %}Catálogo{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-    <h2 class="h4 mb-0">Catalogo de asociaciones y productos</h2>
-    <span class="badge text-bg-success">{{ productos|length }} productos</span>
+<h2>Catálogo de productos</h2>
+
+<div class="card p-3">
+    <p>Aquí se mostrarán los productos.</p>
 </div>
 
-{% if asociaciones %}
-    <div class="row g-4">
-        {% for asociacion in asociaciones %}
-            <div class="col-12 col-lg-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start gap-2">
-                            <div>
-                                <h3 class="h5 mb-1">{{ asociacion.nombre_asociacion }}</h3>
-                                <p class="text-muted mb-2">{{ asociacion.descripcion or "Sin descripcion" }}</p>
-                            </div>
-                            <a href="/asociacion/{{ asociacion.id }}" class="btn btn-sm btn-outline-success">Ver perfil</a>
-                        </div>
-                        <div class="row g-3 mt-1">
-                            {% for producto in asociacion.productos %}
-                                <div class="col-12 col-md-6">
-                                    <div class="border rounded p-3 h-100">
-                                        <h4 class="h6 mb-1">{{ producto.nombre }}</h4>
-                                        <p class="small text-muted mb-2">{{ producto.descripcion or "Sin descripcion" }}</p>
-                                        <p class="mb-0 fw-semibold">
-                                            {% if producto.precio is not none %}
-                                                ${{ "%.2f"|format(producto.precio / 100) }}
-                                            {% else %}
-                                                Precio por consultar
-                                            {% endif %}
-                                        </p>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <div class="col-12">
-                                    <p class="text-muted mb-0">Esta asociacion aun no publica productos.</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-{% else %}
-    <div class="alert alert-info">Aun no hay asociaciones registradas.</div>
-{% endif %}
+<a href="/" class="btn btn-secondary mt-3">Volver</a>
 {% endblock %}

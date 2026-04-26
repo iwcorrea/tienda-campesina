@@ -1,35 +1,27 @@
 {% extends "base.html" %}
+
+{% block title %}Registro{% endblock %}
+
 {% block content %}
-<h2>Registro de Asociación</h2>
+<h2>Registro</h2>
+
 <form action="/auth/registro" method="post">
+
     <div class="mb-3">
-        <label class="form-label">Correo electrónico</label>
+        <label>Email</label>
         <input type="email" name="email" class="form-control" required>
     </div>
+
     <div class="mb-3">
-        <label class="form-label">Nombre de la asociación</label>
-        <input type="text" name="nombre_asociacion" class="form-control" required>
+        <label>Contraseña</label>
+        <input type="password" name="password" class="form-control" required>
     </div>
-    <div class="mb-3">
-        <label class="form-label">Descripción</label>
-        <textarea name="descripcion" class="form-control"></textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Dirección</label>
-        <input type="text" name="direccion" class="form-control">
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Teléfono</label>
-        <input type="text" name="telefono" class="form-control">
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Contraseña</label>
-        <input type="password" name="password" class="form-control" maxlength="72" required>
-        <small class="text-muted">Máximo 72 caracteres. Si usas acentos o eñes, prueba una contraseña más corta.</small>
-    </div>
-    <button type="submit" class="btn btn-success">Registrar</button>
+
+    <button type="submit" class="btn btn-success">Registrarse</button>
 </form>
+
 {% if error %}
-    <div class="alert alert-danger mt-3">{{ error }}</div>
+<div class="alert alert-danger mt-3">{{ error }}</div>
 {% endif %}
+
 {% endblock %}
