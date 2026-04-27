@@ -42,7 +42,6 @@ app.include_router(auth_router, prefix="/auth")
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
     """
     Elimina un recurso de Cloudinary a partir de su URL.
-    Formato típico: https://res.cloudinary.com/<cloud>/<resource_type>/upload/v<version>/<folder>/<file>.<ext>
     Incluimos la extensión para raw, y la omitimos para image/video (buena práctica de Cloudinary).
     """
     if not url or "cloudinary.com" not in url:
@@ -229,12 +228,52 @@ def dashboard(request: Request):
             "tipo_precio": p[8] if len(p) > 8 else ""
         })
 
+    # ─── VALORACIONES DE LOS PRODUCTOS DEL USUARIO ───
+    total_valoraciones = 0
+    suma_estrellas = 0
+    distribucion_estrellas = [0, 0, 0, 0, 0]  # índices 0-4 para 1-5 estrellas
+    ultimas_valoraciones = []
+
+    try:
+        sheet_val = get_valoraciones_sheet()
+        vals = sheet_val.get_all_values()[1:]
+        mis_ids = [p[0].strip() for p in mis_productos if len(p) > 0 and p[0].strip()]
+        mis_vals = [v for v in vals if len(v) > 1 and v[1].strip() in mis_ids]
+        total_valoraciones = len(mis_vals)
+        for v in mis_vals:
+            est_str = v[2].strip() if len(v) > 2 else "0"
+            if est_str.isdigit():
+                estrellas = int(est_str)
+                suma_estrellas += estrellas
+                if 1 <= estrellas <= 5:
+                    distribucion_estrellas[estrellas - 1] += 1
+        mis_vals.sort(key=lambda x: x[4] if len(x) > 4 else "", reverse=True)
+        for v in mis_vals[:5]:
+            prod_nombre = ""
+            for p in mis_productos:
+                if len(p) > 0 and p[0].strip() == v[1].strip():
+                    prod_nombre = p[2] if len(p) > 2 else ""
+                    break
+            ultimas_valoraciones.append({
+                "producto_nombre": prod_nombre or "Producto",
+                "estrellas": int(v[2]) if len(v) > 2 and v[2].isdigit() else 0,
+                "comentario": v[3] if len(v) > 3 else ""
+            })
+    except Exception:
+        pass
+
+    promedio_estrellas = round(suma_estrellas / total_valoraciones, 1) if total_valoraciones > 0 else 0
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "usuario": request.session.get("nombre_asociacion", email),
         "total_productos": total,
         "ultimos_productos": ultimos,
-        "productos_por_tipo": productos_por_tipo
+        "productos_por_tipo": productos_por_tipo,
+        "total_valoraciones": total_valoraciones,
+        "promedio_estrellas": promedio_estrellas,
+        "distribucion_estrellas": distribucion_estrellas,
+        "ultimas_valoraciones": ultimas_valoraciones
     })
 
 # ─── PANEL ─────────────────────────────────────────
