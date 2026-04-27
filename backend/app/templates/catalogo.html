@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+
 {% block title %}Catálogo de Productos{% endblock %}
+
 {% block content %}
 <h2 class="mb-4">Productos campesinos</h2>
 <div class="row row-cols-1 row-cols-md-3 g-4">
@@ -10,8 +12,13 @@
             <div class="card-body">
                 <h5 class="card-title">{{ producto.nombre }}</h5>
                 <p class="card-text">{{ producto.descripcion }}</p>
-                <p class="text-success fw-bold">${{ producto.precio }}</p>
-                <small class="text-muted">Por: {{ producto.asociacion }}</small>
+                <p class="text-success fw-bold fs-5">${{ producto.precio }}</p>
+                <div class="asociacion-badge">
+                    {% if producto.logo_url %}
+                    <img src="{{ producto.logo_url }}" class="logo-mini">
+                    {% endif %}
+                    <span>{{ producto.asociacion_nombre or producto.asociacion }}</span>
+                </div>
             </div>
         </div>
     </div>

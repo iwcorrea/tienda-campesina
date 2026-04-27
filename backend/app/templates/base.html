@@ -10,7 +10,12 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success mb-4">
         <div class="container">
-            <a class="navbar-brand" href="/">🌱 Tienda Campesina</a>
+            <a class="navbar-brand" href="/">
+                {% if request.session.get("logo_url") %}
+                <img src="{{ request.session.logo_url }}" alt="Logo" class="navbar-logo me-2" width="32" height="32">
+                {% endif %}
+                🌱 Tienda Campesina
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -42,7 +47,12 @@
     <main class="container">
         {% if request.session.get("usuario") %}
         <div class="alert alert-success d-flex justify-content-between align-items-center">
-            <span>Conectado como <strong>{{ request.session.get("nombre_asociacion", request.session["usuario"]) }}</strong></span>
+            <span>
+                {% if request.session.get("logo_url") %}
+                <img src="{{ request.session.logo_url }}" class="logo-mini me-2" width="24" height="24">
+                {% endif %}
+                Conectado como <strong>{{ request.session.get("nombre_asociacion", request.session["usuario"]) }}</strong>
+            </span>
         </div>
         {% endif %}
 

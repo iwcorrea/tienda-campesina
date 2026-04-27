@@ -16,7 +16,6 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
-# Configurar Cloudinary (lee la variable de entorno CLOUDINARY_URL)
 cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
@@ -49,29 +48,45 @@ def inicio(request: Request):
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO ─────────────────────────────────────────
+# ─── CATÁLOGO (con logos de asociación) ─────────────────
 @app.get("/catalogo", response_class=HTMLResponse)
 def catalogo(request: Request):
     try:
         sheet_prod = get_products_sheet()
         registros = sheet_prod.get_all_values()
         datos = registros[1:] if len(registros) > 1 else []
-        logging.info(f"Catálogo: {len(datos)} filas encontradas en Productos")
+        logging.info(f"Catálogo: {len(datos)} filas de productos")
     except Exception as e:
-        logging.exception("Error al leer la hoja Productos")
+        logging.exception("Error al leer hoja Productos")
         datos = []
+
+    # Obtener logos desde hoja de usuarios (sheet1)
+    logos = {}
+    nombres_asoc = {}
+    try:
+        sheet_usr = get_sheet()
+        usuarios = sheet_usr.get_all_values()[1:]
+        for u in usuarios:
+            if u[0]:
+                logos[u[0].strip()] = u[7].strip() if len(u) > 7 and u[7].strip() else ""
+                nombres_asoc[u[0].strip()] = u[3].strip() if len(u) > 3 and u[3].strip() else u[0]
+    except Exception as e:
+        logging.exception("Error al leer logos de usuarios")
 
     productos = []
     for fila in datos:
         if len(fila) >= 2 and fila[0].strip():
+            email_asoc = fila[0].strip()
             productos.append({
                 "nombre": fila[1],
                 "descripcion": fila[2] if len(fila) > 2 else "",
                 "precio": fila[3] if len(fila) > 3 else "",
                 "imagen": fila[4].strip() if len(fila) > 4 and fila[4].strip() else "https://placehold.co/300x200/5B8C51/white?text=Producto",
-                "asociacion": fila[0]
+                "asociacion": email_asoc,
+                "asociacion_nombre": nombres_asoc.get(email_asoc, email_asoc),
+                "logo_url": logos.get(email_asoc, "")
             })
-    logging.info(f"Catálogo: {len(productos)} productos listos para mostrar")
+    logging.info(f"Catálogo: {len(productos)} productos listos")
     return templates.TemplateResponse("catalogo.html", {"request": request, "productos": productos})
 
 # ─── PANEL (protegido) ───────────────────────────────

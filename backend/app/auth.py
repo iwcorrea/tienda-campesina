@@ -11,7 +11,6 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger("auth")
 
-# ------------------- LOGIN -------------------
 @router.get("/login", response_class=HTMLResponse)
 def login_get(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -29,6 +28,8 @@ def login_post(request: Request, email: str = Form(...), password: str = Form(..
                     request.session["usuario"] = email
                     if len(fila) > 3:
                         request.session["nombre_asociacion"] = fila[3]
+                    if len(fila) > 7 and fila[7].strip():
+                        request.session["logo_url"] = fila[7].strip()
                     return RedirectResponse(url="/panel", status_code=303)
                 else:
                     return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales incorrectas"})
@@ -42,7 +43,6 @@ def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/", status_code=303)
 
-# ------------------- REGISTRO -------------------
 @router.get("/registro", response_class=HTMLResponse)
 def registro_get(request: Request):
     return templates.TemplateResponse("registro.html", {"request": request})
@@ -65,13 +65,12 @@ def registro_post(
             if fila[0] == email:
                 return templates.TemplateResponse("registro.html", {"request": request, "error": "Este email ya está registrado."})
 
-        # Subir logo a Cloudinary
         logo_url = ""
         if logo and logo.filename:
             try:
                 result = cloudinary.uploader.upload(logo.file, folder="logos")
                 logo_url = result.get("secure_url", "")
-            except Exception as e:
+            except Exception as ex:
                 logger.exception("Error subiendo logo a Cloudinary")
 
         password_bytes = password.encode("utf-8")[:72]
