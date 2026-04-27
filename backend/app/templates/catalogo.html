@@ -3,7 +3,39 @@
 {% block title %}Catálogo de Productos{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Productos campesinos</h2>
+<h2 class="mb-3">Productos campesinos</h2>
+
+<!-- Formulario de búsqueda y filtros -->
+<form method="get" action="/catalogo" class="row g-2 mb-4">
+    <div class="col-md-4">
+        <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o descripción" value="{{ q }}">
+    </div>
+    <div class="col-md-2">
+        <select name="tipo" class="form-select">
+            <option value="">Todos los tipos</option>
+            <option value="producto" {% if tipo == 'producto' %}selected{% endif %}>Producto</option>
+            <option value="servicio" {% if tipo == 'servicio' %}selected{% endif %}>Servicio</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="tipo_precio" class="form-select">
+            <option value="">Cualquier precio</option>
+            <option value="fijo" {% if tipo_precio == 'fijo' %}selected{% endif %}>Precio fijo</option>
+            <option value="convenir" {% if tipo_precio == 'convenir' %}selected{% endif %}>A convenir</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-success w-100">Filtrar</button>
+    </div>
+    <div class="col-md-2">
+        <a href="/catalogo" class="btn btn-outline-secondary w-100">Limpiar</a>
+    </div>
+</form>
+
+{% if total_productos %}
+<p class="text-muted">Mostrando {{ productos|length }} de {{ total_productos }} resultados.</p>
+{% endif %}
+
 <div class="row row-cols-1 row-cols-md-3 g-4">
     {% for producto in productos %}
     <div class="col">
@@ -31,6 +63,33 @@
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="col-12">
+        <p class="text-muted">No se encontraron productos con esos criterios.</p>
+    </div>
     {% endfor %}
 </div>
+
+<!-- Paginación -->
+{% if total_pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page > 1 %}
+        <li class="page-item">
+            <a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ page - 1 }}">Anterior</a>
+        </li>
+        {% endif %}
+        {% for p in range(1, total_pages + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ p }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        {% if page < total_pages %}
+        <li class="page-item">
+            <a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ page + 1 }}">Siguiente</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
 {% endblock %}

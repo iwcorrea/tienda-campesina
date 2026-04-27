@@ -6,6 +6,9 @@
 <h2>Panel de gestión</h2>
 <p class="lead">Administra tu asociación y productos.</p>
 
+<!-- Acceso al dashboard -->
+<p><a href="/dashboard" class="btn btn-outline-success btn-sm">📊 Ver dashboard</a></p>
+
 {% if request.session.get("logo_url") %}
 <div class="text-center mb-4">
     <img src="{{ request.session.logo_url }}" alt="Logo de la asociación" class="panel-logo shadow-sm" style="max-width: 160px; max-height: 160px;">

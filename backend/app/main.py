@@ -1,7 +1,7 @@
 import logging
 import os
 import uuid
-from fastapi import FastAPI, Request, Form, File, UploadFile
+from fastapi import FastAPI, Request, Form, File, UploadFile, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -49,19 +49,25 @@ def inicio(request: Request):
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO (índices corregidos) ─────────────────────
+# ─── CATÁLOGO (búsqueda, filtros y paginación) ─────────
 @app.get("/catalogo", response_class=HTMLResponse)
-def catalogo(request: Request):
+def catalogo(
+    request: Request,
+    q: str = Query(default=None),
+    tipo: str = Query(default=None),
+    tipo_precio: str = Query(default=None),
+    page: int = Query(default=1, ge=1)
+):
     try:
         sheet_prod = get_products_sheet()
         registros = sheet_prod.get_all_values()
         datos = registros[1:] if len(registros) > 1 else []
-        logging.info(f"Catálogo: {len(datos)} filas de productos")
+        logging.info(f"Catálogo: {len(datos)} filas de productos (sin filtrar)")
     except Exception as e:
         logging.exception("Error al leer hoja Productos")
         datos = []
 
-    # Obtener logos y nombres de asociaciones desde hoja de usuarios
+    # Logos y nombres de asociaciones
     logos = {}
     nombres_asoc = {}
     try:
@@ -76,25 +82,96 @@ def catalogo(request: Request):
 
     productos = []
     for fila in datos:
-        # Nuevas columnas: 0=id, 1=email, 2=nombre, 3=descripcion, 4=precio, 5=imagen_url, 6=fecha, 7=tipo, 8=tipo_precio
-        if len(fila) >= 2 and fila[1].strip():   # email en columna 1
+        if len(fila) >= 2 and fila[1].strip():
             email_asoc = fila[1].strip()
-            tipo = fila[7].strip() if len(fila) > 7 and fila[7].strip() else ""
-            tipo_precio = fila[8].strip() if len(fila) > 8 and fila[8].strip() else ""
+            prod_nombre = fila[2].strip() if len(fila) > 2 else ""
+            prod_desc = fila[3].strip() if len(fila) > 3 else ""
+            prod_tipo = fila[7].strip().lower() if len(fila) > 7 and fila[7].strip() else ""
+            prod_tipo_precio = fila[8].strip().lower() if len(fila) > 8 and fila[8].strip() else ""
+
+            # Aplicar búsqueda por texto (nombre o descripción)
+            if q and q.strip():
+                search = q.strip().lower()
+                if search not in prod_nombre.lower() and search not in prod_desc.lower():
+                    continue
+
+            # Filtrar por tipo
+            if tipo and tipo.strip():
+                if prod_tipo != tipo.strip().lower():
+                    continue
+
+            # Filtrar por modalidad de precio
+            if tipo_precio and tipo_precio.strip():
+                if prod_tipo_precio != tipo_precio.strip().lower():
+                    continue
+
             productos.append({
-                "id": fila[0] if fila[0].strip() else "",
-                "nombre": fila[2].strip() if len(fila) > 2 else "",
-                "descripcion": fila[3].strip() if len(fila) > 3 else "",
+                "id": fila[0].strip() if fila[0].strip() else "",
+                "nombre": prod_nombre,
+                "descripcion": prod_desc,
                 "precio": fila[4].strip() if len(fila) > 4 else "",
                 "imagen": fila[5].strip() if len(fila) > 5 and fila[5].strip() else "https://placehold.co/300x200/5B8C51/white?text=Producto",
                 "asociacion": email_asoc,
                 "asociacion_nombre": nombres_asoc.get(email_asoc, email_asoc),
                 "logo_url": logos.get(email_asoc, ""),
-                "tipo": tipo,
-                "tipo_precio": tipo_precio
+                "tipo": prod_tipo,
+                "tipo_precio": prod_tipo_precio
             })
-    logging.info(f"Catálogo: {len(productos)} productos listos")
-    return templates.TemplateResponse("catalogo.html", {"request": request, "productos": productos})
+
+    total_productos = len(productos)
+    per_page = 6
+    total_pages = max(1, (total_productos + per_page - 1) // per_page)
+    page = min(page, total_pages)
+    start = (page - 1) * per_page
+    end = start + per_page
+    productos_paginados = productos[start:end]
+
+    logging.info(f"Catálogo: {total_productos} productos después de filtros, página {page}/{total_pages}")
+
+    return templates.TemplateResponse("catalogo.html", {
+        "request": request,
+        "productos": productos_paginados,
+        "q": q or "",
+        "tipo": tipo or "",
+        "tipo_precio": tipo_precio or "",
+        "page": page,
+        "total_pages": total_pages,
+        "total_productos": total_productos
+    })
+
+# ─── DASHBOARD (protegido) ──────────────────────────
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    if "usuario" not in request.session:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    email = request.session["usuario"]
+    try:
+        sheet_prod = get_products_sheet()
+        todos = sheet_prod.get_all_values()
+        datos = todos[1:] if len(todos) > 1 else []
+        mis_productos = [fila for fila in datos if len(fila) > 1 and fila[1].strip() == email]
+    except Exception:
+        mis_productos = []
+
+    total = len(mis_productos)
+    # Últimos 5 productos
+    ultimos = []
+    for p in reversed(mis_productos[-5:]):
+        ultimos.append({
+            "nombre": p[2] if len(p) > 2 else "",
+            "precio": p[4] if len(p) > 4 else "",
+            "imagen": p[5] if len(p) > 5 else "",
+            "tipo": p[7] if len(p) > 7 else "",
+            "tipo_precio": p[8] if len(p) > 8 else ""
+        })
+
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "usuario": request.session.get("nombre_asociacion", email),
+        "total_productos": total,
+        "ultimos_productos": ultimos
+    })
 
 # ─── PANEL (protegido) ───────────────────────────────
 @app.get("/panel", response_class=HTMLResponse)
@@ -107,7 +184,6 @@ def panel(request: Request):
         sheet_prod = get_products_sheet()
         todos = sheet_prod.get_all_values()
         datos = todos[1:] if len(todos) > 1 else []
-        # Buscar por columna email (índice 1)
         mis_productos = [fila for fila in datos if len(fila) > 1 and fila[1].strip() == email]
     except Exception:
         mis_productos = []
@@ -130,7 +206,7 @@ def panel(request: Request):
         "productos": productos_obj
     })
 
-# ─── CREAR PRODUCTO (con ID, tipo y tipo_precio) ─────
+# ─── CREAR PRODUCTO ─────────────────────────────────
 @app.post("/panel/producto")
 def crear_producto(
     request: Request,
@@ -157,7 +233,6 @@ def crear_producto(
 
     try:
         sheet_prod = get_products_sheet()
-        # Si la hoja está vacía (sin encabezados), escribimos los encabezados
         todos = sheet_prod.get_all_values()
         if not todos or not any(todos[0]):
             sheet_prod.append_row(["id", "email", "nombre", "descripcion", "precio", "imagen_url", "fecha", "tipo", "tipo_precio"])
@@ -177,7 +252,7 @@ def crear_producto(
 
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── EDITAR PRODUCTO (formulario) ───────────────────
+# ─── EDITAR PRODUCTO ───────────────────────────────
 @app.get("/panel/producto/editar/{producto_id}", response_class=HTMLResponse)
 def editar_producto_form(request: Request, producto_id: str):
     if "usuario" not in request.session:
@@ -224,7 +299,7 @@ def actualizar_producto(
         sheet_prod = get_products_sheet()
         todos = sheet_prod.get_all_values()
         for i, fila in enumerate(todos):
-            if i == 0:  # encabezados
+            if i == 0:
                 continue
             if len(fila) > 0 and fila[0] == producto_id and len(fila) > 1 and fila[1] == email:
                 nueva_imagen = fila[5] if len(fila) > 5 and fila[5].strip() else ""
@@ -235,7 +310,6 @@ def actualizar_producto(
                     except Exception as e:
                         logging.exception("Error al actualizar imagen en Cloudinary")
 
-                # Actualizar fila (columnas: id, email, nombre, desc, precio, img, fecha, tipo, tipo_precio)
                 sheet_prod.update(f'A{i+1}:I{i+1}', [[
                     producto_id,
                     email,
@@ -267,7 +341,7 @@ def eliminar_producto(request: Request, producto_id: str):
             if i == 0:
                 continue
             if len(fila) > 0 and fila[0] == producto_id and len(fila) > 1 and fila[1] == email:
-                sheet_prod.delete_rows(i + 1)  # +1 porque sheets empieza en 1
+                sheet_prod.delete_rows(i + 1)
                 break
     except Exception as e:
         logging.exception("Error al eliminar producto")
