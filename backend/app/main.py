@@ -40,23 +40,41 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(auth_router, prefix="/auth")
 
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
+    """
+    Elimina un recurso de Cloudinary a partir de su URL.
+    Formato típico: https://res.cloudinary.com/<cloud>/<resource_type>/upload/v<version>/<folder>/<file>.<ext>
+    Incluimos la extensión para raw, y la omitimos para image/video (buena práctica de Cloudinary).
+    """
     if not url or "cloudinary.com" not in url:
         return
+
     try:
         parts = url.split("/")
+        # Encontramos la posición de "upload" para extraer el public_id a partir de ahí
         upload_idx = -1
         for i, part in enumerate(parts):
             if part == "upload":
                 upload_idx = i
                 break
         if upload_idx == -1 or upload_idx + 2 >= len(parts):
+            logging.warning(f"No se pudo extraer public_id de la URL: {url}")
             return
+
+        # Saltamos el segmento de la versión (ej. v1234567890)
         public_id_with_ext = "/".join(parts[upload_idx + 2:])
-        public_id = ".".join(public_id_with_ext.split(".")[:-1])
+
+        # Para imágenes y videos, Cloudinary recomienda NO incluir la extensión
+        if resource_type in ("image", "video"):
+            public_id = public_id_with_ext.rsplit(".", 1)[0]  # quita la extensión
+        else:
+            # Para raw (PDF, documentos) la extensión SÍ es parte del public_id
+            public_id = public_id_with_ext
+
+        logging.info(f"Intentando eliminar: resource_type={resource_type}, public_id={public_id}")
         result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
-        logging.info(f"Eliminado recurso antiguo: {public_id} -> {result}")
+        logging.info(f"Resultado de eliminación para {public_id}: {result}")
     except Exception as e:
-        logging.exception("Error al eliminar recurso antiguo de Cloudinary")
+        logging.exception(f"Error al eliminar recurso de Cloudinary: {url}")
 
 # ─── HOME ───────────────────────────────────────────────
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
