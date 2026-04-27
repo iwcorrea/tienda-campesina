@@ -49,7 +49,7 @@ def inicio(request: Request):
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO (con logos, enlaces a perfil) ─────────────
+# ─── CATÁLOGO (índices corregidos) ─────────────────────
 @app.get("/catalogo", response_class=HTMLResponse)
 def catalogo(request: Request):
     try:
@@ -61,6 +61,7 @@ def catalogo(request: Request):
         logging.exception("Error al leer hoja Productos")
         datos = []
 
+    # Obtener logos y nombres de asociaciones desde hoja de usuarios
     logos = {}
     nombres_asoc = {}
     try:
@@ -75,17 +76,17 @@ def catalogo(request: Request):
 
     productos = []
     for fila in datos:
-        if len(fila) >= 2 and fila[0].strip():
-            email_asoc = fila[0].strip()
-            # Nuevas columnas: tipo (índice 7), tipo_precio (8)
-            tipo = fila[7].strip() if len(fila) > 7 else ""
-            tipo_precio = fila[8].strip() if len(fila) > 8 else ""
+        # Nuevas columnas: 0=id, 1=email, 2=nombre, 3=descripcion, 4=precio, 5=imagen_url, 6=fecha, 7=tipo, 8=tipo_precio
+        if len(fila) >= 2 and fila[1].strip():   # email en columna 1
+            email_asoc = fila[1].strip()
+            tipo = fila[7].strip() if len(fila) > 7 and fila[7].strip() else ""
+            tipo_precio = fila[8].strip() if len(fila) > 8 and fila[8].strip() else ""
             productos.append({
-                "id": fila[0] if len(fila) > 0 else "",
-                "nombre": fila[1] if len(fila) > 1 else "",
-                "descripcion": fila[2] if len(fila) > 2 else "",
-                "precio": fila[3] if len(fila) > 3 else "",
-                "imagen": fila[4].strip() if len(fila) > 4 and fila[4].strip() else "https://placehold.co/300x200/5B8C51/white?text=Producto",
+                "id": fila[0] if fila[0].strip() else "",
+                "nombre": fila[2].strip() if len(fila) > 2 else "",
+                "descripcion": fila[3].strip() if len(fila) > 3 else "",
+                "precio": fila[4].strip() if len(fila) > 4 else "",
+                "imagen": fila[5].strip() if len(fila) > 5 and fila[5].strip() else "https://placehold.co/300x200/5B8C51/white?text=Producto",
                 "asociacion": email_asoc,
                 "asociacion_nombre": nombres_asoc.get(email_asoc, email_asoc),
                 "logo_url": logos.get(email_asoc, ""),
@@ -106,7 +107,8 @@ def panel(request: Request):
         sheet_prod = get_products_sheet()
         todos = sheet_prod.get_all_values()
         datos = todos[1:] if len(todos) > 1 else []
-        mis_productos = [fila for fila in datos if fila[1] == email]  # email ahora en columna B
+        # Buscar por columna email (índice 1)
+        mis_productos = [fila for fila in datos if len(fila) > 1 and fila[1].strip() == email]
     except Exception:
         mis_productos = []
 
@@ -135,8 +137,8 @@ def crear_producto(
     nombre: str = Form(...),
     descripcion: str = Form(None),
     precio: int = Form(...),
-    tipo: str = Form("producto"),       # "producto" o "servicio"
-    tipo_precio: str = Form("fijo"),    # "fijo" o "convenir"
+    tipo: str = Form("producto"),
+    tipo_precio: str = Form("fijo"),
     imagen: UploadFile = File(None)
 ):
     if "usuario" not in request.session:
@@ -155,7 +157,10 @@ def crear_producto(
 
     try:
         sheet_prod = get_products_sheet()
-        # Asegurar encabezados (ya los tiene get_products_sheet)
+        # Si la hoja está vacía (sin encabezados), escribimos los encabezados
+        todos = sheet_prod.get_all_values()
+        if not todos or not any(todos[0]):
+            sheet_prod.append_row(["id", "email", "nombre", "descripcion", "precio", "imagen_url", "fecha", "tipo", "tipo_precio"])
         sheet_prod.append_row([
             producto_id,
             email,
@@ -182,11 +187,11 @@ def editar_producto_form(request: Request, producto_id: str):
     try:
         sheet_prod = get_products_sheet()
         todos = sheet_prod.get_all_values()[1:]
-        for i, fila in enumerate(todos):
-            if fila[0] == producto_id and fila[1] == email:
+        for fila in todos:
+            if len(fila) > 0 and fila[0] == producto_id and len(fila) > 1 and fila[1] == email:
                 producto = {
                     "id": fila[0],
-                    "nombre": fila[2],
+                    "nombre": fila[2] if len(fila) > 2 else "",
                     "descripcion": fila[3] if len(fila) > 3 else "",
                     "precio": fila[4] if len(fila) > 4 else "",
                     "imagen_url": fila[5] if len(fila) > 5 else "",
@@ -218,13 +223,11 @@ def actualizar_producto(
     try:
         sheet_prod = get_products_sheet()
         todos = sheet_prod.get_all_values()
-        # Encontrar fila por ID y email
         for i, fila in enumerate(todos):
-            if i == 0:  # skip headers
+            if i == 0:  # encabezados
                 continue
-            if fila[0] == producto_id and fila[1] == email:
-                # Mantener la imagen antigua si no se sube nueva
-                nueva_imagen = fila[5] if len(fila) > 5 else ""
+            if len(fila) > 0 and fila[0] == producto_id and len(fila) > 1 and fila[1] == email:
+                nueva_imagen = fila[5] if len(fila) > 5 and fila[5].strip() else ""
                 if imagen and imagen.filename:
                     try:
                         result = cloudinary.uploader.upload(imagen.file, folder="productos")
@@ -263,8 +266,8 @@ def eliminar_producto(request: Request, producto_id: str):
         for i, fila in enumerate(todos):
             if i == 0:
                 continue
-            if fila[0] == producto_id and fila[1] == email:
-                sheet_prod.delete_rows(i + 1)  # i + 1 porque sheets empieza en 1
+            if len(fila) > 0 and fila[0] == producto_id and len(fila) > 1 and fila[1] == email:
+                sheet_prod.delete_rows(i + 1)  # +1 porque sheets empieza en 1
                 break
     except Exception as e:
         logging.exception("Error al eliminar producto")
@@ -273,7 +276,6 @@ def eliminar_producto(request: Request, producto_id: str):
 # ─── PERFIL PÚBLICO DE ASOCIACIÓN ─────────────────
 @app.get("/asociacion/{email}", response_class=HTMLResponse)
 def perfil_asociacion(request: Request, email: str):
-    # Obtener datos de la asociación desde hoja de usuarios
     asociacion = None
     try:
         sheet_usr = get_sheet()
@@ -295,15 +297,14 @@ def perfil_asociacion(request: Request, email: str):
     if not asociacion:
         return RedirectResponse(url="/catalogo", status_code=303)
 
-    # Obtener productos de esa asociación
     productos = []
     try:
         sheet_prod = get_products_sheet()
         todos = sheet_prod.get_all_values()[1:]
         for fila in todos:
-            if fila[1] == email:
+            if len(fila) > 1 and fila[1] == email:
                 productos.append({
-                    "nombre": fila[2],
+                    "nombre": fila[2] if len(fila) > 2 else "",
                     "descripcion": fila[3] if len(fila) > 3 else "",
                     "precio": fila[4] if len(fila) > 4 else "",
                     "imagen": fila[5].strip() if len(fila) > 5 and fila[5].strip() else "https://placehold.co/300x200/5B8C51/white?text=Producto",
