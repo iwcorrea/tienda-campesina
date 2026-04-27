@@ -11,7 +11,10 @@
         <h1>{{ asociacion.nombre }}</h1>
         <p>{{ asociacion.descripcion }}</p>
         {% if asociacion.direccion %}<p><strong>Ubicación:</strong> {{ asociacion.direccion }}</p>{% endif %}
-        {% if asociacion.telefono %}<p><strong>Teléfono:</strong> {{ asociacion.telefono }}</p>{% endif %}
+        <!-- No mostramos teléfono ni email públicamente -->
+        {% if asociacion.show_whatsapp == '1' and asociacion.telefono %}
+        <a href="https://wa.me/57{{ asociacion.telefono|replace('+','')|replace(' ','') }}?text=Hola,%20vi%20tu%20perfil%20en%20Tienda%20Campesina" target="_blank" class="btn btn-success">💬 Contactar por WhatsApp</a>
+        {% endif %}
     </div>
 </div>
 <hr>

@@ -6,7 +6,6 @@
 <h2 class="mb-4">Registrar Asociación Campesina</h2>
 
 <form action="/auth/registro" method="post" enctype="multipart/form-data">
-    <!-- Datos de acceso -->
     <h4 class="text-success">Datos de acceso</h4>
     <div class="mb-3">
         <label>Email de la asociación</label>
@@ -19,7 +18,6 @@
 
     <hr>
 
-    <!-- Datos de la asociación -->
     <h4 class="text-success">Información de la asociación</h4>
     <div class="mb-3">
         <label>Nombre de la asociación</label>
@@ -36,6 +34,10 @@
     <div class="mb-3">
         <label>Teléfono</label>
         <input type="text" name="telefono" class="form-control">
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" name="show_whatsapp" value="1" class="form-check-input" id="showWhatsapp">
+        <label class="form-check-label" for="showWhatsapp">Deseo recibir consultas por WhatsApp (el número se usará solo para el enlace de chat)</label>
     </div>
     <div class="mb-3">
         <label>Logo de la asociación (opcional)</label>

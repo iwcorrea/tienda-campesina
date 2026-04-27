@@ -49,7 +49,7 @@ def inicio(request: Request):
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO (con valoraciones) ───────────────────────
+# ─── CATÁLOGO (con WhatsApp, oculta precio si "convenir") ─
 @app.get("/catalogo", response_class=HTMLResponse)
 def catalogo(
     request: Request,
@@ -67,16 +67,22 @@ def catalogo(
         logging.exception("Error al leer hoja Productos")
         datos = []
 
-    # --- Leer asociaciones (logos y nombres) ---
+    # --- Leer asociaciones (logos, nombres, whatsapp) ---
     logos = {}
     nombres_asoc = {}
+    whatsapp_info = {}  # {email: {show_whatsapp, telefono}}
     try:
         sheet_usr = get_sheet()
         usuarios = sheet_usr.get_all_values()[1:]
         for u in usuarios:
             if u[0]:
-                logos[u[0].strip()] = u[7].strip() if len(u) > 7 and u[7].strip() else ""
-                nombres_asoc[u[0].strip()] = u[3].strip() if len(u) > 3 and u[3].strip() else u[0]
+                email_usr = u[0].strip()
+                logos[email_usr] = u[7].strip() if len(u) > 7 and u[7].strip() else ""
+                nombres_asoc[email_usr] = u[3].strip() if len(u) > 3 and u[3].strip() else email_usr
+                whatsapp_info[email_usr] = {
+                    "show_whatsapp": u[8].strip() if len(u) > 8 and u[8].strip() else "",
+                    "telefono": u[6].strip() if len(u) > 6 and u[6].strip() else ""
+                }
     except Exception:
         pass
 
@@ -119,6 +125,7 @@ def catalogo(
             prod_id = fila[0].strip() if fila[0].strip() else ""
             val = valoraciones.get(prod_id, {"total": 0, "cuenta": 0})
             promedio = round(val["total"] / val["cuenta"], 1) if val["cuenta"] > 0 else 0
+            asoc_info = whatsapp_info.get(email_asoc, {"show_whatsapp": "", "telefono": ""})
 
             productos.append({
                 "id": prod_id,
@@ -132,7 +139,9 @@ def catalogo(
                 "tipo": prod_tipo,
                 "tipo_precio": prod_tipo_precio,
                 "estrellas": promedio,
-                "num_valoraciones": val["cuenta"]
+                "num_valoraciones": val["cuenta"],
+                "show_whatsapp": asoc_info["show_whatsapp"],
+                "telefono": asoc_info["telefono"]
             })
 
     total_productos = len(productos)
@@ -154,7 +163,7 @@ def catalogo(
         "total_productos": total_productos
     })
 
-# ─── DASHBOARD (con gráfico y valoraciones) ──────────
+# ─── DASHBOARD ──────────────────────────────────────
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
     if "usuario" not in request.session:
@@ -194,7 +203,7 @@ def dashboard(request: Request):
         "productos_por_tipo": productos_por_tipo
     })
 
-# ─── PANEL (protegido) ───────────────────────────────
+# ─── PANEL ─────────────────────────────────────────
 @app.get("/panel", response_class=HTMLResponse)
 def panel(request: Request):
     if "usuario" not in request.session:
@@ -227,7 +236,7 @@ def panel(request: Request):
         "productos": productos_obj
     })
 
-# ─── CREAR PRODUCTO ─────────────────────────────────
+# ─── CREAR PRODUCTO ────────────────────────────────
 @app.post("/panel/producto")
 def crear_producto(
     request: Request,
@@ -363,14 +372,15 @@ def editar_perfil_form(request: Request):
                     "descripcion": u[4] if len(u) > 4 else "",
                     "direccion": u[5] if len(u) > 5 else "",
                     "telefono": u[6] if len(u) > 6 else "",
-                    "logo_url": u[7] if len(u) > 7 and u[7].strip() else ""
+                    "logo_url": u[7] if len(u) > 7 and u[7].strip() else "",
+                    "show_whatsapp": u[8].strip() if len(u) > 8 else ""
                 }
                 return templates.TemplateResponse("editar_perfil.html", {"request": request, "perfil": perfil})
     except Exception:
         pass
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── ACTUALIZAR PERFIL ─────────────────────────────
+# ─── ACTUALIZAR PERFIL (incluye show_whatsapp) ─────
 @app.post("/panel/editar-perfil")
 def actualizar_perfil(
     request: Request,
@@ -378,6 +388,7 @@ def actualizar_perfil(
     descripcion: str = Form(None),
     direccion: str = Form(None),
     telefono: str = Form(None),
+    show_whatsapp: str = Form(None),   # "1" o vacío
     logo: UploadFile = File(None)
 ):
     if "usuario" not in request.session:
@@ -399,7 +410,7 @@ def actualizar_perfil(
                     except Exception:
                         pass
 
-                sheet_usr.update(f'A{i+1}:H{i+1}', [[
+                sheet_usr.update(f'A{i+1}:I{i+1}', [[
                     email,
                     u[1],
                     u[2],
@@ -407,17 +418,20 @@ def actualizar_perfil(
                     descripcion or "",
                     direccion or "",
                     telefono or "",
-                    logo_url
+                    logo_url,
+                    "1" if show_whatsapp == "1" else ""
                 ]])
                 request.session["nombre_asociacion"] = nombre_asociacion
                 request.session["logo_url"] = logo_url
+                request.session["show_whatsapp"] = "1" if show_whatsapp == "1" else ""
+                request.session["telefono"] = telefono or ""
                 break
     except Exception as e:
         logging.exception("Error al actualizar perfil")
 
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── PERFIL PÚBLICO DE ASOCIACIÓN ─────────────────
+# ─── PERFIL PÚBLICO DE ASOCIACIÓN (WhatsApp solo si habilitado) ─
 @app.get("/asociacion/{email}", response_class=HTMLResponse)
 def perfil_asociacion(request: Request, email: str):
     asociacion = None
@@ -432,7 +446,8 @@ def perfil_asociacion(request: Request, email: str):
                     "descripcion": u[4] if len(u) > 4 else "",
                     "direccion": u[5] if len(u) > 5 else "",
                     "telefono": u[6] if len(u) > 6 else "",
-                    "logo_url": u[7].strip() if len(u) > 7 and u[7].strip() else ""
+                    "logo_url": u[7].strip() if len(u) > 7 and u[7].strip() else "",
+                    "show_whatsapp": u[8].strip() if len(u) > 8 else ""
                 }
                 break
     except Exception:
@@ -458,9 +473,13 @@ def perfil_asociacion(request: Request, email: str):
     except Exception:
         pass
 
-    return templates.TemplateResponse("perfil.html", {"request": request, "asociacion": asociacion, "productos": productos})
+    return templates.TemplateResponse("perfil.html", {
+        "request": request,
+        "asociacion": asociacion,
+        "productos": productos
+    })
 
-# ─── VALORAR PRODUCTO (SOLO USUARIOS REGISTRADOS) ──
+# ─── VALORAR PRODUCTO (solo registrados) ───────────
 @app.post("/valorar/{producto_id}")
 def valorar_producto(
     request: Request,
@@ -468,14 +487,13 @@ def valorar_producto(
     estrellas: int = Form(...),
     comentario: str = Form(None)
 ):
-    # Protección: solo usuarios logueados pueden valorar
     if "usuario" not in request.session:
         return RedirectResponse(url="/auth/login", status_code=303)
 
     if estrellas < 1 or estrellas > 5:
         return RedirectResponse(url="/catalogo", status_code=303)
 
-    email = request.session["usuario"]  # se guarda para futura validación
+    email = request.session["usuario"]
     try:
         sheet_val = get_valoraciones_sheet()
         sheet_val.append_row([
@@ -484,7 +502,7 @@ def valorar_producto(
             estrellas,
             comentario or "",
             str(datetime.datetime.now()),
-            email  # columna extra con el email del usuario que valora
+            email
         ])
     except Exception as e:
         logging.exception("Error al guardar valoración")

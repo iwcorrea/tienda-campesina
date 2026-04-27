@@ -30,6 +30,10 @@ def login_post(request: Request, email: str = Form(...), password: str = Form(..
                         request.session["nombre_asociacion"] = fila[3]
                     if len(fila) > 7 and fila[7].strip():
                         request.session["logo_url"] = fila[7].strip()
+                    if len(fila) > 8:
+                        request.session["show_whatsapp"] = fila[8].strip()  # columna I
+                    if len(fila) > 6:
+                        request.session["telefono"] = fila[6].strip()       # columna G
                     return RedirectResponse(url="/panel", status_code=303)
                 else:
                     return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales incorrectas"})
@@ -56,6 +60,7 @@ def registro_post(
     descripcion: str = Form(None),
     direccion: str = Form(None),
     telefono: str = Form(None),
+    show_whatsapp: str = Form(None),   # "1" o vacío
     logo: UploadFile = File(None)
 ):
     try:
@@ -84,7 +89,8 @@ def registro_post(
             descripcion or "",
             direccion or "",
             telefono or "",
-            logo_url
+            logo_url,
+            "1" if show_whatsapp == "1" else ""   # Columna I
         ])
 
         logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)
