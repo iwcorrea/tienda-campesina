@@ -276,7 +276,13 @@ def crear_producto(
 
     if imagen and imagen.filename:
         try:
-            result = cloudinary.uploader.upload(imagen.file, folder="productos")
+            result = cloudinary.uploader.upload(
+                imagen.file,
+                folder="productos",
+                filename=imagen.filename,
+                use_filename=True,
+                unique_filename=True
+            )
             imagen_url = result.get("secure_url", "")
         except Exception:
             pass
@@ -345,7 +351,13 @@ def actualizar_producto(
                     if antigua_imagen:
                         delete_cloudinary_asset(antigua_imagen, resource_type="image")
                     try:
-                        result = cloudinary.uploader.upload(imagen.file, folder="productos")
+                        result = cloudinary.uploader.upload(
+                            imagen.file,
+                            folder="productos",
+                            filename=imagen.filename,
+                            use_filename=True,
+                            unique_filename=True
+                        )
                         nueva_imagen = result.get("secure_url", "")
                     except Exception:
                         pass
@@ -447,7 +459,13 @@ def actualizar_perfil(
                     if u[7].strip():
                         delete_cloudinary_asset(u[7].strip(), resource_type="image")
                     try:
-                        result = cloudinary.uploader.upload(logo.file, folder="logos")
+                        result = cloudinary.uploader.upload(
+                            logo.file,
+                            folder="logos",
+                            filename=logo.filename,
+                            use_filename=True,
+                            unique_filename=True
+                        )
                         logo_url = result.get("secure_url", "")
                     except Exception:
                         pass
@@ -462,6 +480,7 @@ def actualizar_perfil(
                             camara_comercio.file,
                             folder="documentos",
                             resource_type="raw",
+                            filename=camara_comercio.filename,
                             use_filename=True,
                             unique_filename=True
                         )
@@ -479,6 +498,7 @@ def actualizar_perfil(
                             rut.file,
                             folder="documentos",
                             resource_type="raw",
+                            filename=rut.filename,
                             use_filename=True,
                             unique_filename=True
                         )
