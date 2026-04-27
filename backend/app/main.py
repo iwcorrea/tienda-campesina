@@ -50,7 +50,6 @@ def delete_cloudinary_asset(url: str, resource_type: str = "image"):
 
     try:
         parts = url.split("/")
-        # Encontramos la posición de "upload" para extraer el public_id a partir de ahí
         upload_idx = -1
         for i, part in enumerate(parts):
             if part == "upload":
@@ -60,14 +59,11 @@ def delete_cloudinary_asset(url: str, resource_type: str = "image"):
             logging.warning(f"No se pudo extraer public_id de la URL: {url}")
             return
 
-        # Saltamos el segmento de la versión (ej. v1234567890)
         public_id_with_ext = "/".join(parts[upload_idx + 2:])
 
-        # Para imágenes y videos, Cloudinary recomienda NO incluir la extensión
         if resource_type in ("image", "video"):
-            public_id = public_id_with_ext.rsplit(".", 1)[0]  # quita la extensión
+            public_id = public_id_with_ext.rsplit(".", 1)[0]
         else:
-            # Para raw (PDF, documentos) la extensión SÍ es parte del public_id
             public_id = public_id_with_ext
 
         logging.info(f"Intentando eliminar: resource_type={resource_type}, public_id={public_id}")
