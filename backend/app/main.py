@@ -281,7 +281,8 @@ def crear_producto(
                 folder="productos",
                 filename=imagen.filename,
                 use_filename=True,
-                unique_filename=True
+                unique_filename=True,
+                access_mode="public"
             )
             imagen_url = result.get("secure_url", "")
         except Exception:
@@ -356,7 +357,8 @@ def actualizar_producto(
                             folder="productos",
                             filename=imagen.filename,
                             use_filename=True,
-                            unique_filename=True
+                            unique_filename=True,
+                            access_mode="public"
                         )
                         nueva_imagen = result.get("secure_url", "")
                     except Exception:
@@ -464,7 +466,8 @@ def actualizar_perfil(
                             folder="logos",
                             filename=logo.filename,
                             use_filename=True,
-                            unique_filename=True
+                            unique_filename=True,
+                            access_mode="public"
                         )
                         logo_url = result.get("secure_url", "")
                     except Exception:
@@ -482,7 +485,8 @@ def actualizar_perfil(
                             resource_type="raw",
                             filename=camara_comercio.filename,
                             use_filename=True,
-                            unique_filename=True
+                            unique_filename=True,
+                            access_mode="public"
                         )
                         camara_url = result.get("secure_url", "")
                     except Exception:
@@ -500,7 +504,8 @@ def actualizar_perfil(
                             resource_type="raw",
                             filename=rut.filename,
                             use_filename=True,
-                            unique_filename=True
+                            unique_filename=True,
+                            access_mode="public"
                         )
                         rut_url = result.get("secure_url", "")
                     except Exception:

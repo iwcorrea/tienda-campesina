@@ -74,7 +74,7 @@ def registro_post(
             if fila[0] == email:
                 return templates.TemplateResponse("registro.html", {"request": request, "error": "Este email ya está registrado."})
 
-        # Logo (imagen)
+        # Logo (imagen pública)
         logo_url = ""
         if logo and logo.filename:
             try:
@@ -83,13 +83,14 @@ def registro_post(
                     folder="logos",
                     filename=logo.filename,
                     use_filename=True,
-                    unique_filename=True
+                    unique_filename=True,
+                    access_mode="public"
                 )
                 logo_url = result.get("secure_url", "")
             except Exception:
                 pass
 
-        # Cámara de Comercio (PDF)
+        # Cámara de Comercio (PDF público)
         camara_url = ""
         if camara_comercio and camara_comercio.filename:
             try:
@@ -99,13 +100,14 @@ def registro_post(
                     resource_type="raw",
                     filename=camara_comercio.filename,
                     use_filename=True,
-                    unique_filename=True
+                    unique_filename=True,
+                    access_mode="public"
                 )
                 camara_url = result.get("secure_url", "")
             except Exception:
                 pass
 
-        # RUT (PDF)
+        # RUT (PDF público)
         rut_url = ""
         if rut and rut.filename:
             try:
@@ -115,7 +117,8 @@ def registro_post(
                     resource_type="raw",
                     filename=rut.filename,
                     use_filename=True,
-                    unique_filename=True
+                    unique_filename=True,
+                    access_mode="public"
                 )
                 rut_url = result.get("secure_url", "")
             except Exception:
