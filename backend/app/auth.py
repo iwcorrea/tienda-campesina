@@ -2,7 +2,8 @@ from fastapi import APIRouter, Request, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import bcrypt
-from app.google_sheets import get_sheet, upload_to_gcs
+from app.google_sheets import get_sheet
+import cloudinary.uploader
 import logging
 import datetime
 
@@ -55,7 +56,7 @@ def registro_post(
     descripcion: str = Form(None),
     direccion: str = Form(None),
     telefono: str = Form(None),
-    logo: UploadFile = File(None)   # ← Campo de archivo opcional
+    logo: UploadFile = File(None)
 ):
     try:
         sheet = get_sheet()
@@ -64,10 +65,14 @@ def registro_post(
             if fila[0] == email:
                 return templates.TemplateResponse("registro.html", {"request": request, "error": "Este email ya está registrado."})
 
-        # Subir logo si se proporcionó
+        # Subir logo a Cloudinary
         logo_url = ""
         if logo and logo.filename:
-            logo_url = upload_to_gcs(logo, logo.filename, folder="logos")
+            try:
+                result = cloudinary.uploader.upload(logo.file, folder="logos")
+                logo_url = result.get("secure_url", "")
+            except Exception as e:
+                logger.exception("Error subiendo logo a Cloudinary")
 
         password_bytes = password.encode("utf-8")[:72]
         hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
@@ -80,7 +85,7 @@ def registro_post(
             descripcion or "",
             direccion or "",
             telefono or "",
-            logo_url    # ← Columna H: URL del logo
+            logo_url
         ])
 
         logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)

@@ -1,18 +1,23 @@
 import logging
+import os
 from fastapi import FastAPI, Request, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-import os
 from app.auth import router as auth_router
-from app.google_sheets import get_sheet, get_products_sheet, upload_to_gcs
+from app.google_sheets import get_sheet, get_products_sheet
+import cloudinary
+import cloudinary.uploader
 import datetime
 
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
+
+# Configurar Cloudinary (lee la variable de entorno CLOUDINARY_URL)
+cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 app.add_middleware(
@@ -44,16 +49,13 @@ def inicio(request: Request):
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO (mejorado con logs y validación de columnas) ─
+# ─── CATÁLOGO ─────────────────────────────────────────
 @app.get("/catalogo", response_class=HTMLResponse)
 def catalogo(request: Request):
     try:
         sheet_prod = get_products_sheet()
         registros = sheet_prod.get_all_values()
-        if len(registros) > 1:
-            datos = registros[1:]  # sin encabezados
-        else:
-            datos = []
+        datos = registros[1:] if len(registros) > 1 else []
         logging.info(f"Catálogo: {len(datos)} filas encontradas en Productos")
     except Exception as e:
         logging.exception("Error al leer la hoja Productos")
@@ -61,14 +63,12 @@ def catalogo(request: Request):
 
     productos = []
     for fila in datos:
-        # Solo procesar filas con al menos email y nombre
         if len(fila) >= 2 and fila[0].strip():
             productos.append({
-                "nombre": fila[1] if len(fila) > 1 else "",
+                "nombre": fila[1],
                 "descripcion": fila[2] if len(fila) > 2 else "",
                 "precio": fila[3] if len(fila) > 3 else "",
-                "imagen": (fila[4].strip() if len(fila) > 4 and fila[4].strip() else
-                           "https://placehold.co/300x200/5B8C51/white?text=Producto"),
+                "imagen": fila[4].strip() if len(fila) > 4 and fila[4].strip() else "https://placehold.co/300x200/5B8C51/white?text=Producto",
                 "asociacion": fila[0]
             })
     logging.info(f"Catálogo: {len(productos)} productos listos para mostrar")
@@ -104,7 +104,7 @@ def panel(request: Request):
         "productos": productos_obj
     })
 
-# ─── CREAR PRODUCTO (acepta imagen) ─────────────────
+# ─── CREAR PRODUCTO (Cloudinary) ─────────────────────
 @app.post("/panel/producto")
 def crear_producto(
     request: Request,
@@ -121,13 +121,13 @@ def crear_producto(
 
     if imagen and imagen.filename:
         try:
-            imagen_url = upload_to_gcs(imagen, imagen.filename, folder="productos")
+            result = cloudinary.uploader.upload(imagen.file, folder="productos")
+            imagen_url = result.get("secure_url", "")
         except Exception as e:
-            logging.exception("Error subiendo imagen a GCS")
+            logging.exception("Error subiendo imagen a Cloudinary")
 
     try:
         sheet_prod = get_products_sheet()
-        # Agregar los encabezados si la hoja está vacía (primera fila vacía o no tiene encabezados)
         todos = sheet_prod.get_all_values()
         if not todos or not any(todos[0]):
             sheet_prod.append_row(["email", "nombre", "descripcion", "precio", "imagen_url", "fecha"])

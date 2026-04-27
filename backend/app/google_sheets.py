@@ -1,8 +1,6 @@
 import os
 import gspread
 from google.oauth2.service_account import Credentials
-from google.cloud import storage
-import datetime
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
@@ -44,21 +42,3 @@ def get_products_sheet():
         ws = spreadsheet.add_worksheet(title="Productos", rows=1000, cols=10)
         ws.append_row(["email", "nombre", "descripcion", "precio", "imagen_url", "fecha"])
         return ws
-
-def upload_to_gcs(file_data, filename, folder=""):
-    """Sube un archivo a Google Cloud Storage y retorna la URL pública."""
-    bucket_name = os.getenv("GCS_BUCKET_NAME")
-    if not bucket_name:
-        raise RuntimeError("Falta la variable GCS_BUCKET_NAME.")
-    
-    creds = _get_credentials()
-    storage_client = storage.Client(credentials=creds)
-    bucket = storage_client.bucket(bucket_name)
-    
-    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    blob_name = f"{folder}/{timestamp}_{filename}" if folder else f"{timestamp}_{filename}"
-    blob = bucket.blob(blob_name)
-    
-    blob.upload_from_file(file_data.file, content_type=file_data.content_type)
-    blob.make_public()
-    return blob.public_url
