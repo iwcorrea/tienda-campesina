@@ -39,6 +39,33 @@ templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(auth_router, prefix="/auth")
 
+# ─── FUNCIÓN AUXILIAR: BORRAR RECURSO DE CLOUDINARY ─
+def delete_cloudinary_asset(url: str, resource_type: str = "image"):
+    """
+    Intenta eliminar un recurso de Cloudinary a partir de su URL.
+    Extrae el public_id y llama a destroy.
+    """
+    if not url or "cloudinary.com" not in url:
+        return
+    try:
+        # Formato típico: .../upload/v1234567890/folder/file.ext
+        parts = url.split("/")
+        upload_idx = -1
+        for i, part in enumerate(parts):
+            if part == "upload":
+                upload_idx = i
+                break
+        if upload_idx == -1 or upload_idx + 2 >= len(parts):
+            return
+        # Saltamos el segmento de la versión (v1234567890) y tomamos el resto
+        public_id_with_ext = "/".join(parts[upload_idx + 2:])
+        # Quitamos la extensión
+        public_id = ".".join(public_id_with_ext.split(".")[:-1])
+        result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+        logging.info(f"Eliminado recurso antiguo: {public_id} -> {result}")
+    except Exception as e:
+        logging.exception("Error al eliminar recurso antiguo de Cloudinary")
+
 # ─── HOME ───────────────────────────────────────────────
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def inicio(request: Request):
@@ -58,7 +85,6 @@ def catalogo(
     tipo_precio: str = Query(default=None),
     page: int = Query(default=1, ge=1)
 ):
-    # --- Leer productos ---
     try:
         sheet_prod = get_products_sheet()
         registros = sheet_prod.get_all_values()
@@ -66,7 +92,6 @@ def catalogo(
     except Exception:
         datos = []
 
-    # --- Leer asociaciones (logos, nombres, whatsapp, verificado) ---
     logos = {}
     nombres_asoc = {}
     whatsapp_info = {}
@@ -88,7 +113,6 @@ def catalogo(
     except Exception:
         pass
 
-    # --- Leer valoraciones ---
     valoraciones = {}
     try:
         sheet_val = get_valoraciones_sheet()
@@ -108,10 +132,8 @@ def catalogo(
     for fila in datos:
         if len(fila) >= 2 and fila[1].strip():
             email_asoc = fila[1].strip()
-            # Filtrar solo verificados
             if email_asoc not in verificados:
                 continue
-
             prod_nombre = fila[2].strip() if len(fila) > 2 else ""
             prod_desc = fila[3].strip() if len(fila) > 3 else ""
             prod_tipo = fila[7].strip().lower() if len(fila) > 7 and fila[7].strip() else ""
@@ -301,7 +323,7 @@ def editar_producto_form(request: Request, producto_id: str):
     except Exception:
         return RedirectResponse(url="/panel", status_code=303)
 
-# ─── ACTUALIZAR PRODUCTO ───────────────────────────
+# ─── ACTUALIZAR PRODUCTO (ELIMINA IMAGEN ANTERIOR)──
 @app.post("/panel/producto/actualizar/{producto_id}")
 def actualizar_producto(
     request: Request,
@@ -324,20 +346,36 @@ def actualizar_producto(
             if i == 0:
                 continue
             if len(fila) > 0 and fila[0] == producto_id and len(fila) > 1 and fila[1] == email:
-                nueva_imagen = fila[5] if len(fila) > 5 and fila[5].strip() else ""
+                antigua_imagen = fila[5] if len(fila) > 5 and fila[5].strip() else ""
+                nueva_imagen = antigua_imagen
+
                 if imagen and imagen.filename:
+                    # Eliminar la imagen anterior si existe
+                    if antigua_imagen:
+                        delete_cloudinary_asset(antigua_imagen, resource_type="image")
                     try:
                         result = cloudinary.uploader.upload(imagen.file, folder="productos")
                         nueva_imagen = result.get("secure_url", "")
                     except Exception:
                         pass
-                sheet_prod.update(f'A{i+1}:I{i+1}', [[producto_id, email, nombre, descripcion or "", precio, nueva_imagen, fila[6] if len(fila) > 6 else str(datetime.datetime.now()), tipo, tipo_precio]])
+
+                sheet_prod.update(f'A{i+1}:I{i+1}', [[
+                    producto_id,
+                    email,
+                    nombre,
+                    descripcion or "",
+                    precio,
+                    nueva_imagen,
+                    fila[6] if len(fila) > 6 else str(datetime.datetime.now()),
+                    tipo,
+                    tipo_precio
+                ]])
                 break
         return RedirectResponse(url="/panel", status_code=303)
     except Exception:
         return RedirectResponse(url="/panel", status_code=303)
 
-# ─── ELIMINAR PRODUCTO ─────────────────────────────
+# ─── ELIMINAR PRODUCTO (BORRA IMAGEN) ──────────────
 @app.post("/panel/producto/eliminar/{producto_id}")
 def eliminar_producto(request: Request, producto_id: str):
     if "usuario" not in request.session:
@@ -351,10 +389,15 @@ def eliminar_producto(request: Request, producto_id: str):
             if i == 0:
                 continue
             if len(fila) > 0 and fila[0] == producto_id and len(fila) > 1 and fila[1] == email:
+                # Borrar imagen de Cloudinary
+                imagen_url = fila[5] if len(fila) > 5 and fila[5].strip() else ""
+                if imagen_url:
+                    delete_cloudinary_asset(imagen_url, resource_type="image")
+                # Borrar fila de Google Sheets
                 sheet_prod.delete_rows(i + 1)
                 break
-    except Exception:
-        pass
+    except Exception as e:
+        logging.exception("Error al eliminar producto")
     return RedirectResponse(url="/panel", status_code=303)
 
 # ─── EDITAR PERFIL (GET) ───────────────────────────
@@ -385,7 +428,7 @@ def editar_perfil_form(request: Request):
         pass
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── ACTUALIZAR PERFIL ─────────────────────────────
+# ─── ACTUALIZAR PERFIL (ELIMINA ARCHIVOS ANTERIORES) ─
 @app.post("/panel/editar-perfil")
 def actualizar_perfil(
     request: Request,
@@ -410,17 +453,21 @@ def actualizar_perfil(
             if i == 0:
                 continue
             if u[0] == email:
-                # Logo
+                # ── Logo ──
                 if logo and logo.filename:
+                    if u[7].strip():
+                        delete_cloudinary_asset(u[7].strip(), resource_type="image")
                     try:
                         result = cloudinary.uploader.upload(logo.file, folder="logos")
                         logo_url = result.get("secure_url", "")
                     except Exception:
                         pass
 
-                # Cámara de Comercio
+                # ── Cámara de Comercio ──
                 camara_url = u[9] if len(u) > 9 else ""
                 if camara_comercio and camara_comercio.filename:
+                    if camara_url:
+                        delete_cloudinary_asset(camara_url, resource_type="raw")
                     try:
                         result = cloudinary.uploader.upload(
                             camara_comercio.file,
@@ -431,9 +478,11 @@ def actualizar_perfil(
                     except Exception:
                         pass
 
-                # RUT
+                # ── RUT ──
                 rut_url = u[10] if len(u) > 10 else ""
                 if rut and rut.filename:
+                    if rut_url:
+                        delete_cloudinary_asset(rut_url, resource_type="raw")
                     try:
                         result = cloudinary.uploader.upload(
                             rut.file,
@@ -444,7 +493,7 @@ def actualizar_perfil(
                     except Exception:
                         pass
 
-                # Actualizar la fila (columnas A hasta L)
+                # Actualizar fila completa (hasta columna L)
                 sheet_usr.update(f'A{i+1}:L{i+1}', [[
                     email,
                     u[1],
