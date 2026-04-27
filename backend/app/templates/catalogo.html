@@ -5,14 +5,13 @@
 {% block content %}
 <h2 class="mb-3">Productos campesinos</h2>
 
-<!-- Formulario de búsqueda y filtros -->
 <form method="get" action="/catalogo" class="row g-2 mb-4">
     <div class="col-md-4">
-        <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o descripción" value="{{ q }}">
+        <input type="text" name="q" class="form-control" placeholder="Buscar..." value="{{ q }}">
     </div>
     <div class="col-md-2">
         <select name="tipo" class="form-select">
-            <option value="">Todos los tipos</option>
+            <option value="">Todos</option>
             <option value="producto" {% if tipo == 'producto' %}selected{% endif %}>Producto</option>
             <option value="servicio" {% if tipo == 'servicio' %}selected{% endif %}>Servicio</option>
         </select>
@@ -20,7 +19,7 @@
     <div class="col-md-2">
         <select name="tipo_precio" class="form-select">
             <option value="">Cualquier precio</option>
-            <option value="fijo" {% if tipo_precio == 'fijo' %}selected{% endif %}>Precio fijo</option>
+            <option value="fijo" {% if tipo_precio == 'fijo' %}selected{% endif %}>Fijo</option>
             <option value="convenir" {% if tipo_precio == 'convenir' %}selected{% endif %}>A convenir</option>
         </select>
     </div>
@@ -33,7 +32,7 @@
 </form>
 
 {% if total_productos %}
-<p class="text-muted">Mostrando {{ productos|length }} de {{ total_productos }} resultados.</p>
+<p class="text-muted">{{ productos|length }} de {{ total_productos }} resultados.</p>
 {% endif %}
 
 <div class="row row-cols-1 row-cols-md-3 g-4">
@@ -52,6 +51,24 @@
                     {% endif %}
                 </p>
                 {% if producto.tipo %}<span class="badge bg-secondary">{{ producto.tipo|capitalize }}</span>{% endif %}
+
+                <!-- Valoración (visible siempre) -->
+                <div class="mt-2">
+                    {% for i in range(1, 6) %}
+                    {% if i <= producto.estrellas %}
+                    ⭐
+                    {% else %}
+                    ☆
+                    {% endif %}
+                    {% endfor %}
+                    <small class="text-muted">({{ producto.num_valoraciones }})</small>
+                </div>
+
+                <!-- Botón para valorar SOLO si hay sesión -->
+                {% if request.session.get("usuario") %}
+                <button class="btn btn-sm btn-outline-warning mt-1" data-bs-toggle="modal" data-bs-target="#modalValorar" data-id="{{ producto.id }}" data-nombre="{{ producto.nombre }}">Valorar</button>
+                {% endif %}
+
                 <div class="asociacion-badge mt-2">
                     {% if producto.logo_url %}
                     <img src="{{ producto.logo_url }}" class="logo-mini">
@@ -64,32 +81,71 @@
         </div>
     </div>
     {% else %}
-    <div class="col-12">
-        <p class="text-muted">No se encontraron productos con esos criterios.</p>
-    </div>
+    <p class="text-muted">No se encontraron productos.</p>
     {% endfor %}
 </div>
 
-<!-- Paginación -->
 {% if total_pages > 1 %}
 <nav class="mt-4">
     <ul class="pagination justify-content-center">
         {% if page > 1 %}
-        <li class="page-item">
-            <a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ page - 1 }}">Anterior</a>
-        </li>
+        <li class="page-item"><a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ page - 1 }}">Anterior</a></li>
         {% endif %}
         {% for p in range(1, total_pages + 1) %}
-        <li class="page-item {% if p == page %}active{% endif %}">
-            <a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ p }}">{{ p }}</a>
-        </li>
+        <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ p }}">{{ p }}</a></li>
         {% endfor %}
         {% if page < total_pages %}
-        <li class="page-item">
-            <a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ page + 1 }}">Siguiente</a>
-        </li>
+        <li class="page-item"><a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ page + 1 }}">Siguiente</a></li>
         {% endif %}
     </ul>
 </nav>
 {% endif %}
+
+<!-- Modal para valorar -->
+<div class="modal fade" id="modalValorar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="formValorar" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Valorar producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="producto_id" id="productoId">
+                    <p id="nombreProducto" class="fw-bold"></p>
+                    <div class="mb-3">
+                        <label class="form-label">Puntuación</label>
+                        <div class="star-rating">
+                            {% for i in range(1, 6) %}
+                            <input type="radio" name="estrellas" value="{{ i }}" id="star{{ i }}" {% if i == 5 %}checked{% endif %}>
+                            <label for="star{{ i }}">⭐</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Comentario (opcional)</label>
+                        <textarea name="comentario" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Enviar valoración</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('modalValorar');
+    modal.addEventListener('show.bs.modal', function(event) {
+        var button = event.relatedTarget;
+        var id = button.getAttribute('data-id');
+        var nombre = button.getAttribute('data-nombre');
+        document.getElementById('productoId').value = id;
+        document.getElementById('nombreProducto').textContent = nombre;
+        document.getElementById('formValorar').action = '/valorar/' + id;
+    });
+});
+</script>
 {% endblock %}

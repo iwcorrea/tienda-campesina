@@ -48,4 +48,28 @@
     {% endfor %}
 </div>
 {% endif %}
+
+<!-- Gráfico de distribución por tipo -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h5>Distribución por tipo</h5>
+        <canvas id="chartTipo" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('chartTipo').getContext('2d');
+new Chart(ctx, {
+    type: 'pie',
+    data: {
+        labels: ['Producto', 'Servicio'],
+        datasets: [{
+            label: 'Cantidad',
+            data: [{{ productos_por_tipo.producto }}, {{ productos_por_tipo.servicio }}],
+            backgroundColor: ['#2d6a4f', '#52b788']
+        }]
+    }
+});
+</script>
 {% endblock %}

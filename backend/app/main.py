@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.auth import router as auth_router
-from app.google_sheets import get_sheet, get_products_sheet
+from app.google_sheets import get_sheet, get_products_sheet, get_valoraciones_sheet
 import cloudinary
 import cloudinary.uploader
 import datetime
@@ -49,7 +49,7 @@ def inicio(request: Request):
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO (búsqueda, filtros y paginación) ─────────
+# ─── CATÁLOGO (con valoraciones) ───────────────────────
 @app.get("/catalogo", response_class=HTMLResponse)
 def catalogo(
     request: Request,
@@ -58,16 +58,16 @@ def catalogo(
     tipo_precio: str = Query(default=None),
     page: int = Query(default=1, ge=1)
 ):
+    # --- Leer productos ---
     try:
         sheet_prod = get_products_sheet()
         registros = sheet_prod.get_all_values()
         datos = registros[1:] if len(registros) > 1 else []
-        logging.info(f"Catálogo: {len(datos)} filas de productos (sin filtrar)")
     except Exception as e:
         logging.exception("Error al leer hoja Productos")
         datos = []
 
-    # Logos y nombres de asociaciones
+    # --- Leer asociaciones (logos y nombres) ---
     logos = {}
     nombres_asoc = {}
     try:
@@ -77,8 +77,24 @@ def catalogo(
             if u[0]:
                 logos[u[0].strip()] = u[7].strip() if len(u) > 7 and u[7].strip() else ""
                 nombres_asoc[u[0].strip()] = u[3].strip() if len(u) > 3 and u[3].strip() else u[0]
-    except Exception as e:
-        logging.exception("Error al leer logos de usuarios")
+    except Exception:
+        pass
+
+    # --- Leer valoraciones ---
+    valoraciones = {}
+    try:
+        sheet_val = get_valoraciones_sheet()
+        vals = sheet_val.get_all_values()[1:]
+        for v in vals:
+            pid = v[1].strip() if len(v) > 1 else ""
+            estrellas = int(v[2]) if len(v) > 2 and v[2].isdigit() else 0
+            if pid:
+                if pid not in valoraciones:
+                    valoraciones[pid] = {"total": 0, "cuenta": 0}
+                valoraciones[pid]["total"] += estrellas
+                valoraciones[pid]["cuenta"] += 1
+    except Exception:
+        pass
 
     productos = []
     for fila in datos:
@@ -89,24 +105,23 @@ def catalogo(
             prod_tipo = fila[7].strip().lower() if len(fila) > 7 and fila[7].strip() else ""
             prod_tipo_precio = fila[8].strip().lower() if len(fila) > 8 and fila[8].strip() else ""
 
-            # Aplicar búsqueda por texto (nombre o descripción)
             if q and q.strip():
                 search = q.strip().lower()
                 if search not in prod_nombre.lower() and search not in prod_desc.lower():
                     continue
-
-            # Filtrar por tipo
             if tipo and tipo.strip():
                 if prod_tipo != tipo.strip().lower():
                     continue
-
-            # Filtrar por modalidad de precio
             if tipo_precio and tipo_precio.strip():
                 if prod_tipo_precio != tipo_precio.strip().lower():
                     continue
 
+            prod_id = fila[0].strip() if fila[0].strip() else ""
+            val = valoraciones.get(prod_id, {"total": 0, "cuenta": 0})
+            promedio = round(val["total"] / val["cuenta"], 1) if val["cuenta"] > 0 else 0
+
             productos.append({
-                "id": fila[0].strip() if fila[0].strip() else "",
+                "id": prod_id,
                 "nombre": prod_nombre,
                 "descripcion": prod_desc,
                 "precio": fila[4].strip() if len(fila) > 4 else "",
@@ -115,7 +130,9 @@ def catalogo(
                 "asociacion_nombre": nombres_asoc.get(email_asoc, email_asoc),
                 "logo_url": logos.get(email_asoc, ""),
                 "tipo": prod_tipo,
-                "tipo_precio": prod_tipo_precio
+                "tipo_precio": prod_tipo_precio,
+                "estrellas": promedio,
+                "num_valoraciones": val["cuenta"]
             })
 
     total_productos = len(productos)
@@ -125,8 +142,6 @@ def catalogo(
     start = (page - 1) * per_page
     end = start + per_page
     productos_paginados = productos[start:end]
-
-    logging.info(f"Catálogo: {total_productos} productos después de filtros, página {page}/{total_pages}")
 
     return templates.TemplateResponse("catalogo.html", {
         "request": request,
@@ -139,7 +154,7 @@ def catalogo(
         "total_productos": total_productos
     })
 
-# ─── DASHBOARD (protegido) ──────────────────────────
+# ─── DASHBOARD (con gráfico y valoraciones) ──────────
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
     if "usuario" not in request.session:
@@ -155,7 +170,12 @@ def dashboard(request: Request):
         mis_productos = []
 
     total = len(mis_productos)
-    # Últimos 5 productos
+    productos_por_tipo = {"producto": 0, "servicio": 0}
+    for p in mis_productos:
+        t = p[7].strip().lower() if len(p) > 7 else ""
+        if t in productos_por_tipo:
+            productos_por_tipo[t] += 1
+
     ultimos = []
     for p in reversed(mis_productos[-5:]):
         ultimos.append({
@@ -170,7 +190,8 @@ def dashboard(request: Request):
         "request": request,
         "usuario": request.session.get("nombre_asociacion", email),
         "total_productos": total,
-        "ultimos_productos": ultimos
+        "ultimos_productos": ultimos,
+        "productos_por_tipo": productos_por_tipo
     })
 
 # ─── PANEL (protegido) ───────────────────────────────
@@ -228,31 +249,21 @@ def crear_producto(
         try:
             result = cloudinary.uploader.upload(imagen.file, folder="productos")
             imagen_url = result.get("secure_url", "")
-        except Exception as e:
-            logging.exception("Error subiendo imagen a Cloudinary")
+        except Exception:
+            pass
 
     try:
         sheet_prod = get_products_sheet()
         todos = sheet_prod.get_all_values()
         if not todos or not any(todos[0]):
             sheet_prod.append_row(["id", "email", "nombre", "descripcion", "precio", "imagen_url", "fecha", "tipo", "tipo_precio"])
-        sheet_prod.append_row([
-            producto_id,
-            email,
-            nombre,
-            descripcion or "",
-            precio,
-            imagen_url,
-            str(datetime.datetime.now()),
-            tipo,
-            tipo_precio
-        ])
-    except Exception as e:
-        logging.exception("Error al guardar producto en Sheets")
+        sheet_prod.append_row([producto_id, email, nombre, descripcion or "", precio, imagen_url, str(datetime.datetime.now()), tipo, tipo_precio])
+    except Exception:
+        pass
 
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── EDITAR PRODUCTO ───────────────────────────────
+# ─── EDITAR PRODUCTO (GET) ─────────────────────────
 @app.get("/panel/producto/editar/{producto_id}", response_class=HTMLResponse)
 def editar_producto_form(request: Request, producto_id: str):
     if "usuario" not in request.session:
@@ -275,8 +286,7 @@ def editar_producto_form(request: Request, producto_id: str):
                 }
                 return templates.TemplateResponse("editar_producto.html", {"request": request, "producto": producto})
         return RedirectResponse(url="/panel", status_code=303)
-    except Exception as e:
-        logging.exception("Error al obtener producto para editar")
+    except Exception:
         return RedirectResponse(url="/panel", status_code=303)
 
 # ─── ACTUALIZAR PRODUCTO ───────────────────────────
@@ -307,24 +317,12 @@ def actualizar_producto(
                     try:
                         result = cloudinary.uploader.upload(imagen.file, folder="productos")
                         nueva_imagen = result.get("secure_url", "")
-                    except Exception as e:
-                        logging.exception("Error al actualizar imagen en Cloudinary")
-
-                sheet_prod.update(f'A{i+1}:I{i+1}', [[
-                    producto_id,
-                    email,
-                    nombre,
-                    descripcion or "",
-                    precio,
-                    nueva_imagen,
-                    fila[6] if len(fila) > 6 else str(datetime.datetime.now()),
-                    tipo,
-                    tipo_precio
-                ]])
+                    except Exception:
+                        pass
+                sheet_prod.update(f'A{i+1}:I{i+1}', [[producto_id, email, nombre, descripcion or "", precio, nueva_imagen, fila[6] if len(fila) > 6 else str(datetime.datetime.now()), tipo, tipo_precio]])
                 break
         return RedirectResponse(url="/panel", status_code=303)
-    except Exception as e:
-        logging.exception("Error al actualizar producto")
+    except Exception:
         return RedirectResponse(url="/panel", status_code=303)
 
 # ─── ELIMINAR PRODUCTO ─────────────────────────────
@@ -343,8 +341,80 @@ def eliminar_producto(request: Request, producto_id: str):
             if len(fila) > 0 and fila[0] == producto_id and len(fila) > 1 and fila[1] == email:
                 sheet_prod.delete_rows(i + 1)
                 break
+    except Exception:
+        pass
+    return RedirectResponse(url="/panel", status_code=303)
+
+# ─── EDITAR PERFIL (GET) ───────────────────────────
+@app.get("/panel/editar-perfil", response_class=HTMLResponse)
+def editar_perfil_form(request: Request):
+    if "usuario" not in request.session:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    email = request.session["usuario"]
+    try:
+        sheet_usr = get_sheet()
+        usuarios = sheet_usr.get_all_values()[1:]
+        for u in usuarios:
+            if u[0] == email:
+                perfil = {
+                    "email": u[0],
+                    "nombre": u[3] if len(u) > 3 else "",
+                    "descripcion": u[4] if len(u) > 4 else "",
+                    "direccion": u[5] if len(u) > 5 else "",
+                    "telefono": u[6] if len(u) > 6 else "",
+                    "logo_url": u[7] if len(u) > 7 and u[7].strip() else ""
+                }
+                return templates.TemplateResponse("editar_perfil.html", {"request": request, "perfil": perfil})
+    except Exception:
+        pass
+    return RedirectResponse(url="/panel", status_code=303)
+
+# ─── ACTUALIZAR PERFIL ─────────────────────────────
+@app.post("/panel/editar-perfil")
+def actualizar_perfil(
+    request: Request,
+    nombre_asociacion: str = Form(...),
+    descripcion: str = Form(None),
+    direccion: str = Form(None),
+    telefono: str = Form(None),
+    logo: UploadFile = File(None)
+):
+    if "usuario" not in request.session:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    email = request.session["usuario"]
+    logo_url = request.session.get("logo_url", "")
+    try:
+        sheet_usr = get_sheet()
+        usuarios = sheet_usr.get_all_values()
+        for i, u in enumerate(usuarios):
+            if i == 0:
+                continue
+            if u[0] == email:
+                if logo and logo.filename:
+                    try:
+                        result = cloudinary.uploader.upload(logo.file, folder="logos")
+                        logo_url = result.get("secure_url", "")
+                    except Exception:
+                        pass
+
+                sheet_usr.update(f'A{i+1}:H{i+1}', [[
+                    email,
+                    u[1],
+                    u[2],
+                    nombre_asociacion,
+                    descripcion or "",
+                    direccion or "",
+                    telefono or "",
+                    logo_url
+                ]])
+                request.session["nombre_asociacion"] = nombre_asociacion
+                request.session["logo_url"] = logo_url
+                break
     except Exception as e:
-        logging.exception("Error al eliminar producto")
+        logging.exception("Error al actualizar perfil")
+
     return RedirectResponse(url="/panel", status_code=303)
 
 # ─── PERFIL PÚBLICO DE ASOCIACIÓN ─────────────────
@@ -365,8 +435,8 @@ def perfil_asociacion(request: Request, email: str):
                     "logo_url": u[7].strip() if len(u) > 7 and u[7].strip() else ""
                 }
                 break
-    except Exception as e:
-        logging.exception("Error al leer asociación")
+    except Exception:
+        pass
 
     if not asociacion:
         return RedirectResponse(url="/catalogo", status_code=303)
@@ -385,11 +455,38 @@ def perfil_asociacion(request: Request, email: str):
                     "tipo": fila[7] if len(fila) > 7 else "",
                     "tipo_precio": fila[8] if len(fila) > 8 else ""
                 })
-    except Exception as e:
-        logging.exception("Error al leer productos de la asociación")
+    except Exception:
+        pass
 
-    return templates.TemplateResponse("perfil.html", {
-        "request": request,
-        "asociacion": asociacion,
-        "productos": productos
-    })
+    return templates.TemplateResponse("perfil.html", {"request": request, "asociacion": asociacion, "productos": productos})
+
+# ─── VALORAR PRODUCTO (SOLO USUARIOS REGISTRADOS) ──
+@app.post("/valorar/{producto_id}")
+def valorar_producto(
+    request: Request,
+    producto_id: str,
+    estrellas: int = Form(...),
+    comentario: str = Form(None)
+):
+    # Protección: solo usuarios logueados pueden valorar
+    if "usuario" not in request.session:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    if estrellas < 1 or estrellas > 5:
+        return RedirectResponse(url="/catalogo", status_code=303)
+
+    email = request.session["usuario"]  # se guarda para futura validación
+    try:
+        sheet_val = get_valoraciones_sheet()
+        sheet_val.append_row([
+            str(uuid.uuid4()),
+            producto_id,
+            estrellas,
+            comentario or "",
+            str(datetime.datetime.now()),
+            email  # columna extra con el email del usuario que valora
+        ])
+    except Exception as e:
+        logging.exception("Error al guardar valoración")
+
+    return RedirectResponse(url="/catalogo", status_code=303)

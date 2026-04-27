@@ -1,37 +1,36 @@
 {% extends "base.html" %}
 
-{% block title %}Editar perfil | Tienda Campesina{% endblock %}
+{% block title %}Editar Perfil{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-12 col-lg-8">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body p-4">
-                <h2 class="h4 mb-3">Editar perfil de asociacion</h2>
-                <form method="post" action="/mi-perfil" class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label">Nombre de la asociacion</label>
-                        <input type="text" name="nombre_asociacion" class="form-control" value="{{ usuario.nombre_asociacion }}" required>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Descripcion</label>
-                        <textarea name="descripcion" class="form-control" rows="3">{{ usuario.descripcion or "" }}</textarea>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Direccion</label>
-                        <input type="text" name="direccion" class="form-control" value="{{ usuario.direccion or '' }}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Telefono</label>
-                        <input type="text" name="telefono" class="form-control" value="{{ usuario.telefono or '' }}">
-                    </div>
-                    <div class="col-12 d-flex gap-2">
-                        <button class="btn btn-success" type="submit">Guardar cambios</button>
-                        <a href="/dashboard" class="btn btn-outline-secondary">Volver</a>
-                    </div>
-                </form>
-            </div>
-        </div>
+<h2>Editar perfil de la asociación</h2>
+
+<form action="/panel/editar-perfil" method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label class="form-label">Nombre de la asociación</label>
+        <input type="text" name="nombre_asociacion" class="form-control" value="{{ perfil.nombre }}" required>
     </div>
-</div>
+    <div class="mb-3">
+        <label class="form-label">Descripción</label>
+        <textarea name="descripcion" class="form-control" rows="3">{{ perfil.descripcion }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Dirección / Municipio</label>
+        <input type="text" name="direccion" class="form-control" value="{{ perfil.direccion }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Teléfono</label>
+        <input type="text" name="telefono" class="form-control" value="{{ perfil.telefono }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Logo actual</label><br>
+        {% if perfil.logo_url %}
+        <img src="{{ perfil.logo_url }}" class="mb-2 rounded" style="max-width: 120px;"><br>
+        {% endif %}
+        <label class="form-label">Cambiar logo (opcional)</label>
+        <input type="file" name="logo" class="form-control" accept="image/*">
+    </div>
+    <button type="submit" class="btn btn-success">Guardar cambios</button>
+    <a href="/panel" class="btn btn-secondary">Cancelar</a>
+</form>
 {% endblock %}
