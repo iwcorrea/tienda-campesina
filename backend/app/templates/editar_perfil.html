@@ -26,14 +26,36 @@
         <input type="checkbox" name="show_whatsapp" value="1" class="form-check-input" id="showWhatsapp" {% if perfil.show_whatsapp == '1' %}checked{% endif %}>
         <label class="form-check-label" for="showWhatsapp">Recibir consultas por WhatsApp</label>
     </div>
+
+    <h5 class="mt-4">Logo</h5>
     <div class="mb-3">
-        <label class="form-label">Logo actual</label><br>
         {% if perfil.logo_url %}
         <img src="{{ perfil.logo_url }}" class="mb-2 rounded" style="max-width: 120px;"><br>
+        <label>Cambiar logo (opcional)</label>
+        {% else %}
+        <label>Subir logo (opcional)</label>
         {% endif %}
-        <label class="form-label">Cambiar logo (opcional)</label>
         <input type="file" name="logo" class="form-control" accept="image/*">
     </div>
+
+    <h5 class="mt-4">Documentos legales</h5>
+    <div class="mb-3">
+        <label class="form-label">Cámara de Comercio (PDF)</label>
+        {% if perfil.camara_comercio_url %}
+        <p><a href="{{ perfil.camara_comercio_url }}" target="_blank">Ver documento actual</a></p>
+        <label class="form-label">Reemplazar archivo (opcional)</label>
+        {% endif %}
+        <input type="file" name="camara_comercio" class="form-control" accept=".pdf">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">RUT actualizado (PDF)</label>
+        {% if perfil.rut_url %}
+        <p><a href="{{ perfil.rut_url }}" target="_blank">Ver documento actual</a></p>
+        <label class="form-label">Reemplazar archivo (opcional)</label>
+        {% endif %}
+        <input type="file" name="rut" class="form-control" accept=".pdf">
+    </div>
+
     <button type="submit" class="btn btn-success">Guardar cambios</button>
     <a href="/panel" class="btn btn-secondary">Cancelar</a>
 </form>

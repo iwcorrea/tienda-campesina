@@ -17,7 +17,6 @@
     </div>
 
     <hr>
-
     <h4 class="text-success">Información de la asociación</h4>
     <div class="mb-3">
         <label>Nombre de la asociación</label>
@@ -37,12 +36,22 @@
     </div>
     <div class="mb-3 form-check">
         <input type="checkbox" name="show_whatsapp" value="1" class="form-check-input" id="showWhatsapp">
-        <label class="form-check-label" for="showWhatsapp">Deseo recibir consultas por WhatsApp (el número se usará solo para el enlace de chat)</label>
+        <label class="form-check-label" for="showWhatsapp">Deseo recibir consultas por WhatsApp</label>
     </div>
     <div class="mb-3">
         <label>Logo de la asociación (opcional)</label>
         <input type="file" name="logo" class="form-control" accept="image/*">
-        <small class="text-muted">Puedes subir una imagen más tarde</small>
+    </div>
+
+    <hr>
+    <h4 class="text-success">Documentos de verificación</h4>
+    <div class="mb-3">
+        <label>Cámara de Comercio (PDF)</label>
+        <input type="file" name="camara_comercio" class="form-control" accept=".pdf" required>
+    </div>
+    <div class="mb-3">
+        <label>RUT actualizado (PDF)</label>
+        <input type="file" name="rut" class="form-control" accept=".pdf" required>
     </div>
 
     <button type="submit" class="btn btn-success btn-lg">Registrar asociación</button>

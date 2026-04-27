@@ -31,9 +31,11 @@ def login_post(request: Request, email: str = Form(...), password: str = Form(..
                     if len(fila) > 7 and fila[7].strip():
                         request.session["logo_url"] = fila[7].strip()
                     if len(fila) > 8:
-                        request.session["show_whatsapp"] = fila[8].strip()  # columna I
+                        request.session["show_whatsapp"] = fila[8].strip()
                     if len(fila) > 6:
-                        request.session["telefono"] = fila[6].strip()       # columna G
+                        request.session["telefono"] = fila[6].strip()
+                    if len(fila) > 11:
+                        request.session["verificado"] = fila[11].strip()
                     return RedirectResponse(url="/panel", status_code=303)
                 else:
                     return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales incorrectas"})
@@ -60,8 +62,10 @@ def registro_post(
     descripcion: str = Form(None),
     direccion: str = Form(None),
     telefono: str = Form(None),
-    show_whatsapp: str = Form(None),   # "1" o vacío
-    logo: UploadFile = File(None)
+    show_whatsapp: str = Form(None),
+    logo: UploadFile = File(None),
+    camara_comercio: UploadFile = File(None),
+    rut: UploadFile = File(None)
 ):
     try:
         sheet = get_sheet()
@@ -75,8 +79,24 @@ def registro_post(
             try:
                 result = cloudinary.uploader.upload(logo.file, folder="logos")
                 logo_url = result.get("secure_url", "")
-            except Exception as ex:
-                logger.exception("Error subiendo logo a Cloudinary")
+            except Exception:
+                pass
+
+        camara_url = ""
+        if camara_comercio and camara_comercio.filename:
+            try:
+                result = cloudinary.uploader.upload(camara_comercio.file, folder="documentos", resource_type="raw")
+                camara_url = result.get("secure_url", "")
+            except Exception:
+                pass
+
+        rut_url = ""
+        if rut and rut.filename:
+            try:
+                result = cloudinary.uploader.upload(rut.file, folder="documentos", resource_type="raw")
+                rut_url = result.get("secure_url", "")
+            except Exception:
+                pass
 
         password_bytes = password.encode("utf-8")[:72]
         hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
@@ -90,7 +110,10 @@ def registro_post(
             direccion or "",
             telefono or "",
             logo_url,
-            "1" if show_whatsapp == "1" else ""   # Columna I
+            "1" if show_whatsapp == "1" else "",
+            camara_url,
+            rut_url,
+            ""   # verificado vacío
         ])
 
         logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)

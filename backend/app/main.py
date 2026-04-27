@@ -49,7 +49,7 @@ def inicio(request: Request):
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO (con WhatsApp, oculta precio si "convenir") ─
+# ─── CATÁLOGO (solo productos de asociaciones verificadas) ─
 @app.get("/catalogo", response_class=HTMLResponse)
 def catalogo(
     request: Request,
@@ -63,14 +63,14 @@ def catalogo(
         sheet_prod = get_products_sheet()
         registros = sheet_prod.get_all_values()
         datos = registros[1:] if len(registros) > 1 else []
-    except Exception as e:
-        logging.exception("Error al leer hoja Productos")
+    except Exception:
         datos = []
 
-    # --- Leer asociaciones (logos, nombres, whatsapp) ---
+    # --- Leer asociaciones (logos, nombres, whatsapp, verificado) ---
     logos = {}
     nombres_asoc = {}
-    whatsapp_info = {}  # {email: {show_whatsapp, telefono}}
+    whatsapp_info = {}
+    verificados = set()
     try:
         sheet_usr = get_sheet()
         usuarios = sheet_usr.get_all_values()[1:]
@@ -83,6 +83,8 @@ def catalogo(
                     "show_whatsapp": u[8].strip() if len(u) > 8 and u[8].strip() else "",
                     "telefono": u[6].strip() if len(u) > 6 and u[6].strip() else ""
                 }
+                if len(u) > 11 and u[11].strip() == "1":
+                    verificados.add(email_usr)
     except Exception:
         pass
 
@@ -106,6 +108,10 @@ def catalogo(
     for fila in datos:
         if len(fila) >= 2 and fila[1].strip():
             email_asoc = fila[1].strip()
+            # Filtrar solo verificados
+            if email_asoc not in verificados:
+                continue
+
             prod_nombre = fila[2].strip() if len(fila) > 2 else ""
             prod_desc = fila[3].strip() if len(fila) > 3 else ""
             prod_tipo = fila[7].strip().lower() if len(fila) > 7 and fila[7].strip() else ""
@@ -263,9 +269,6 @@ def crear_producto(
 
     try:
         sheet_prod = get_products_sheet()
-        todos = sheet_prod.get_all_values()
-        if not todos or not any(todos[0]):
-            sheet_prod.append_row(["id", "email", "nombre", "descripcion", "precio", "imagen_url", "fecha", "tipo", "tipo_precio"])
         sheet_prod.append_row([producto_id, email, nombre, descripcion or "", precio, imagen_url, str(datetime.datetime.now()), tipo, tipo_precio])
     except Exception:
         pass
@@ -372,15 +375,17 @@ def editar_perfil_form(request: Request):
                     "descripcion": u[4] if len(u) > 4 else "",
                     "direccion": u[5] if len(u) > 5 else "",
                     "telefono": u[6] if len(u) > 6 else "",
-                    "logo_url": u[7] if len(u) > 7 and u[7].strip() else "",
-                    "show_whatsapp": u[8].strip() if len(u) > 8 else ""
+                    "logo_url": u[7].strip() if len(u) > 7 and u[7].strip() else "",
+                    "show_whatsapp": u[8].strip() if len(u) > 8 else "",
+                    "camara_comercio_url": u[9].strip() if len(u) > 9 and u[9].strip() else "",
+                    "rut_url": u[10].strip() if len(u) > 10 and u[10].strip() else ""
                 }
                 return templates.TemplateResponse("editar_perfil.html", {"request": request, "perfil": perfil})
     except Exception:
         pass
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── ACTUALIZAR PERFIL (incluye show_whatsapp) ─────
+# ─── ACTUALIZAR PERFIL ─────────────────────────────
 @app.post("/panel/editar-perfil")
 def actualizar_perfil(
     request: Request,
@@ -388,8 +393,10 @@ def actualizar_perfil(
     descripcion: str = Form(None),
     direccion: str = Form(None),
     telefono: str = Form(None),
-    show_whatsapp: str = Form(None),   # "1" o vacío
-    logo: UploadFile = File(None)
+    show_whatsapp: str = Form(None),
+    logo: UploadFile = File(None),
+    camara_comercio: UploadFile = File(None),
+    rut: UploadFile = File(None)
 ):
     if "usuario" not in request.session:
         return RedirectResponse(url="/auth/login", status_code=303)
@@ -403,6 +410,7 @@ def actualizar_perfil(
             if i == 0:
                 continue
             if u[0] == email:
+                # Logo
                 if logo and logo.filename:
                     try:
                         result = cloudinary.uploader.upload(logo.file, folder="logos")
@@ -410,7 +418,34 @@ def actualizar_perfil(
                     except Exception:
                         pass
 
-                sheet_usr.update(f'A{i+1}:I{i+1}', [[
+                # Cámara de Comercio
+                camara_url = u[9] if len(u) > 9 else ""
+                if camara_comercio and camara_comercio.filename:
+                    try:
+                        result = cloudinary.uploader.upload(
+                            camara_comercio.file,
+                            folder="documentos",
+                            resource_type="raw"
+                        )
+                        camara_url = result.get("secure_url", "")
+                    except Exception:
+                        pass
+
+                # RUT
+                rut_url = u[10] if len(u) > 10 else ""
+                if rut and rut.filename:
+                    try:
+                        result = cloudinary.uploader.upload(
+                            rut.file,
+                            folder="documentos",
+                            resource_type="raw"
+                        )
+                        rut_url = result.get("secure_url", "")
+                    except Exception:
+                        pass
+
+                # Actualizar la fila (columnas A hasta L)
+                sheet_usr.update(f'A{i+1}:L{i+1}', [[
                     email,
                     u[1],
                     u[2],
@@ -419,8 +454,12 @@ def actualizar_perfil(
                     direccion or "",
                     telefono or "",
                     logo_url,
-                    "1" if show_whatsapp == "1" else ""
+                    "1" if show_whatsapp == "1" else "",
+                    camara_url,
+                    rut_url,
+                    u[11] if len(u) > 11 else ""
                 ]])
+
                 request.session["nombre_asociacion"] = nombre_asociacion
                 request.session["logo_url"] = logo_url
                 request.session["show_whatsapp"] = "1" if show_whatsapp == "1" else ""
@@ -431,7 +470,7 @@ def actualizar_perfil(
 
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── PERFIL PÚBLICO DE ASOCIACIÓN (WhatsApp solo si habilitado) ─
+# ─── PERFIL PÚBLICO DE ASOCIACIÓN (solo si verificada) ─
 @app.get("/asociacion/{email}", response_class=HTMLResponse)
 def perfil_asociacion(request: Request, email: str):
     asociacion = None
@@ -440,6 +479,8 @@ def perfil_asociacion(request: Request, email: str):
         usuarios = sheet_usr.get_all_values()[1:]
         for u in usuarios:
             if u[0] == email:
+                if len(u) <= 11 or u[11].strip() != "1":
+                    return RedirectResponse(url="/catalogo", status_code=303)
                 asociacion = {
                     "email": u[0],
                     "nombre": u[3] if len(u) > 3 else u[0],
@@ -504,7 +545,7 @@ def valorar_producto(
             str(datetime.datetime.now()),
             email
         ])
-    except Exception as e:
-        logging.exception("Error al guardar valoración")
+    except Exception:
+        pass
 
     return RedirectResponse(url="/catalogo", status_code=303)

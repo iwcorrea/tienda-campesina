@@ -52,7 +52,6 @@
                 </p>
                 {% if producto.tipo %}<span class="badge bg-secondary">{{ producto.tipo|capitalize }}</span>{% endif %}
 
-                <!-- Valoración -->
                 <div class="mt-2">
                     {% for i in range(1, 6) %}
                     {% if i <= producto.estrellas %}
@@ -68,7 +67,6 @@
                 <button class="btn btn-sm btn-outline-warning mt-1" data-bs-toggle="modal" data-bs-target="#modalValorar" data-id="{{ producto.id }}" data-nombre="{{ producto.nombre }}">Valorar</button>
                 {% endif %}
 
-                <!-- WhatsApp solo si el proveedor lo habilita -->
                 {% if producto.show_whatsapp == '1' and producto.telefono %}
                 <a href="https://wa.me/57{{ producto.telefono|replace('+','')|replace(' ','') }}?text=Hola,%20vi%20tu%20producto%20{{ producto.nombre|urlencode }}%20en%20Tienda%20Campesina" target="_blank" class="btn btn-sm btn-success mt-1">💬 WhatsApp</a>
                 {% endif %}
@@ -105,7 +103,6 @@
 </nav>
 {% endif %}
 
-<!-- Modal para valorar -->
 <div class="modal fade" id="modalValorar" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
