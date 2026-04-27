@@ -39,16 +39,10 @@ templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(auth_router, prefix="/auth")
 
-# ─── FUNCIÓN AUXILIAR: BORRAR RECURSO DE CLOUDINARY ─
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
-    """
-    Intenta eliminar un recurso de Cloudinary a partir de su URL.
-    Extrae el public_id y llama a destroy.
-    """
     if not url or "cloudinary.com" not in url:
         return
     try:
-        # Formato típico: .../upload/v1234567890/folder/file.ext
         parts = url.split("/")
         upload_idx = -1
         for i, part in enumerate(parts):
@@ -57,9 +51,7 @@ def delete_cloudinary_asset(url: str, resource_type: str = "image"):
                 break
         if upload_idx == -1 or upload_idx + 2 >= len(parts):
             return
-        # Saltamos el segmento de la versión (v1234567890) y tomamos el resto
         public_id_with_ext = "/".join(parts[upload_idx + 2:])
-        # Quitamos la extensión
         public_id = ".".join(public_id_with_ext.split(".")[:-1])
         result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
         logging.info(f"Eliminado recurso antiguo: {public_id} -> {result}")
@@ -76,7 +68,7 @@ def inicio(request: Request):
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO (solo productos de asociaciones verificadas) ─
+# ─── CATÁLOGO ─────────────────────────────────────────
 @app.get("/catalogo", response_class=HTMLResponse)
 def catalogo(
     request: Request,
@@ -323,7 +315,7 @@ def editar_producto_form(request: Request, producto_id: str):
     except Exception:
         return RedirectResponse(url="/panel", status_code=303)
 
-# ─── ACTUALIZAR PRODUCTO (ELIMINA IMAGEN ANTERIOR)──
+# ─── ACTUALIZAR PRODUCTO ───────────────────────────
 @app.post("/panel/producto/actualizar/{producto_id}")
 def actualizar_producto(
     request: Request,
@@ -350,7 +342,6 @@ def actualizar_producto(
                 nueva_imagen = antigua_imagen
 
                 if imagen and imagen.filename:
-                    # Eliminar la imagen anterior si existe
                     if antigua_imagen:
                         delete_cloudinary_asset(antigua_imagen, resource_type="image")
                     try:
@@ -375,7 +366,7 @@ def actualizar_producto(
     except Exception:
         return RedirectResponse(url="/panel", status_code=303)
 
-# ─── ELIMINAR PRODUCTO (BORRA IMAGEN) ──────────────
+# ─── ELIMINAR PRODUCTO ─────────────────────────────
 @app.post("/panel/producto/eliminar/{producto_id}")
 def eliminar_producto(request: Request, producto_id: str):
     if "usuario" not in request.session:
@@ -389,11 +380,9 @@ def eliminar_producto(request: Request, producto_id: str):
             if i == 0:
                 continue
             if len(fila) > 0 and fila[0] == producto_id and len(fila) > 1 and fila[1] == email:
-                # Borrar imagen de Cloudinary
                 imagen_url = fila[5] if len(fila) > 5 and fila[5].strip() else ""
                 if imagen_url:
                     delete_cloudinary_asset(imagen_url, resource_type="image")
-                # Borrar fila de Google Sheets
                 sheet_prod.delete_rows(i + 1)
                 break
     except Exception as e:
@@ -428,7 +417,7 @@ def editar_perfil_form(request: Request):
         pass
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── ACTUALIZAR PERFIL (ELIMINA ARCHIVOS ANTERIORES) ─
+# ─── ACTUALIZAR PERFIL ─────────────────────────────
 @app.post("/panel/editar-perfil")
 def actualizar_perfil(
     request: Request,
@@ -472,7 +461,9 @@ def actualizar_perfil(
                         result = cloudinary.uploader.upload(
                             camara_comercio.file,
                             folder="documentos",
-                            resource_type="raw"
+                            resource_type="raw",
+                            use_filename=True,
+                            unique_filename=True
                         )
                         camara_url = result.get("secure_url", "")
                     except Exception:
@@ -487,7 +478,9 @@ def actualizar_perfil(
                         result = cloudinary.uploader.upload(
                             rut.file,
                             folder="documentos",
-                            resource_type="raw"
+                            resource_type="raw",
+                            use_filename=True,
+                            unique_filename=True
                         )
                         rut_url = result.get("secure_url", "")
                     except Exception:
@@ -519,7 +512,7 @@ def actualizar_perfil(
 
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── PERFIL PÚBLICO DE ASOCIACIÓN (solo si verificada) ─
+# ─── PERFIL PÚBLICO DE ASOCIACIÓN ─────────────────
 @app.get("/asociacion/{email}", response_class=HTMLResponse)
 def perfil_asociacion(request: Request, email: str):
     asociacion = None
@@ -569,7 +562,7 @@ def perfil_asociacion(request: Request, email: str):
         "productos": productos
     })
 
-# ─── VALORAR PRODUCTO (solo registrados) ───────────
+# ─── VALORAR PRODUCTO ──────────────────────────────
 @app.post("/valorar/{producto_id}")
 def valorar_producto(
     request: Request,

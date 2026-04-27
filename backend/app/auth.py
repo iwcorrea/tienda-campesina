@@ -85,7 +85,13 @@ def registro_post(
         camara_url = ""
         if camara_comercio and camara_comercio.filename:
             try:
-                result = cloudinary.uploader.upload(camara_comercio.file, folder="documentos", resource_type="raw")
+                result = cloudinary.uploader.upload(
+                    camara_comercio.file,
+                    folder="documentos",
+                    resource_type="raw",
+                    use_filename=True,
+                    unique_filename=True
+                )
                 camara_url = result.get("secure_url", "")
             except Exception:
                 pass
@@ -93,7 +99,13 @@ def registro_post(
         rut_url = ""
         if rut and rut.filename:
             try:
-                result = cloudinary.uploader.upload(rut.file, folder="documentos", resource_type="raw")
+                result = cloudinary.uploader.upload(
+                    rut.file,
+                    folder="documentos",
+                    resource_type="raw",
+                    use_filename=True,
+                    unique_filename=True
+                )
                 rut_url = result.get("secure_url", "")
             except Exception:
                 pass
@@ -113,7 +125,7 @@ def registro_post(
             "1" if show_whatsapp == "1" else "",
             camara_url,
             rut_url,
-            ""   # verificado vacío
+            ""
         ])
 
         logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)
