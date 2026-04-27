@@ -12,12 +12,21 @@
             <div class="card-body">
                 <h5 class="card-title">{{ producto.nombre }}</h5>
                 <p class="card-text">{{ producto.descripcion }}</p>
-                <p class="text-success fw-bold fs-5">${{ producto.precio }}</p>
-                <div class="asociacion-badge">
+                <p class="text-success fw-bold fs-5">
+                    {% if producto.tipo_precio == 'convenir' %}
+                    Precio a convenir
+                    {% else %}
+                    ${{ producto.precio }}
+                    {% endif %}
+                </p>
+                {% if producto.tipo %}<span class="badge bg-secondary">{{ producto.tipo|capitalize }}</span>{% endif %}
+                <div class="asociacion-badge mt-2">
                     {% if producto.logo_url %}
                     <img src="{{ producto.logo_url }}" class="logo-mini">
                     {% endif %}
-                    <span>{{ producto.asociacion_nombre or producto.asociacion }}</span>
+                    <a href="/asociacion/{{ producto.asociacion }}" class="text-decoration-none text-dark">
+                        {{ producto.asociacion_nombre or producto.asociacion }}
+                    </a>
                 </div>
             </div>
         </div>

@@ -30,15 +30,20 @@ def get_sheet():
     return client.open_by_key(SHEET_ID).sheet1
 
 def get_products_sheet():
-    """Devuelve la hoja 'Productos' (pestaña 2). Si no existe, la crea con encabezados."""
+    """Devuelve la hoja 'Productos' (pestaña 2). Si no existe, la crea con encabezados actualizados."""
     client = _get_client()
     SHEET_ID = os.getenv("SHEET_ID")
     if not SHEET_ID:
         raise RuntimeError("Falta la variable SHEET_ID.")
     spreadsheet = client.open_by_key(SHEET_ID)
     try:
-        return spreadsheet.worksheet("Productos")
+        ws = spreadsheet.worksheet("Productos")
     except gspread.exceptions.WorksheetNotFound:
         ws = spreadsheet.add_worksheet(title="Productos", rows=1000, cols=10)
-        ws.append_row(["email", "nombre", "descripcion", "precio", "imagen_url", "fecha"])
+        ws.append_row(["id", "email", "nombre", "descripcion", "precio", "imagen_url", "fecha", "tipo", "tipo_precio"])
         return ws
+    # Si ya existe pero le faltan columnas, actualizamos los encabezados
+    headers = ws.row_values(1)
+    if len(headers) < 9 or headers[0] != "id":
+        ws.insert_row(["id", "email", "nombre", "descripcion", "precio", "imagen_url", "fecha", "tipo", "tipo_precio"], 1)
+    return ws
