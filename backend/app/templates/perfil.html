@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ asociacion.nombre }} | Tienda Campesina{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        {% if asociacion.logo_url %}
+        <img src="{{ asociacion.logo_url }}" class="img-fluid rounded shadow-sm mb-3">
+        {% endif %}
+    </div>
+    <div class="col-md-9">
+        <h1>{{ asociacion.nombre }}</h1>
+        <p>{{ asociacion.descripcion }}</p>
+        {% if asociacion.direccion %}<p><strong>Ubicación:</strong> {{ asociacion.direccion }}</p>{% endif %}
+        {% if asociacion.telefono %}<p><strong>Teléfono:</strong> {{ asociacion.telefono }}</p>{% endif %}
+    </div>
+</div>
+<hr>
+<h3>Productos y servicios</h3>
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for p in productos %}
+    <div class="col">
+        <div class="card h-100">
+            <img src="{{ p.imagen }}" class="card-img-top" alt="{{ p.nombre }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ p.nombre }}</h5>
+                <p class="card-text">{{ p.descripcion }}</p>
+                {% if p.tipo %}<span class="badge bg-secondary">{{ p.tipo|capitalize }}</span>{% endif %}
+                <p class="mt-2">
+                    {% if p.tipo_precio == 'convenir' %}
+                    <strong>Precio a convenir</strong>
+                    {% else %}
+                    <strong>${{ p.precio }}</strong>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
