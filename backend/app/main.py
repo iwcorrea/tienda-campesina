@@ -228,7 +228,6 @@ def dashboard(request: Request):
             "tipo_precio": p[8] if len(p) > 8 else ""
         })
 
-    # ─── VALORACIONES DE LOS PRODUCTOS DEL USUARIO ───
     total_valoraciones = 0
     suma_estrellas = 0
     distribucion_estrellas = [0, 0, 0, 0, 0]
@@ -670,7 +669,7 @@ def valorar_producto(
 
     return RedirectResponse(url="/catalogo", status_code=303)
 
-# ─── ADMIN PANEL ─────────────────────────────────────
+# ─── ADMIN PANEL (LISTADO) ─────────────────────────
 @app.get("/admin", response_class=HTMLResponse)
 def admin_panel(request: Request):
     if not request.session.get("es_admin"):
@@ -694,8 +693,9 @@ def admin_panel(request: Request):
 
     return templates.TemplateResponse("admin.html", {"request": request, "asociaciones": asociaciones})
 
-@app.post("/admin/aprobar/{email}")
-def admin_aprobar(request: Request, email: str):
+# ─── TOGGLE ESTADO DE VERIFICACIÓN ─────────────────
+@app.post("/admin/toggle-estado/{email}")
+def admin_toggle_estado(request: Request, email: str):
     if not request.session.get("es_admin"):
         return RedirectResponse(url="/auth/login", status_code=303)
 
@@ -706,9 +706,11 @@ def admin_aprobar(request: Request, email: str):
             if i == 0:
                 continue
             if u[0] == email:
-                sheet_usr.update(f'L{i+1}:L{i+1}', [["1"]])
+                # Alternar estado: si es "1" pasa a "", si está vacío pasa a "1"
+                nuevo_estado = "" if u[11].strip() == "1" else "1"
+                sheet_usr.update(f'L{i+1}:L{i+1}', [[nuevo_estado]])
                 break
     except Exception as e:
-        logging.exception("Error al aprobar asociación")
+        logging.exception("Error al cambiar estado de asociación")
 
     return RedirectResponse(url="/admin", status_code=303)
