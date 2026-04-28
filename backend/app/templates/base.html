@@ -24,6 +24,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/catalogo">Catálogo</a>
                     </li>
+                    {% if request.session.get("es_admin") %}
+                    <li class="nav-item">
+                        <a class="nav-link text-warning fw-bold" href="/admin">🔧 Admin</a>
+                    </li>
+                    {% endif %}
                     {% if request.session.get("usuario") %}
                     <li class="nav-item">
                         <a class="nav-link" href="/panel">Panel</a>
