@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Editar Producto (Admin){% endblock %}
+{% block content %}
+<h2>Editar imagen de "{{ producto.nombre }}"</h2>
+
+<form method="post" action="/admin/producto/{{ producto.id }}/actualizar">
+    <div class="mb-3">
+        <label>URL de la imagen</label>
+        <input type="url" name="imagen_url" class="form-control" value="{{ producto.imagen_url }}">
+        {% if producto.imagen_url %}<img src="{{ producto.imagen_url }}" style="max-width:200px" class="mt-2">{% endif %}
+    </div>
+    <button type="submit" class="btn btn-success">Guardar</button>
+    <a href="/admin" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Archivos en Cloudinary{% endblock %}
+{% block content %}
+<h2>Archivos en Cloudinary – {{ resource_type|capitalize }}</h2>
+<p>
+    <a href="/admin" class="btn btn-secondary">⬅ Volver al admin</a>
+    <a href="/admin/archivos?resource_type=image" class="btn btn-sm btn-outline-primary">Imágenes</a>
+    <a href="/admin/archivos?resource_type=raw" class="btn btn-sm btn-outline-primary">Documentos</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Vista previa</th>
+            <th>Public ID</th>
+            <th>Tipo</th>
+            <th>Acción</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in recursos %}
+        <tr>
+            <td>
+                {% if resource_type == 'image' %}
+                <img src="{{ r.secure_url }}" style="max-width:80px; max-height:80px">
+                {% else %}
+                <a href="{{ r.secure_url }}" target="_blank">📄 Ver</a>
+                {% endif %}
+            </td>
+            <td><code>{{ r.public_id }}</code></td>
+            <td>{{ r.resource_type }}/{{ r.format }}</td>
+            <td>
+                <form method="post" action="/admin/archivos/eliminar" onsubmit="return confirm('¿Eliminar permanentemente?')">
+                    <input type="hidden" name="public_id" value="{{ r.public_id }}">
+                    <input type="hidden" name="resource_type" value="{{ resource_type }}">
+                    <button class="btn btn-sm btn-danger">🗑️ Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if next_cursor %}
+<a href="/admin/archivos?resource_type={{ resource_type }}&next_cursor={{ next_cursor }}" class="btn btn-outline-primary">Siguiente página</a>
+{% endif %}
+{% endblock %}

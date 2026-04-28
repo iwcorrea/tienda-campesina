@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Editar Asociación (Admin){% endblock %}
+{% block content %}
+<h2>Editar URLs de {{ perfil.nombre }}</h2>
+
+<form method="post" action="/admin/asociacion/{{ perfil.email }}/actualizar">
+    <div class="mb-3">
+        <label>Logo URL</label>
+        <input type="url" name="logo_url" class="form-control" value="{{ perfil.logo_url }}">
+        {% if perfil.logo_url %}<img src="{{ perfil.logo_url }}" style="max-width:100px" class="mt-2">{% endif %}
+    </div>
+    <div class="mb-3">
+        <label>Cámara de Comercio URL</label>
+        <input type="url" name="camara_url" class="form-control" value="{{ perfil.camara_comercio_url }}">
+    </div>
+    <div class="mb-3">
+        <label>RUT URL</label>
+        <input type="url" name="rut_url" class="form-control" value="{{ perfil.rut_url }}">
+    </div>
+    <button type="submit" class="btn btn-success">Guardar</button>
+    <a href="/admin" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}
