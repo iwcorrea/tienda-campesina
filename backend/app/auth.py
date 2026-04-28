@@ -6,10 +6,13 @@ from app.google_sheets import get_sheet
 import cloudinary.uploader
 import logging
 import datetime
+import os
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger("auth")
+
+ADMIN_EMAILS = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 
 @router.get("/login", response_class=HTMLResponse)
 def login_get(request: Request):
@@ -36,6 +39,13 @@ def login_post(request: Request, email: str = Form(...), password: str = Form(..
                         request.session["telefono"] = fila[6].strip()
                     if len(fila) > 11:
                         request.session["verificado"] = fila[11].strip()
+
+                    # ════ ADMIN ════
+                    if email.lower() in ADMIN_EMAILS:
+                        request.session["es_admin"] = True
+                        return RedirectResponse(url="/admin", status_code=303)
+                    # ═══════════════
+
                     return RedirectResponse(url="/panel", status_code=303)
                 else:
                     return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales incorrectas"})
@@ -74,52 +84,26 @@ def registro_post(
             if fila[0] == email:
                 return templates.TemplateResponse("registro.html", {"request": request, "error": "Este email ya está registrado."})
 
-        # Logo (imagen pública)
         logo_url = ""
         if logo and logo.filename:
             try:
-                result = cloudinary.uploader.upload(
-                    logo.file,
-                    folder="logos",
-                    filename=logo.filename,
-                    use_filename=True,
-                    unique_filename=True,
-                    access_mode="public"
-                )
+                result = cloudinary.uploader.upload(logo.file, folder="logos", filename=logo.filename, use_filename=True, unique_filename=True, access_mode="public")
                 logo_url = result.get("secure_url", "")
             except Exception:
                 pass
 
-        # Cámara de Comercio (PDF público)
         camara_url = ""
         if camara_comercio and camara_comercio.filename:
             try:
-                result = cloudinary.uploader.upload(
-                    camara_comercio.file,
-                    folder="documentos",
-                    resource_type="raw",
-                    filename=camara_comercio.filename,
-                    use_filename=True,
-                    unique_filename=True,
-                    access_mode="public"
-                )
+                result = cloudinary.uploader.upload(camara_comercio.file, folder="documentos", resource_type="raw", filename=camara_comercio.filename, use_filename=True, unique_filename=True, access_mode="public")
                 camara_url = result.get("secure_url", "")
             except Exception:
                 pass
 
-        # RUT (PDF público)
         rut_url = ""
         if rut and rut.filename:
             try:
-                result = cloudinary.uploader.upload(
-                    rut.file,
-                    folder="documentos",
-                    resource_type="raw",
-                    filename=rut.filename,
-                    use_filename=True,
-                    unique_filename=True,
-                    access_mode="public"
-                )
+                result = cloudinary.uploader.upload(rut.file, folder="documentos", resource_type="raw", filename=rut.filename, use_filename=True, unique_filename=True, access_mode="public")
                 rut_url = result.get("secure_url", "")
             except Exception:
                 pass

@@ -231,7 +231,7 @@ def dashboard(request: Request):
     # ─── VALORACIONES DE LOS PRODUCTOS DEL USUARIO ───
     total_valoraciones = 0
     suma_estrellas = 0
-    distribucion_estrellas = [0, 0, 0, 0, 0]  # índices 0-4 para 1-5 estrellas
+    distribucion_estrellas = [0, 0, 0, 0, 0]
     ultimas_valoraciones = []
 
     try:
@@ -669,3 +669,46 @@ def valorar_producto(
         pass
 
     return RedirectResponse(url="/catalogo", status_code=303)
+
+# ─── ADMIN PANEL ─────────────────────────────────────
+@app.get("/admin", response_class=HTMLResponse)
+def admin_panel(request: Request):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    asociaciones = []
+    try:
+        sheet_usr = get_sheet()
+        usuarios = sheet_usr.get_all_values()[1:]
+        for u in usuarios:
+            if u[0]:
+                asociaciones.append({
+                    "email": u[0],
+                    "nombre": u[3] if len(u) > 3 else u[0],
+                    "camara_url": u[9].strip() if len(u) > 9 and u[9].strip() else "",
+                    "rut_url": u[10].strip() if len(u) > 10 and u[10].strip() else "",
+                    "verificado": u[11].strip() if len(u) > 11 else ""
+                })
+    except Exception as e:
+        logging.exception("Error al leer asociaciones para admin")
+
+    return templates.TemplateResponse("admin.html", {"request": request, "asociaciones": asociaciones})
+
+@app.post("/admin/aprobar/{email}")
+def admin_aprobar(request: Request, email: str):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    try:
+        sheet_usr = get_sheet()
+        usuarios = sheet_usr.get_all_values()
+        for i, u in enumerate(usuarios):
+            if i == 0:
+                continue
+            if u[0] == email:
+                sheet_usr.update(f'L{i+1}:L{i+1}', [["1"]])
+                break
+    except Exception as e:
+        logging.exception("Error al aprobar asociación")
+
+    return RedirectResponse(url="/admin", status_code=303)
