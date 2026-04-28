@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Panel de Administración{% endblock %}
+{% block content %}
+<h2>Panel de Administración</h2>
+<p class="lead">Asociaciones registradas</p>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Nombre</th>
+                <th>Documentos</th>
+                <th>Estado</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in asociaciones %}
+            <tr>
+                <td>{{ a.email }}</td>
+                <td>{{ a.nombre }}</td>
+                <td>
+                    {% if a.camara_url %}
+                    <a href="{{ a.camara_url }}" target="_blank">Cámara de Comercio</a>
+                    {% else %}—{% endif %}
+                    |
+                    {% if a.rut_url %}
+                    <a href="{{ a.rut_url }}" target="_blank">RUT</a>
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    {% if a.verificado == '1' %}
+                    <span class="badge bg-success">Aprobado</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">Pendiente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if a.verificado != '1' %}
+                    <form method="post" action="/admin/aprobar/{{ a.email }}">
+                        <button type="submit" class="btn btn-sm btn-success">Aprobar</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
