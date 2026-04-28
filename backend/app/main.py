@@ -11,6 +11,7 @@ from app.auth import router as auth_router
 from app.google_sheets import get_sheet, get_products_sheet, get_valoraciones_sheet
 import cloudinary
 import cloudinary.uploader
+import cloudinary.api
 import datetime
 
 logging.basicConfig(level=logging.INFO)
@@ -40,13 +41,8 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(auth_router, prefix="/auth")
 
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
-    """
-    Elimina un recurso de Cloudinary a partir de su URL.
-    Incluimos la extensión para raw, y la omitimos para image/video (buena práctica de Cloudinary).
-    """
     if not url or "cloudinary.com" not in url:
         return
-
     try:
         parts = url.split("/")
         upload_idx = -1
@@ -57,14 +53,11 @@ def delete_cloudinary_asset(url: str, resource_type: str = "image"):
         if upload_idx == -1 or upload_idx + 2 >= len(parts):
             logging.warning(f"No se pudo extraer public_id de la URL: {url}")
             return
-
         public_id_with_ext = "/".join(parts[upload_idx + 2:])
-
         if resource_type in ("image", "video"):
             public_id = public_id_with_ext.rsplit(".", 1)[0]
         else:
             public_id = public_id_with_ext
-
         logging.info(f"Intentando eliminar: resource_type={resource_type}, public_id={public_id}")
         result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
         logging.info(f"Resultado de eliminación para {public_id}: {result}")
@@ -508,7 +501,6 @@ def actualizar_perfil(
             if i == 0:
                 continue
             if u[0] == email:
-                # ── Logo ──
                 if logo and logo.filename:
                     if u[7].strip():
                         delete_cloudinary_asset(u[7].strip(), resource_type="image")
@@ -525,7 +517,6 @@ def actualizar_perfil(
                     except Exception:
                         pass
 
-                # ── Cámara de Comercio ──
                 camara_url = u[9] if len(u) > 9 else ""
                 if camara_comercio and camara_comercio.filename:
                     if camara_url:
@@ -544,7 +535,6 @@ def actualizar_perfil(
                     except Exception:
                         pass
 
-                # ── RUT ──
                 rut_url = u[10] if len(u) > 10 else ""
                 if rut and rut.filename:
                     if rut_url:
@@ -563,7 +553,6 @@ def actualizar_perfil(
                     except Exception:
                         pass
 
-                # Actualizar fila completa (hasta columna L)
                 sheet_usr.update(f'A{i+1}:L{i+1}', [[
                     email,
                     u[1],
@@ -669,6 +658,14 @@ def valorar_producto(
 
     return RedirectResponse(url="/catalogo", status_code=303)
 
+# ═══════════════════════════════════════════════════
+#  ADMIN
+# ═══════════════════════════════════════════════════
+
+def verificar_admin(request: Request):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+
 # ─── ADMIN PANEL (LISTADO) ─────────────────────────
 @app.get("/admin", response_class=HTMLResponse)
 def admin_panel(request: Request):
@@ -693,7 +690,7 @@ def admin_panel(request: Request):
 
     return templates.TemplateResponse("admin.html", {"request": request, "asociaciones": asociaciones})
 
-# ─── TOGGLE ESTADO DE VERIFICACIÓN ─────────────────
+# ─── TOGGLE ESTADO ─────────────────────────────────
 @app.post("/admin/toggle-estado/{email}")
 def admin_toggle_estado(request: Request, email: str):
     if not request.session.get("es_admin"):
@@ -706,7 +703,6 @@ def admin_toggle_estado(request: Request, email: str):
             if i == 0:
                 continue
             if u[0] == email:
-                # Alternar estado: si es "1" pasa a "", si está vacío pasa a "1"
                 nuevo_estado = "" if u[11].strip() == "1" else "1"
                 sheet_usr.update(f'L{i+1}:L{i+1}', [[nuevo_estado]])
                 break
@@ -714,3 +710,162 @@ def admin_toggle_estado(request: Request, email: str):
         logging.exception("Error al cambiar estado de asociación")
 
     return RedirectResponse(url="/admin", status_code=303)
+
+# ─── ADMIN ARCHIVOS (LISTAR RECURSOS DE CLOUDINARY) ─
+@app.get("/admin/archivos", response_class=HTMLResponse)
+def admin_archivos(request: Request, resource_type: str = "image", next_cursor: str = None):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    recursos = []
+    cursor = None
+    try:
+        if resource_type in ("image", "raw"):
+            result = cloudinary.api.resources(
+                type="upload",
+                resource_type=resource_type,
+                max_results=50,
+                next_cursor=next_cursor
+            )
+            recursos = result.get("resources", [])
+            cursor = result.get("next_cursor", None)
+    except Exception as e:
+        logging.exception("Error al listar recursos de Cloudinary")
+
+    return templates.TemplateResponse("admin_archivos.html", {
+        "request": request,
+        "recursos": recursos,
+        "resource_type": resource_type,
+        "next_cursor": cursor
+    })
+
+# ─── ADMIN ELIMINAR ARCHIVO ────────────────────────
+@app.post("/admin/archivos/eliminar")
+def admin_eliminar_archivo(
+    request: Request,
+    public_id: str = Form(...),
+    resource_type: str = Form(...)
+):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    try:
+        result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+        logging.info(f"Admin eliminó recurso: {public_id} ({resource_type}) -> {result}")
+    except Exception as e:
+        logging.exception("Error al eliminar archivo desde admin")
+
+    return RedirectResponse(url=f"/admin/archivos?resource_type={resource_type}", status_code=303)
+
+# ─── ADMIN EDITAR ASOCIACIÓN (GET) ─────────────────
+@app.get("/admin/asociacion/{email}/editar", response_class=HTMLResponse)
+def admin_editar_asociacion_form(request: Request, email: str):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    perfil = None
+    try:
+        sheet_usr = get_sheet()
+        usuarios = sheet_usr.get_all_values()[1:]
+        for u in usuarios:
+            if u[0] == email:
+                perfil = {
+                    "email": u[0],
+                    "nombre": u[3] if len(u) > 3 else "",
+                    "descripcion": u[4] if len(u) > 4 else "",
+                    "direccion": u[5] if len(u) > 5 else "",
+                    "telefono": u[6] if len(u) > 6 else "",
+                    "logo_url": u[7].strip() if len(u) > 7 and u[7].strip() else "",
+                    "show_whatsapp": u[8].strip() if len(u) > 8 else "",
+                    "camara_comercio_url": u[9].strip() if len(u) > 9 and u[9].strip() else "",
+                    "rut_url": u[10].strip() if len(u) > 10 and u[10].strip() else ""
+                }
+                break
+    except Exception:
+        pass
+
+    if not perfil:
+        return RedirectResponse(url="/admin", status_code=303)
+
+    return templates.TemplateResponse("admin_editar_asociacion.html", {"request": request, "perfil": perfil})
+
+# ─── ADMIN ACTUALIZAR ASOCIACIÓN ───────────────────
+@app.post("/admin/asociacion/{email}/actualizar")
+def admin_actualizar_asociacion(
+    request: Request,
+    email: str,
+    logo_url: str = Form(""),
+    camara_url: str = Form(""),
+    rut_url: str = Form("")
+):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    try:
+        sheet_usr = get_sheet()
+        usuarios = sheet_usr.get_all_values()
+        for i, u in enumerate(usuarios):
+            if i == 0:
+                continue
+            if u[0] == email:
+                sheet_usr.update(f'H{i+1}:J{i+1}', [[
+                    logo_url.strip(),
+                    camara_url.strip(),
+                    rut_url.strip()
+                ]])
+                break
+    except Exception as e:
+        logging.exception("Error al actualizar URLs de asociación")
+
+    return RedirectResponse(url=f"/admin/asociacion/{email}/editar", status_code=303)
+
+# ─── ADMIN EDITAR PRODUCTO (GET) ───────────────────
+@app.get("/admin/producto/{producto_id}/editar", response_class=HTMLResponse)
+def admin_editar_producto_form(request: Request, producto_id: str):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    producto = None
+    try:
+        sheet_prod = get_products_sheet()
+        todos = sheet_prod.get_all_values()[1:]
+        for fila in todos:
+            if fila[0] == producto_id:
+                producto = {
+                    "id": fila[0],
+                    "nombre": fila[2] if len(fila) > 2 else "",
+                    "precio": fila[4] if len(fila) > 4 else "",
+                    "imagen_url": fila[5] if len(fila) > 5 else ""
+                }
+                break
+    except Exception:
+        pass
+
+    if not producto:
+        return RedirectResponse(url="/admin", status_code=303)
+
+    return templates.TemplateResponse("admin_editar_producto.html", {"request": request, "producto": producto})
+
+# ─── ADMIN ACTUALIZAR PRODUCTO ─────────────────────
+@app.post("/admin/producto/{producto_id}/actualizar")
+def admin_actualizar_producto(
+    request: Request,
+    producto_id: str,
+    imagen_url: str = Form("")
+):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    try:
+        sheet_prod = get_products_sheet()
+        todos = sheet_prod.get_all_values()
+        for i, fila in enumerate(todos):
+            if i == 0:
+                continue
+            if fila[0] == producto_id:
+                sheet_prod.update(f'F{i+1}:F{i+1}', [[imagen_url.strip()]])
+                break
+    except Exception:
+        pass
+
+    return RedirectResponse(url=f"/admin/producto/{producto_id}/editar", status_code=303)

@@ -2,8 +2,13 @@
 {% block title %}Panel de Administración{% endblock %}
 {% block content %}
 <h2>Panel de Administración</h2>
-<p class="lead">Asociaciones registradas</p>
 
+<div class="d-flex gap-2 mb-4">
+    <a href="/admin/archivos?resource_type=image" class="btn btn-outline-primary">🖼️ Imágenes</a>
+    <a href="/admin/archivos?resource_type=raw" class="btn btn-outline-primary">📁 Documentos</a>
+</div>
+
+<h4>Asociaciones registradas</h4>
 <div class="table-responsive">
     <table class="table table-striped">
         <thead>
@@ -19,10 +24,12 @@
             {% for a in asociaciones %}
             <tr>
                 <td>{{ a.email }}</td>
-                <td>{{ a.nombre }}</td>
+                <td>
+                    <a href="/admin/asociacion/{{ a.email }}/editar">{{ a.nombre }}</a>
+                </td>
                 <td>
                     {% if a.camara_url %}
-                    <a href="{{ a.camara_url }}" target="_blank">Cámara de Comercio</a>
+                    <a href="{{ a.camara_url }}" target="_blank">Cámara</a>
                     {% else %}—{% endif %}
                     |
                     {% if a.rut_url %}
@@ -37,8 +44,8 @@
                     {% endif %}
                 </td>
                 <td>
-                    <form method="post" action="/admin/toggle-estado/{{ a.email }}">
-                        <button type="submit" class="btn btn-sm {% if a.verificado == '1' %}btn-outline-danger{% else %}btn-success{% endif %}">
+                    <form method="post" action="/admin/toggle-estado/{{ a.email }}" style="display:inline">
+                        <button class="btn btn-sm {% if a.verificado == '1' %}btn-outline-danger{% else %}btn-success{% endif %}">
                             {% if a.verificado == '1' %}Desaprobar{% else %}Aprobar{% endif %}
                         </button>
                     </form>
