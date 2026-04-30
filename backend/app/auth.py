@@ -16,6 +16,24 @@ logger = logging.getLogger("auth")
 
 ADMIN_EMAILS = [e.strip().lower() for e in os.getenv("ADMIN_EMAILS", "").split(",") if e.strip()]
 
+def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
+    if not file or not file.filename:
+        return ""
+    try:
+        kwargs = dict(
+            folder=folder,
+            filename=file.filename,
+            use_filename=True,
+            unique_filename=True,
+            access_mode="public"
+        )
+        if raw:
+            kwargs["resource_type"] = "raw"
+        result = cloudinary.uploader.upload(file.file, **kwargs)
+        return result.get("secure_url", "")
+    except Exception:
+        return ""
+
 @router.get("/login", response_class=HTMLResponse)
 def login_get(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -102,21 +120,3 @@ def registro_post(
     except Exception as e:
         logger.exception("Error al guardar en base de datos")
         return templates.TemplateResponse("registro.html", {"request": request, "error": "No se pudo completar el registro. Intenta más tarde."})
-
-def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
-    if not file or not file.filename:
-        return ""
-    try:
-        kwargs = dict(
-            folder=folder,
-            filename=file.filename,
-            use_filename=True,
-            unique_filename=True,
-            access_mode="public"
-        )
-        if raw:
-            kwargs["resource_type"] = "raw"
-        result = cloudinary.uploader.upload(file.file, **kwargs)
-        return result.get("secure_url", "")
-    except Exception:
-        return ""

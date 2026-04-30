@@ -1,4 +1,3 @@
-# (Copia todo el contenido que viene a continuación)
 import logging
 import os
 import uuid
@@ -44,7 +43,6 @@ templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(auth_router, prefix="/auth")
 
-# Crear tablas al iniciar si no existen
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
@@ -70,17 +68,17 @@ def delete_cloudinary_asset(url: str, resource_type: str = "image"):
     except Exception as e:
         logging.exception("Error al eliminar recurso")
 
-# ─── HOME ───
+# ─── HOME ───────────────────────────────────────────────
 @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def inicio(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# ─── MENÚ ───
+# ─── MENÚ ──────────────────────────────────────────────
 @app.get("/menu", response_class=HTMLResponse)
 def menu(request: Request):
     return templates.TemplateResponse("menu.html", {"request": request})
 
-# ─── CATÁLOGO ───
+# ─── CATÁLOGO ─────────────────────────────────────────
 @app.get("/catalogo", response_class=HTMLResponse)
 def catalogo(
     request: Request,
@@ -110,7 +108,6 @@ def catalogo(
 
     productos = []
     for p in productos_db:
-        # Obtener valoraciones de este producto
         estrellas_data = db.query(
             func.avg(Valoracion.estrellas), func.count(Valoracion.id)
         ).filter(Valoracion.producto_id == p.id).first()
@@ -146,7 +143,7 @@ def catalogo(
         "total_productos": total_productos
     })
 
-# ─── DASHBOARD ───
+# ─── DASHBOARD ──────────────────────────────────────
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
     if "usuario" not in request.session:
@@ -172,7 +169,6 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             "tipo_precio": p.tipo_precio
         })
 
-    # Valoraciones de los productos
     total_valoraciones = 0
     suma_estrellas = 0
     distribucion_estrellas = [0, 0, 0, 0, 0]
@@ -210,7 +206,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         "ultimas_valoraciones": ultimas_valoraciones
     })
 
-# ─── PANEL ───
+# ─── PANEL ─────────────────────────────────────────
 @app.get("/panel", response_class=HTMLResponse)
 def panel(request: Request, db: Session = Depends(get_db)):
     if "usuario" not in request.session:
@@ -238,7 +234,7 @@ def panel(request: Request, db: Session = Depends(get_db)):
         "productos": productos_obj
     })
 
-# ─── CREAR PRODUCTO ───
+# ─── CREAR PRODUCTO ────────────────────────────────
 @app.post("/panel/producto")
 def crear_producto(
     request: Request,
@@ -282,7 +278,7 @@ def crear_producto(
     db.commit()
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── EDITAR PRODUCTO (GET) ───
+# ─── EDITAR PRODUCTO (GET) ─────────────────────────
 @app.get("/panel/producto/editar/{producto_id}", response_class=HTMLResponse)
 def editar_producto_form(request: Request, producto_id: str, db: Session = Depends(get_db)):
     if "usuario" not in request.session:
@@ -302,7 +298,7 @@ def editar_producto_form(request: Request, producto_id: str, db: Session = Depen
     }
     return templates.TemplateResponse("editar_producto.html", {"request": request, "producto": producto})
 
-# ─── ACTUALIZAR PRODUCTO ───
+# ─── ACTUALIZAR PRODUCTO ───────────────────────────
 @app.post("/panel/producto/actualizar/{producto_id}")
 def actualizar_producto(
     request: Request,
@@ -346,7 +342,7 @@ def actualizar_producto(
     db.commit()
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── ELIMINAR PRODUCTO ───
+# ─── ELIMINAR PRODUCTO ─────────────────────────────
 @app.post("/panel/producto/eliminar/{producto_id}")
 def eliminar_producto(request: Request, producto_id: str, db: Session = Depends(get_db)):
     if "usuario" not in request.session:
@@ -356,11 +352,12 @@ def eliminar_producto(request: Request, producto_id: str, db: Session = Depends(
     if p:
         if p.imagen_url:
             delete_cloudinary_asset(p.imagen_url, resource_type="image")
+        # cascade se encarga de las valoraciones gracias al modelo
         db.delete(p)
         db.commit()
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── EDITAR PERFIL (GET) ───
+# ─── EDITAR PERFIL (GET) ───────────────────────────
 @app.get("/panel/editar-perfil", response_class=HTMLResponse)
 def editar_perfil_form(request: Request, db: Session = Depends(get_db)):
     if "usuario" not in request.session:
@@ -382,7 +379,7 @@ def editar_perfil_form(request: Request, db: Session = Depends(get_db)):
     }
     return templates.TemplateResponse("editar_perfil.html", {"request": request, "perfil": perfil})
 
-# ─── ACTUALIZAR PERFIL ───
+# ─── ACTUALIZAR PERFIL ─────────────────────────────
 @app.post("/panel/editar-perfil")
 def actualizar_perfil(
     request: Request,
@@ -466,7 +463,7 @@ def actualizar_perfil(
     request.session["telefono"] = a.telefono
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── PERFIL PÚBLICO ───
+# ─── PERFIL PÚBLICO ────────────────────────────────
 @app.get("/asociacion/{email}", response_class=HTMLResponse)
 def perfil_asociacion(request: Request, email: str, db: Session = Depends(get_db)):
     a = db.query(Asociacion).filter(Asociacion.email == email, Asociacion.verificado == "1").first()
@@ -493,7 +490,7 @@ def perfil_asociacion(request: Request, email: str, db: Session = Depends(get_db
     }
     return templates.TemplateResponse("perfil.html", {"request": request, "asociacion": asociacion, "productos": productos})
 
-# ─── VALORAR PRODUCTO ───
+# ─── VALORAR PRODUCTO ──────────────────────────────
 @app.post("/valorar/{producto_id}")
 def valorar_producto(
     request: Request,
@@ -644,5 +641,3 @@ def admin_actualizar_producto(
         p.imagen_url = imagen_url.strip()
         db.commit()
     return RedirectResponse(url=f"/admin/producto/{producto_id}/editar", status_code=303)
-  
- 

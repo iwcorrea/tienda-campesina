@@ -18,10 +18,10 @@ class Asociacion(Base):
     direccion = Column(String, default="")
     telefono = Column(String, default="")
     logo_url = Column(Text, default="")
-    show_whatsapp = Column(String, default="")          # "1" o ""
+    show_whatsapp = Column(String, default="")
     camara_url = Column(Text, default="")
     rut_url = Column(Text, default="")
-    verificado = Column(String, default="")              # "1" o ""
+    verificado = Column(String, default="")
     fecha_registro = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     productos = relationship("Producto", back_populates="asociacion", cascade="all, delete-orphan")
@@ -35,11 +35,12 @@ class Producto(Base):
     descripcion = Column(Text, default="")
     precio = Column(Integer, default=0)
     imagen_url = Column(Text, default="")
-    tipo = Column(String, default="producto")            # "producto" o "servicio"
-    tipo_precio = Column(String, default="fijo")         # "fijo" o "convenir"
+    tipo = Column(String, default="producto")
+    tipo_precio = Column(String, default="fijo")
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     asociacion = relationship("Asociacion", back_populates="productos")
+    valoraciones = relationship("Valoracion", back_populates="producto", cascade="all, delete-orphan")
 
 class Valoracion(Base):
     __tablename__ = "valoraciones"
@@ -51,4 +52,4 @@ class Valoracion(Base):
     email_usuario = Column(String, default="")
     fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    producto = relationship("Producto")
+    producto = relationship("Producto", back_populates="valoraciones")
