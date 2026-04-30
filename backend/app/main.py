@@ -644,7 +644,8 @@ def admin_actualizar_producto(
         p.imagen_url = imagen_url.strip()
         db.commit()
     return RedirectResponse(url=f"/admin/producto/{producto_id}/editar", status_code=303)
-    # ═══════════ RUTA TEMPORAL DE MIGRACIÓN ═══════════
+  
+  # ═══════════ RUTA TEMPORAL DE MIGRACIÓN (CORREGIDA) ═══════════
 @app.get("/admin/migrar-sheets")
 def migrar_desde_render(request: Request, db: Session = Depends(get_db)):
     if not request.session.get("es_admin"):
@@ -653,19 +654,23 @@ def migrar_desde_render(request: Request, db: Session = Depends(get_db)):
     from app.google_sheets import get_sheet, get_products_sheet, get_valoraciones_sheet
     import uuid
 
-    # --- Migrar asociaciones (Sheet1) ---
+    # 1. Migrar asociaciones (solo si el email no existe ya)
     sheet_usr = get_sheet()
     usuarios = sheet_usr.get_all_values()[1:]
+    nuevos = 0
     for u in usuarios:
         if not u[0]:
             continue
+        email = u[0].strip()
+        if db.query(Asociacion).filter(Asociacion.email == email).first():
+            continue  # ya existe, lo salta
         while len(u) < 12:
             u.append("")
         a = Asociacion(
             id=str(uuid.uuid4()),
-            email=u[0],
+            email=email,
             hashed_password=u[1],
-            nombre=u[3] or u[0],
+            nombre=u[3] or email,
             descripcion=u[4] or "",
             direccion=u[5] or "",
             telefono=u[6] or "",
@@ -676,8 +681,10 @@ def migrar_desde_render(request: Request, db: Session = Depends(get_db)):
             verificado=u[11] or ""
         )
         db.add(a)
+        nuevos += 1
+    db.flush()  # para tener los IDs antes de productos
 
-    # --- Migrar productos ---
+    # 2. Migrar productos
     sheet_prod = get_products_sheet()
     productos = sheet_prod.get_all_values()[1:]
     for p in productos:
@@ -695,7 +702,7 @@ def migrar_desde_render(request: Request, db: Session = Depends(get_db)):
         )
         db.add(prod)
 
-    # --- Migrar valoraciones ---
+    # 3. Migrar valoraciones
     try:
         sheet_val = get_valoraciones_sheet()
         vals = sheet_val.get_all_values()[1:]
@@ -714,5 +721,5 @@ def migrar_desde_render(request: Request, db: Session = Depends(get_db)):
         pass
 
     db.commit()
-    return HTMLResponse("<h2>✅ Migración completada con éxito. Ya puedes cerrar esta página. Recuerda eliminar esta ruta del código.</h2>")
-# ═══════════════════════════════════════════════════
+    return HTMLResponse(f"<h2>✅ Migración completada con éxito. {nuevos} asociaciones nuevas insertadas.</h2>")
+# ════════════════════════════════════════════════════════
