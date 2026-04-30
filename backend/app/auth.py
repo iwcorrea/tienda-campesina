@@ -9,6 +9,7 @@ import cloudinary.uploader
 import logging
 import datetime
 import os
+import time
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -51,6 +52,7 @@ def login_post(request: Request, email: str = Form(...), password: str = Form(..
                 request.session["show_whatsapp"] = user.show_whatsapp
                 request.session["telefono"] = user.telefono
                 request.session["verificado"] = user.verificado
+                request.session["last_activity"] = time.time()
 
                 if email.lower() in ADMIN_EMAILS:
                     request.session["es_admin"] = True

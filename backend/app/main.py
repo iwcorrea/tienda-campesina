@@ -43,6 +43,25 @@ templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(auth_router, prefix="/auth")
 
+# ─── Middleware de tiempo de inactividad ──────────────
+from starlette.middleware.base import BaseHTTPMiddleware
+import time
+
+class SessionTimeoutMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.session.get("usuario"):
+            last_activity = request.session.get("last_activity", 0)
+            now = time.time()
+            if now - last_activity > 120:  # 2 minutos
+                request.session.clear()
+                return RedirectResponse(url="/auth/login", status_code=303)
+            request.session["last_activity"] = now
+        response = await call_next(request)
+        return response
+
+app.add_middleware(SessionTimeoutMiddleware)
+# ─────────────────────────────────────────────────────
+
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
@@ -352,7 +371,6 @@ def eliminar_producto(request: Request, producto_id: str, db: Session = Depends(
     if p:
         if p.imagen_url:
             delete_cloudinary_asset(p.imagen_url, resource_type="image")
-        # cascade se encarga de las valoraciones gracias al modelo
         db.delete(p)
         db.commit()
     return RedirectResponse(url="/panel", status_code=303)
@@ -642,7 +660,7 @@ def admin_actualizar_producto(
         db.commit()
     return RedirectResponse(url=f"/admin/producto/{producto_id}/editar", status_code=303)
 
-    # ─── CALCULADORA DE PRECIO JUSTO ──────────────────────
+# ─── CALCULADORA DE PRECIO JUSTO ──────────────────────
 @app.get("/calculadora", response_class=HTMLResponse)
 def calculadora_get(request: Request):
     return templates.TemplateResponse("calculadora.html", {"request": request})
@@ -670,4 +688,4 @@ def calculadora_post(
         "costo_transporte": costo_transporte,
         "margen_porcentaje": margen_porcentaje,
         "cantidad_producto": cantidad_producto
-    })    
+    })
