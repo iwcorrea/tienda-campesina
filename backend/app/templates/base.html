@@ -4,7 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Tienda Campesina{% endblock %}</title>
+
+    <!-- Favicon básico (navegadores de escritorio) -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+
+    <!-- Apple Touch Icon (iOS Safari) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+
+    <!-- Android Chrome -->
+    <link rel="manifest" href="/static/site.webmanifest">
+
+    <!-- Opcional: color de la barra de herramientas en Android -->
+    <meta name="theme-color" content="#2d6a4f">
+
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Estilos personalizados -->
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -42,9 +59,6 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/auth/registro">Registrarse</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/calculadora">Calculadora</a>
                     </li>
                     {% endif %}
                 </ul>
