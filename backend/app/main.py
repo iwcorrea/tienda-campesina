@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.auth import router as auth_router
 from app.database import engine, get_db, Base
@@ -16,6 +17,7 @@ import cloudinary.api
 import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+import time
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,6 +26,23 @@ app = FastAPI()
 cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
+
+# ─── Middleware de tiempo de inactividad ──────────────
+class SessionTimeoutMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        if request.session.get("usuario"):
+            last_activity = request.session.get("last_activity", 0)
+            now = time.time()
+            if now - last_activity > 120:  # 2 minutos
+                request.session.clear()
+                return RedirectResponse(url="/auth/login", status_code=303)
+            request.session["last_activity"] = now
+        response = await call_next(request)
+        return response
+
+# Añadimos este middleware ANTES que SessionMiddleware para que quede dentro de él
+app.add_middleware(SessionTimeoutMiddleware)
+
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
@@ -42,25 +61,6 @@ app.add_middleware(
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(auth_router, prefix="/auth")
-
-# ─── Middleware de tiempo de inactividad ──────────────
-from starlette.middleware.base import BaseHTTPMiddleware
-import time
-
-class SessionTimeoutMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.session.get("usuario"):
-            last_activity = request.session.get("last_activity", 0)
-            now = time.time()
-            if now - last_activity > 120:  # 2 minutos
-                request.session.clear()
-                return RedirectResponse(url="/auth/login", status_code=303)
-            request.session["last_activity"] = now
-        response = await call_next(request)
-        return response
-
-app.add_middleware(SessionTimeoutMiddleware)
-# ─────────────────────────────────────────────────────
 
 @app.on_event("startup")
 def on_startup():
