@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Calculadora de Precio Justo{% endblock %}
+{% block content %}
+<h2 class="mb-4">🧮 Calculadora de Precio Justo</h2>
+<p class="lead">Ingresa los costos de producción y obtén un precio sugerido para tus productos.</p>
+
+<form method="post" action="/calculadora" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">Costos de insumos ($)</label>
+        <input type="number" step="any" name="costos_insumos" class="form-control" value="{{ costos_insumos or 0 }}">
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Costo de mano de obra ($)</label>
+        <input type="number" step="any" name="costo_mano_obra" class="form-control" value="{{ costo_mano_obra or 0 }}">
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Costo de transporte ($)</label>
+        <input type="number" step="any" name="costo_transporte" class="form-control" value="{{ costo_transporte or 0 }}">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Margen deseado (%)</label>
+        <input type="number" step="any" name="margen_porcentaje" class="form-control" value="{{ margen_porcentaje or 20 }}">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Cantidad de producto (ej. kg)</label>
+        <input type="number" step="any" name="cantidad_producto" class="form-control" value="{{ cantidad_producto or 1 }}">
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-success btn-lg">Calcular precio</button>
+    </div>
+</form>
+
+{% if resultado is not none %}
+<div class="alert alert-success mt-4 fs-5">
+    💰 Precio sugerido por unidad: <strong>${{ resultado }}</strong>
+</div>
+{% endif %}
+{% endblock %}
