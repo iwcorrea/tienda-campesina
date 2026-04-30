@@ -641,3 +641,33 @@ def admin_actualizar_producto(
         p.imagen_url = imagen_url.strip()
         db.commit()
     return RedirectResponse(url=f"/admin/producto/{producto_id}/editar", status_code=303)
+
+    # ─── CALCULADORA DE PRECIO JUSTO ──────────────────────
+@app.get("/calculadora", response_class=HTMLResponse)
+def calculadora_get(request: Request):
+    return templates.TemplateResponse("calculadora.html", {"request": request})
+
+@app.post("/calculadora")
+def calculadora_post(
+    request: Request,
+    costos_insumos: float = Form(0.0),
+    costo_mano_obra: float = Form(0.0),
+    costo_transporte: float = Form(0.0),
+    margen_porcentaje: float = Form(20.0),
+    cantidad_producto: float = Form(1.0)
+):
+    costo_total = costos_insumos + costo_mano_obra + costo_transporte
+    if cantidad_producto <= 0:
+        cantidad_producto = 1.0
+    costo_unitario = costo_total / cantidad_producto
+    precio_sugerido = costo_unitario * (1 + margen_porcentaje / 100)
+    resultado = round(precio_sugerido, 2)
+    return templates.TemplateResponse("calculadora.html", {
+        "request": request,
+        "resultado": resultado,
+        "costos_insumos": costos_insumos,
+        "costo_mano_obra": costo_mano_obra,
+        "costo_transporte": costo_transporte,
+        "margen_porcentaje": margen_porcentaje,
+        "cantidad_producto": cantidad_producto
+    })    
