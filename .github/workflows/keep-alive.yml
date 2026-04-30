@@ -2,8 +2,7 @@ name: Keep Render alive
 
 on:
   schedule:
-    # Se ejecuta cada 10 minutos
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'   # cada 5 minutos
 
 jobs:
   ping:
@@ -11,4 +10,6 @@ jobs:
     steps:
       - name: Ping Tienda Campesina
         run: |
-          curl -s -o /dev/null -w "%{http_code}" https://tienda-campesina.onrender.com
+          curl -s -o /dev/null -w "HTTP status: %{http_code}\n" \
+          -H "User-Agent: Mozilla/5.0 (compatible; GitHubActionsBot/1.0)" \
+          https://tienda-campesina.onrender.com || true
