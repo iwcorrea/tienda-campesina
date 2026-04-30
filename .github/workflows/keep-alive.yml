@@ -1,0 +1,14 @@
+name: Keep Render alive
+
+on:
+  schedule:
+    # Se ejecuta cada 10 minutos
+    - cron: '*/10 * * * *'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Tienda Campesina
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" https://tienda-campesina.onrender.com
