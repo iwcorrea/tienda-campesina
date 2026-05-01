@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Configuración SEO y Diseño{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>🎨 Configuración SEO y Diseño</h2>
+    <a href="/admin" class="btn btn-outline-success">📊 Dashboard</a>
+</div>
+
+<form method="post" action="/admin/configuracion">
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>SEO básico</h5>
+            <div class="mb-3">
+                <label class="form-label">Título del sitio</label>
+                <input type="text" name="titulo_sitio" class="form-control" value="{{ config.titulo_sitio or 'Tienda Campesina' }}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descripción meta (para buscadores)</label>
+                <textarea name="descripcion_meta" class="form-control" rows="2" required>{{ config.descripcion_meta or '' }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>Diseño</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Color primario (navbar, botones)</label>
+                    <div class="input-group">
+                        <span class="input-group-text" style="background-color: {{ config.color_primario or '#2d6a4f' }}; width: 40px;"></span>
+                        <input type="color" name="color_primario" class="form-control" value="{{ config.color_primario or '#2d6a4f' }}">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Color de fondo</label>
+                    <div class="input-group">
+                        <span class="input-group-text" style="background-color: {{ config.color_fondo or '#f8faf5' }}; width: 40px;"></span>
+                        <input type="color" name="color_fondo" class="form-control" value="{{ config.color_fondo or '#f8faf5' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">Guardar cambios</button>
+</form>
+{% endblock %}

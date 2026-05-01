@@ -1,26 +1,23 @@
 /* ===== TIPOGRAFÍA Y ESTILOS BASE ===== */
 body {
   font-family: 'Nunito', system-ui, -apple-system, sans-serif;
-  background-color: #f8faf5;
+  background-color: var(--color-fondo, #f8faf5);
   color: #2f3e2f;
 }
 
 /* ===== COLORES ===== */
 :root {
+  --color-primario: #2d6a4f;
   --verde-oscuro: #1f3b2c;
-  --verde-medio: #2d6a4f;
   --verde-claro: #40916c;
   --verde-palido: #d8f3dc;
   --tierra: #a47148;
-  --tierra-claro: #e6ccb2;
   --amarillo-suave: #fefae0;
-  --blanco: #ffffff;
-  --gris-fondo: #f8faf5;
 }
 
 /* ===== NAVBAR ===== */
 .navbar {
-  background: linear-gradient(135deg, var(--verde-oscuro), var(--verde-medio));
+  background: linear-gradient(135deg, var(--color-primario), var(--verde-oscuro));
   padding-top: 0.6rem;
   padding-bottom: 0.6rem;
 }
@@ -74,19 +71,19 @@ body {
   transition: all 0.2s;
 }
 .btn-success {
-  background-color: var(--verde-medio);
-  border-color: var(--verde-medio);
+  background-color: var(--color-primario);
+  border-color: var(--color-primario);
 }
 .btn-success:hover {
   background-color: var(--verde-oscuro);
   border-color: var(--verde-oscuro);
 }
 .btn-outline-success {
-  border-color: var(--verde-medio);
-  color: var(--verde-medio);
+  border-color: var(--color-primario);
+  color: var(--color-primario);
 }
 .btn-outline-success:hover {
-  background-color: var(--verde-medio);
+  background-color: var(--color-primario);
   color: white;
 }
 
@@ -103,7 +100,7 @@ footer {
 /* ===== ENCABEZADOS ===== */
 h1, h2, h3, h4, h5 {
   font-weight: 700;
-  color: var(--verde-oscuro);
+  color: var(--color-primario);
 }
 
 /* ===== UTILIDADES ===== */

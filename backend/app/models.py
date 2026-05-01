@@ -54,7 +54,6 @@ class Valoracion(Base):
 
     producto = relationship("Producto", back_populates="valoraciones")
 
-# ─── NUEVOS MODELOS PARA BOLSA DE EMPLEO ──────────────
 class Persona(Base):
     __tablename__ = "personas"
 
@@ -91,3 +90,13 @@ class Aplicacion(Base):
 
     vacante = relationship("Vacante")
     persona = relationship("Persona")
+
+# ─── CONFIGURACIÓN SEO Y DISEÑO ─────────────────────
+class Configuracion(Base):
+    __tablename__ = "configuracion"
+
+    id = Column(Integer, primary_key=True, default=1)
+    titulo_sitio = Column(String, default="Tienda Campesina")
+    descripcion_meta = Column(Text, default="Plataforma para visibilizar asociaciones rurales.")
+    color_primario = Column(String, default="#2d6a4f")
+    color_fondo = Column(String, default="#f8faf5")

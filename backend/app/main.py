@@ -1,13 +1,14 @@
 import logging
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.auth import router as auth_router
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
+from app.models import Configuracion
 import cloudinary
 import time
 
@@ -47,6 +48,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Middleware de configuración SEO / Diseño ──────
+@app.middleware("http")
+async def cargar_configuracion(request: Request, call_next):
+    db = SessionLocal()
+    try:
+        config = db.query(Configuracion).first()
+        if not config:
+            config = Configuracion()
+            db.add(config)
+            db.commit()
+            db.refresh(config)
+        request.state.config = config
+    finally:
+        db.close()
+    response = await call_next(request)
+    return response
 
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

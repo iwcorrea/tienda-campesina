@@ -3,21 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Tienda Campesina{% endblock %}</title>
+    <title>{% block title %}{{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}</title>
+    <meta name="description" content="{{ request.state.config.descripcion_meta or 'Plataforma para asociaciones campesinas.' }}">
 
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <link rel="manifest" href="/static/site.webmanifest">
-    <meta name="theme-color" content="#2d6a4f">
+    <meta name="theme-color" content="{{ request.state.config.color_primario or '#2d6a4f' }}">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts para un toque fresco -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="/static/style.css">
+
+    <!-- Estilos dinámicos desde configuración -->
+    <style>
+        :root {
+            --color-primario: {{ request.state.config.color_primario or '#2d6a4f' }};
+            --color-fondo: {{ request.state.config.color_fondo or '#f8faf5' }};
+        }
+        body {
+            background-color: var(--color-fondo) !important;
+        }
+        .bg-success, .btn-success, .navbar.bg-success {
+            background-color: var(--color-primario) !important;
+            border-color: var(--color-primario) !important;
+        }
+        .btn-success {
+            background-color: var(--color-primario) !important;
+        }
+        .btn-outline-success {
+            border-color: var(--color-primario) !important;
+            color: var(--color-primario) !important;
+        }
+        .btn-outline-success:hover {
+            background-color: var(--color-primario) !important;
+            color: white !important;
+        }
+        .text-success {
+            color: var(--color-primario) !important;
+        }
+        .card-header.bg-success {
+            background-color: var(--color-primario) !important;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success sticky-top shadow-sm">
@@ -26,7 +59,7 @@
                 {% if request.session.get("logo_url") %}
                 <img src="{{ request.session.logo_url }}" alt="Logo" class="navbar-logo me-2" width="36" height="36">
                 {% endif %}
-                🌱 Tienda Campesina
+                🌱 {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -46,8 +79,16 @@
 
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
                         {% if request.session.get("es_admin") %}
-                        <li class="nav-item">
-                            <a class="nav-link px-3 text-warning fw-bold" href="/admin">🔧 Admin</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-warning fw-bold px-3" href="#" role="button" data-bs-toggle="dropdown">
+                                🔧 Admin
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/admin">📊 Dashboard</a></li>
+                                <li><a class="dropdown-item" href="/admin/asociaciones">🏢 Asociaciones</a></li>
+                                <li><a class="dropdown-item" href="/admin/archivos">📁 Archivos</a></li>
+                                <li><a class="dropdown-item" href="/admin/configuracion">🎨 Configuración</a></li>
+                            </ul>
                         </li>
                         {% endif %}
                         <li class="nav-item">
@@ -102,7 +143,7 @@
 
     <footer class="py-4 bg-success text-white text-center">
         <div class="container">
-            <p class="mb-1 fw-semibold">Tienda Campesina</p>
+            <p class="mb-1 fw-semibold">{{ request.state.config.titulo_sitio or 'Tienda Campesina' }}</p>
             <small>Apoyando la Reforma Agraria en Colombia 🇨🇴</small>
         </div>
     </footer>

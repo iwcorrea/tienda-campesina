@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from app.database import get_db
-from app.models import Asociacion, Producto, Persona, Vacante
+from app.models import Asociacion, Producto, Persona, Vacante, Configuracion
 import cloudinary
 import cloudinary.api
 import cloudinary.uploader
@@ -194,3 +194,36 @@ def admin_actualizar_producto(
         p.imagen_url = imagen_url.strip()
         db.commit()
     return RedirectResponse(url=f"/admin/producto/{producto_id}/editar", status_code=303)
+
+# ─── CONFIGURACIÓN SEO Y DISEÑO ─────────────────────
+@router.get("/admin/configuracion", response_class=HTMLResponse)
+def admin_configuracion_form(request: Request):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+    config = request.state.config
+    return templates.TemplateResponse("admin_configuracion.html", {
+        "request": request,
+        "config": config
+    })
+
+@router.post("/admin/configuracion")
+def admin_configuracion_guardar(
+    request: Request,
+    titulo_sitio: str = Form(...),
+    descripcion_meta: str = Form(...),
+    color_primario: str = Form(...),
+    color_fondo: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    if not request.session.get("es_admin"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+    config = db.query(Configuracion).first()
+    if not config:
+        config = Configuracion()
+        db.add(config)
+    config.titulo_sitio = titulo_sitio.strip()
+    config.descripcion_meta = descripcion_meta.strip()
+    config.color_primario = color_primario.strip()
+    config.color_fondo = color_fondo.strip()
+    db.commit()
+    return RedirectResponse(url="/admin/configuracion", status_code=303)
