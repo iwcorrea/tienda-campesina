@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Admin{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📊 Dashboard Administrativo</h2>
+    <div>
+        <a href="/admin/asociaciones" class="btn btn-outline-success me-2">🏢 Asociaciones</a>
+        <a href="/admin/archivos" class="btn btn-outline-success">📁 Archivos</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body text-center">
+                <h5>🏢 Asociaciones</h5>
+                <p class="display-4">{{ total_asociaciones }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info h-100">
+            <div class="card-body text-center">
+                <h5>📦 Productos</h5>
+                <p class="display-4">{{ total_productos }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body text-center">
+                <h5>👤 Personas</h5>
+                <p class="display-4">{{ total_personas }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-secondary h-100">
+            <div class="card-body text-center">
+                <h5>💼 Vacantes activas</h5>
+                <p class="display-4">{{ total_vacantes }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5>Asociaciones registradas por mes</h5>
+                <canvas id="chartAsociaciones"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5>Últimas asociaciones</h5>
+                <ul class="list-group list-group-flush">
+                    {% for a in ultimas_asociaciones %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ a.nombre }}</span>
+                        <span>
+                            <small class="text-muted me-3">{{ a.fecha_registro.strftime('%d/%m/%Y') }}</small>
+                            <a href="/admin/asociacion/{{ a.email }}/editar" class="btn btn-sm btn-outline-primary">Editar</a>
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5>Últimas vacantes</h5>
+                <table class="table table-sm">
+                    <thead>
+                        <tr><th>Cargo</th><th>Asociación</th><th>Fecha</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for v in ultimas_vacantes %}
+                        <tr>
+                            <td>{{ v.cargo }}</td>
+                            <td>{{ v.asociacion.nombre }}</td>
+                            <td>{{ v.fecha_publicacion.strftime('%d/%m/%Y') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('chartAsociaciones').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ labels_mes | tojson }},
+        datasets: [{
+            label: 'Nuevas asociaciones',
+            data: {{ data_mensual | tojson }},
+            backgroundColor: '#2d6a4f'
+        }]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
