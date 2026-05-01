@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Bolsa de Empleo Rural{% endblock %}
+{% block content %}
+<h2>🧑‍🌾 Bolsa de Empleo Rural</h2>
+<div class="row mt-4">
+    {% for v in vacantes %}
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ v.cargo }}</h5>
+                <p class="card-text">{{ v.descripcion[:150] }}{% if v.descripcion|length > 150 %}...{% endif %}</p>
+                <p><strong>Ubicación:</strong> {{ v.ubicacion or 'No especificada' }} | <strong>Salario:</strong> {{ v.salario or 'A convenir' }}</p>
+                <small class="text-muted">Publicado por {{ v.asociacion.nombre }} – Límite: {{ v.fecha_limite.strftime('%d/%m/%Y') }}</small>
+                <a href="/bolsa-empleo/{{ v.id }}" class="btn btn-sm btn-outline-success mt-2">Ver y aplicar</a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p>No hay vacantes disponibles en este momento.</p>
+    {% endfor %}
+</div>
+{% endblock %}

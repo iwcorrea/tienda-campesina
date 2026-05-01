@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Mi Perfil{% endblock %}
+{% block content %}
+<h2>Mi Perfil</h2>
+<p><strong>Nombre:</strong> {{ persona.nombre }}</p>
+<p><strong>Email:</strong> {{ persona.email }}</p>
+<p><strong>Teléfono:</strong> {{ persona.telefono or 'No registrado' }}</p>
+{% if persona.hoja_vida_url %}
+<p><a href="{{ persona.hoja_vida_url }}" target="_blank">Ver hoja de vida</a></p>
+{% endif %}
+
+<h4 class="mt-4">Actualizar datos</h4>
+<form action="/perfil/actualizar" method="post" enctype="multipart/form-data">
+    <input type="text" name="nombre" class="form-control mb-2" value="{{ persona.nombre }}" required>
+    <input type="text" name="telefono" class="form-control mb-2" value="{{ persona.telefono }}">
+    <label>Nueva hoja de vida (PDF)</label>
+    <input type="file" name="hoja_vida" class="form-control mb-2" accept=".pdf">
+    <button type="submit" class="btn btn-success mt-2">Guardar cambios</button>
+</form>
+
+<h4 class="mt-5">Mis postulaciones</h4>
+{% if aplicaciones %}
+<ul class="list-group">
+    {% for a in aplicaciones %}
+    <li class="list-group-item">{{ a.cargo }} – {{ a.asociacion }} ({{ a.fecha }})</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>Aún no te has postulado a ninguna vacante.</p>
+{% endif %}
+{% endblock %}

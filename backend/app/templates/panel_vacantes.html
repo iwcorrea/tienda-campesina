@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Mis Vacantes{% endblock %}
+{% block content %}
+<h2>Mis Vacantes</h2>
+<a href="/panel" class="btn btn-secondary mb-3">⬅ Volver al panel</a>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5>Nueva vacante</h5>
+        <form action="/panel/vacantes/crear" method="post">
+            <div class="mb-3">
+                <input type="text" name="cargo" class="form-control" placeholder="Cargo" required>
+            </div>
+            <div class="mb-3">
+                <textarea name="descripcion" class="form-control" rows="3" placeholder="Descripción del cargo"></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" name="ubicacion" class="form-control mb-2" placeholder="Ubicación">
+                </div>
+                <div class="col-md-4">
+                    <input type="number" name="salario" class="form-control mb-2" placeholder="Salario (COP)">
+                </div>
+                <div class="col-md-4">
+                    <input type="date" name="fecha_limite" class="form-control mb-2" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success">Publicar vacante</button>
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <thead><tr><th>Cargo</th><th>Ubicación</th><th>Límite</th><th>Postulantes</th><th>Acción</th></tr></thead>
+    <tbody>
+        {% for v in vacantes %}
+        <tr>
+            <td>{{ v.cargo }}</td>
+            <td>{{ v.ubicacion or 'N/A' }}</td>
+            <td>{{ v.fecha_limite.strftime('%d/%m/%Y') }}</td>
+            <td><a href="/panel/vacantes/{{ v.id }}/postulantes">Ver postulantes</a></td>
+            <td>
+                <form action="/panel/vacantes/eliminar/{{ v.id }}" method="post">
+                    <button class="btn btn-sm btn-outline-danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

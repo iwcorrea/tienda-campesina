@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Postulantes a {{ vacante.cargo }}{% endblock %}
+{% block content %}
+<h2>Postulantes a {{ vacante.cargo }}</h2>
+<a href="/panel/vacantes" class="btn btn-secondary mb-3">⬅ Volver a vacantes</a>
+
+{% if postulantes %}
+<ul class="list-group">
+    {% for p in postulantes %}
+    <li class="list-group-item">
+        <strong>{{ p.nombre }}</strong>
+        {% if p.hoja_vida_url %}<a href="{{ p.hoja_vida_url }}" target="_blank">📄 Ver hoja de vida</a>{% endif %}
+        <br><small>Email: {{ p.email }} | Tel: {{ p.telefono }}</small>
+        <br><small>Mensaje: {{ p.mensaje or 'Sin mensaje' }}</small>
+        <br><small class="text-muted">Aplicó el {{ p.fecha }}</small>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No hay postulaciones aún.</p>
+{% endif %}
+{% endblock %}

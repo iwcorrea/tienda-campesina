@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ vacante.cargo }} | Bolsa de Empleo{% endblock %}
+{% block content %}
+<h2>{{ vacante.cargo }}</h2>
+<p><strong>Publicado por:</strong> {{ vacante.asociacion.nombre }}</p>
+<p><strong>Ubicación:</strong> {{ vacante.ubicacion or 'No especificada' }}</p>
+<p><strong>Salario:</strong> {{ vacante.salario or 'A convenir' }}</p>
+<p><strong>Fecha límite:</strong> {{ vacante.fecha_limite.strftime('%d/%m/%Y') }}</p>
+<hr>
+<p>{{ vacante.descripcion }}</p>
+
+{% if request.session.get("tipo_usuario") == "persona" %}
+<form action="/aplicar/{{ vacante.id }}" method="post">
+    <div class="mb-3">
+        <label>Mensaje (opcional)</label>
+        <textarea name="mensaje" class="form-control" rows="3"></textarea>
+    </div>
+    <button type="submit" class="btn btn-success">Postularme</button>
+</form>
+{% elif not request.session.get("usuario") %}
+<p><a href="/auth/login" class="btn btn-outline-success">Inicia sesión para postularte</a></p>
+{% else %}
+<p>Esta sección solo está disponible para usuarios registrados como persona.</p>
+{% endif %}
+<a href="/bolsa-empleo" class="btn btn-secondary mt-2">← Volver a la bolsa</a>
+{% endblock %}
