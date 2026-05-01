@@ -5,29 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Tienda Campesina{% endblock %}</title>
 
-    <!-- Favicon básico -->
+    <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
-
-    <!-- Apple Touch Icon (iOS Safari) -->
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
-
-    <!-- Android Chrome -->
     <link rel="manifest" href="/static/site.webmanifest">
     <meta name="theme-color" content="#2d6a4f">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <!-- Google Fonts para un toque fresco -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Estilos personalizados -->
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-success mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success sticky-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="/">
+            <a class="navbar-brand fw-bold fs-4" href="/">
                 {% if request.session.get("logo_url") %}
-                <img src="{{ request.session.logo_url }}" alt="Logo" class="navbar-logo me-2" width="32" height="32">
+                <img src="{{ request.session.logo_url }}" alt="Logo" class="navbar-logo me-2" width="36" height="36">
                 {% endif %}
                 🌱 Tienda Campesina
             </a>
@@ -35,75 +32,67 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <!-- Enlaces siempre visibles para cualquier usuario -->
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    <!-- Enlaces públicos -->
                     <li class="nav-item">
-                        <a class="nav-link" href="/catalogo">Catálogo</a>
+                        <a class="nav-link px-3" href="/catalogo">📦 Catálogo</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/calculadora">Calculadora</a>
+                        <a class="nav-link px-3" href="/calculadora">🧮 Calculadora</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/bolsa-empleo">Bolsa de Empleo</a>
+                        <a class="nav-link px-3" href="/bolsa-empleo">💼 Bolsa de Empleo</a>
                     </li>
 
-                    <!-- ============================================= -->
-                    <!-- BLOQUE CONDICIONAL SEGÚN EL TIPO DE USUARIO -->
-                    <!-- ============================================= -->
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
-
-                        <!-- ADMIN: si además es admin, mostramos el enlace de admin -->
                         {% if request.session.get("es_admin") %}
                         <li class="nav-item">
-                            <a class="nav-link text-warning fw-bold" href="/admin">🔧 Admin</a>
+                            <a class="nav-link px-3 text-warning fw-bold" href="/admin">🔧 Admin</a>
                         </li>
                         {% endif %}
-
                         <li class="nav-item">
-                            <a class="nav-link" href="/panel">Panel</a>
+                            <a class="nav-link px-3" href="/panel">🗂️ Panel</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/panel/vacantes">Vacantes</a>
+                            <a class="nav-link px-3" href="/panel/vacantes">📋 Vacantes</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-warning" href="/auth/logout">Cerrar sesión</a>
+                            <a class="nav-link px-3 text-warning" href="/auth/logout">🚪 Cerrar sesión</a>
                         </li>
-
                     {% elif request.session.get("tipo_usuario") == "persona" %}
-
                         <li class="nav-item">
-                            <a class="nav-link" href="/perfil">Perfil</a>
+                            <a class="nav-link px-3" href="/perfil">👤 Perfil</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-warning" href="/auth/logout">Cerrar sesión</a>
+                            <a class="nav-link px-3 text-warning" href="/auth/logout">🚪 Cerrar sesión</a>
                         </li>
-
                     {% else %}
-                        <!-- USUARIO NO AUTENTICADO -->
                         <li class="nav-item">
-                            <a class="nav-link" href="/auth/login">Iniciar sesión</a>
+                            <a class="nav-link px-3" href="/auth/login">🔐 Iniciar sesión</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/auth/registro">Registrar asociación</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle px-3" href="#" role="button" data-bs-toggle="dropdown">
+                                ✨ Registro
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/auth/registro">🏢 Registrar asociación</a></li>
+                                <li><a class="dropdown-item" href="/auth/registro-persona">🧑 Registrar persona</a></li>
+                            </ul>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/auth/registro-persona">Registro persona</a>
-                        </li>
-
                     {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
 
-    <main class="container">
+    <main class="container py-4">
         {% if request.session.get("usuario") %}
-        <div class="alert alert-success d-flex justify-content-between align-items-center">
+        <div class="alert alert-success d-flex justify-content-between align-items-center rounded-3">
             <span>
                 {% if request.session.get("logo_url") %}
-                <img src="{{ request.session.logo_url }}" class="logo-mini me-2" width="24" height="24">
+                <img src="{{ request.session.logo_url }}" class="logo-mini me-2 rounded-circle" width="28" height="28">
                 {% endif %}
-                Conectado como <strong>{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</strong>
+                👋 Conectado como <strong>{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</strong>
             </span>
         </div>
         {% endif %}
@@ -111,9 +100,10 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="mt-5 py-3 bg-light text-center text-muted">
+    <footer class="py-4 bg-success text-white text-center">
         <div class="container">
-            <small>Tienda Campesina – Apoyando la Reforma Agraria en Colombia</small>
+            <p class="mb-1 fw-semibold">Tienda Campesina</p>
+            <small>Apoyando la Reforma Agraria en Colombia 🇨🇴</small>
         </div>
     </footer>
 
