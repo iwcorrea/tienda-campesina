@@ -11,8 +11,10 @@ from app.database import engine, Base
 import cloudinary
 import time
 
-# Routers
+# Routers existentes
 from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
+# NUEVOS routers
+from app.routers import personas, empleos
 
 logging.basicConfig(level=logging.INFO)
 
@@ -60,8 +62,11 @@ app.include_router(asociacion.router)
 app.include_router(valoraciones.router)
 app.include_router(admin.router)
 app.include_router(calculadora.router)
+# NUEVOS
+app.include_router(personas.router)
+app.include_router(empleos.router)
 
-# Utilidad para eliminar assets de Cloudinary (usada por varios routers)
+# Utilidad para eliminar assets de Cloudinary
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
     if not url or "cloudinary.com" not in url:
         return
