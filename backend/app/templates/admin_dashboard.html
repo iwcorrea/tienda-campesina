@@ -62,7 +62,13 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>{{ a.nombre }}</span>
                         <span>
-                            <small class="text-muted me-3">{{ a.fecha_registro.strftime('%d/%m/%Y') }}</small>
+                            <small class="text-muted me-3">
+                                {% if a.fecha_registro %}
+                                    {{ a.fecha_registro.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    Sin fecha
+                                {% endif %}
+                            </small>
                             <a href="/admin/asociacion/{{ a.email }}/editar" class="btn btn-sm btn-outline-primary">Editar</a>
                         </span>
                     </li>
@@ -87,7 +93,13 @@
                         <tr>
                             <td>{{ v.cargo }}</td>
                             <td>{{ v.asociacion.nombre }}</td>
-                            <td>{{ v.fecha_publicacion.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if v.fecha_publicacion %}
+                                    {{ v.fecha_publicacion.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    Sin fecha
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
