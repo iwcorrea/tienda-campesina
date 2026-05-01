@@ -36,7 +36,7 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <!-- Enlaces siempre visibles -->
+                    <!-- Enlaces siempre visibles para cualquier usuario -->
                     <li class="nav-item">
                         <a class="nav-link" href="/catalogo">Catálogo</a>
                     </li>
@@ -47,13 +47,18 @@
                         <a class="nav-link" href="/bolsa-empleo">Bolsa de Empleo</a>
                     </li>
 
-                    <!-- Enlaces según tipo de usuario -->
+                    <!-- ============================================= -->
+                    <!-- BLOQUE CONDICIONAL SEGÚN EL TIPO DE USUARIO -->
+                    <!-- ============================================= -->
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
+
+                        <!-- ADMIN: si además es admin, mostramos el enlace de admin -->
                         {% if request.session.get("es_admin") %}
                         <li class="nav-item">
                             <a class="nav-link text-warning fw-bold" href="/admin">🔧 Admin</a>
                         </li>
                         {% endif %}
+
                         <li class="nav-item">
                             <a class="nav-link" href="/panel">Panel</a>
                         </li>
@@ -63,15 +68,18 @@
                         <li class="nav-item">
                             <a class="nav-link text-warning" href="/auth/logout">Cerrar sesión</a>
                         </li>
+
                     {% elif request.session.get("tipo_usuario") == "persona" %}
+
                         <li class="nav-item">
                             <a class="nav-link" href="/perfil">Perfil</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-warning" href="/auth/logout">Cerrar sesión</a>
                         </li>
+
                     {% else %}
-                        <!-- Usuario NO logueado -->
+                        <!-- USUARIO NO AUTENTICADO -->
                         <li class="nav-item">
                             <a class="nav-link" href="/auth/login">Iniciar sesión</a>
                         </li>
@@ -81,6 +89,7 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/auth/registro-persona">Registro persona</a>
                         </li>
+
                     {% endif %}
                 </ul>
             </div>
