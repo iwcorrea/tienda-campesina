@@ -31,7 +31,7 @@ class SessionTimeoutMiddleware(BaseHTTPMiddleware):
         if request.session.get("usuario"):
             last_activity = request.session.get("last_activity", 0)
             now = time.time()
-            if now - last_activity > 120:
+            if now - last_activity > 300: # 300 segundos = 5 minutos
                 request.session.clear()
                 from fastapi.responses import RedirectResponse
                 return RedirectResponse(url="/auth/login", status_code=303)
