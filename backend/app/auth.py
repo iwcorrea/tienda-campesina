@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import bcrypt
 from app.database import get_db
-from app.models import Asociacion
+from app.models import Asociacion, Persona
 import cloudinary.uploader
 import logging
 import datetime
@@ -35,6 +35,7 @@ def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
     except Exception:
         return ""
 
+# ─── LOGIN UNIFICADO ──────────────────────────────────
 @router.get("/login", response_class=HTMLResponse)
 def login_get(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -42,25 +43,35 @@ def login_get(request: Request):
 @router.post("/login")
 def login_post(request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     try:
-        user = db.query(Asociacion).filter(Asociacion.email == email).first()
-        if user:
+        # Buscar en asociaciones
+        asoc = db.query(Asociacion).filter(Asociacion.email == email).first()
+        if asoc:
             password_bytes = password.encode("utf-8")[:72]
-            if bcrypt.checkpw(password_bytes, user.hashed_password.encode("utf-8")):
-                request.session["usuario"] = user.email
-                request.session["nombre_asociacion"] = user.nombre
-                request.session["logo_url"] = user.logo_url
-                request.session["show_whatsapp"] = user.show_whatsapp
-                request.session["telefono"] = user.telefono
-                request.session["verificado"] = user.verificado
+            if bcrypt.checkpw(password_bytes, asoc.hashed_password.encode("utf-8")):
+                request.session["usuario"] = asoc.email
+                request.session["tipo_usuario"] = "asociacion"
+                request.session["nombre_usuario"] = asoc.nombre
+                request.session["logo_url"] = asoc.logo_url or ""
+                request.session["show_whatsapp"] = asoc.show_whatsapp
+                request.session["telefono"] = asoc.telefono
+                request.session["verificado"] = asoc.verificado
                 request.session["last_activity"] = time.time()
-
                 if email.lower() in ADMIN_EMAILS:
                     request.session["es_admin"] = True
                     return RedirectResponse(url="/admin", status_code=303)
-
                 return RedirectResponse(url="/panel", status_code=303)
-            else:
-                return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales incorrectas"})
+
+        # Buscar en personas
+        persona = db.query(Persona).filter(Persona.email == email).first()
+        if persona:
+            password_bytes = password.encode("utf-8")[:72]
+            if bcrypt.checkpw(password_bytes, persona.hashed_password.encode("utf-8")):
+                request.session["usuario"] = persona.email
+                request.session["tipo_usuario"] = "persona"
+                request.session["nombre_usuario"] = persona.nombre
+                request.session["last_activity"] = time.time()
+                return RedirectResponse(url="/perfil", status_code=303)
+
         return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales incorrectas"})
     except Exception as e:
         logger.exception("Error en login_post")
@@ -71,12 +82,18 @@ def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/", status_code=303)
 
+# ─── REGISTRO DE ASOCIACIÓN ──────────────────────────
 @router.get("/registro", response_class=HTMLResponse)
-def registro_get(request: Request):
+def registro_asociacion_get(request: Request):
+    if request.session.get("usuario"):
+        if request.session.get("tipo_usuario") == "asociacion":
+            return RedirectResponse(url="/panel", status_code=303)
+        elif request.session.get("tipo_usuario") == "persona":
+            return RedirectResponse(url="/perfil", status_code=303)
     return templates.TemplateResponse("registro.html", {"request": request})
 
 @router.post("/registro")
-def registro_post(
+def registro_asociacion_post(
     request: Request,
     email: str = Form(...),
     password: str = Form(...),
@@ -90,35 +107,58 @@ def registro_post(
     rut: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
-    try:
-        if db.query(Asociacion).filter(Asociacion.email == email).first():
-            return templates.TemplateResponse("registro.html", {"request": request, "error": "Este email ya está registrado."})
+    if db.query(Asociacion).filter(Asociacion.email == email).first() or db.query(Persona).filter(Persona.email == email).first():
+        return templates.TemplateResponse("registro.html", {"request": request, "error": "Este email ya está registrado."})
 
-        logo_url = upload_file_cloudinary(logo, "logos")
-        camara_url = upload_file_cloudinary(camara_comercio, "documentos", raw=True)
-        rut_url = upload_file_cloudinary(rut, "documentos", raw=True)
+    logo_url = upload_file_cloudinary(logo, "logos")
+    camara_url = upload_file_cloudinary(camara_comercio, "documentos", raw=True)
+    rut_url = upload_file_cloudinary(rut, "documentos", raw=True)
 
-        hashed = bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
+    hashed = bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
+    nueva = Asociacion(
+        email=email, hashed_password=hashed, nombre=nombre_asociacion,
+        descripcion=descripcion or "", direccion=direccion or "", telefono=telefono or "",
+        logo_url=logo_url, show_whatsapp="1" if show_whatsapp=="1" else "",
+        camara_url=camara_url, rut_url=rut_url, verificado=""
+    )
+    db.add(nueva)
+    db.commit()
+    logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)
+    return RedirectResponse(url="/auth/login", status_code=303)
 
-        nueva = Asociacion(
-            email=email,
-            hashed_password=hashed,
-            nombre=nombre_asociacion,
-            descripcion=descripcion or "",
-            direccion=direccion or "",
-            telefono=telefono or "",
-            logo_url=logo_url,
-            show_whatsapp="1" if show_whatsapp == "1" else "",
-            camara_url=camara_url,
-            rut_url=rut_url,
-            verificado=""
-        )
-        db.add(nueva)
-        db.commit()
+# ─── REGISTRO DE PERSONA ──────────────────────────────
+@router.get("/registro-persona", response_class=HTMLResponse)
+def registro_persona_get(request: Request):
+    if request.session.get("usuario"):
+        if request.session.get("tipo_usuario") == "persona":
+            return RedirectResponse(url="/perfil", status_code=303)
+        elif request.session.get("tipo_usuario") == "asociacion":
+            return RedirectResponse(url="/panel", status_code=303)
+    return templates.TemplateResponse("registro_persona.html", {"request": request})
 
-        logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)
-        return RedirectResponse(url="/auth/login", status_code=303)
+@router.post("/registro-persona")
+def registro_persona_post(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    nombre: str = Form(...),
+    telefono: str = Form(None),
+    hoja_vida: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    if db.query(Asociacion).filter(Asociacion.email == email).first() or db.query(Persona).filter(Persona.email == email).first():
+        return templates.TemplateResponse("registro_persona.html", {"request": request, "error": "Este email ya está registrado."})
 
-    except Exception as e:
-        logger.exception("Error al guardar en base de datos")
-        return templates.TemplateResponse("registro.html", {"request": request, "error": "No se pudo completar el registro. Intenta más tarde."})
+    hoja_url = ""
+    if hoja_vida and hoja_vida.filename:
+        hoja_url = upload_file_cloudinary(hoja_vida, "hojas_vida", raw=True)
+
+    hashed = bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
+    nueva_persona = Persona(
+        email=email, hashed_password=hashed, nombre=nombre,
+        telefono=telefono or "", hoja_vida_url=hoja_url
+    )
+    db.add(nueva_persona)
+    db.commit()
+    logger.info("Persona registrada: %s (%s)", nombre, email)
+    return RedirectResponse(url="/auth/login", status_code=303)

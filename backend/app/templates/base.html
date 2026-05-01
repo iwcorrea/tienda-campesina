@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Tienda Campesina{% endblock %}</title>
 
-    <!-- Favicon básico (navegadores de escritorio) -->
+    <!-- Favicon básico -->
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
 
@@ -14,8 +14,6 @@
 
     <!-- Android Chrome -->
     <link rel="manifest" href="/static/site.webmanifest">
-
-    <!-- Opcional: color de la barra de herramientas en Android -->
     <meta name="theme-color" content="#2d6a4f">
 
     <!-- Bootstrap CSS -->
@@ -38,31 +36,51 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    <!-- Enlaces siempre visibles -->
                     <li class="nav-item">
                         <a class="nav-link" href="/catalogo">Catálogo</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/calculadora">Calculadora</a>
                     </li>
-                    {% if request.session.get("es_admin") %}
                     <li class="nav-item">
-                        <a class="nav-link text-warning fw-bold" href="/admin">🔧 Admin</a>
+                        <a class="nav-link" href="/bolsa-empleo">Bolsa de Empleo</a>
                     </li>
-                    {% endif %}
-                    {% if request.session.get("usuario") %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/panel">Panel</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-warning" href="/auth/logout">Cerrar sesión</a>
-                    </li>
+
+                    <!-- Enlaces según tipo de usuario -->
+                    {% if request.session.get("tipo_usuario") == "asociacion" %}
+                        {% if request.session.get("es_admin") %}
+                        <li class="nav-item">
+                            <a class="nav-link text-warning fw-bold" href="/admin">🔧 Admin</a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/panel">Panel</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/panel/vacantes">Vacantes</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-warning" href="/auth/logout">Cerrar sesión</a>
+                        </li>
+                    {% elif request.session.get("tipo_usuario") == "persona" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/perfil">Perfil</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-warning" href="/auth/logout">Cerrar sesión</a>
+                        </li>
                     {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/auth/login">Iniciar sesión</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/auth/registro">Registrarse</a>
-                    </li>
+                        <!-- Usuario NO logueado -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="/auth/login">Iniciar sesión</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/auth/registro">Registrar asociación</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/auth/registro-persona">Registro persona</a>
+                        </li>
                     {% endif %}
                 </ul>
             </div>
@@ -76,7 +94,7 @@
                 {% if request.session.get("logo_url") %}
                 <img src="{{ request.session.logo_url }}" class="logo-mini me-2" width="24" height="24">
                 {% endif %}
-                Conectado como <strong>{{ request.session.get("nombre_asociacion", request.session["usuario"]) }}</strong>
+                Conectado como <strong>{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</strong>
             </span>
         </div>
         {% endif %}
