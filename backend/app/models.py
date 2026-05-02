@@ -151,7 +151,7 @@ class Configuracion(Base):
     menu_enlace_extra = Column(String, default="")
     menu_url_extra = Column(String, default="")
 
-    class Transportador(Base):
+class Transportador(Base):
     __tablename__ = "transportadores"
 
     id = Column(String, primary_key=True, default=generate_uuid)
