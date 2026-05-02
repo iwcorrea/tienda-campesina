@@ -1,6 +1,37 @@
 {% extends "base.html" %}
-{% block title %}{{ vacante.cargo }} | Bolsa de Empleo{% endblock %}
+{% block title %}{{ vacante.cargo }} en {{ vacante.asociacion.nombre }} | Bolsa de Empleo Rural{% endblock %}
+{% block meta_description %}Vacante: {{ vacante.cargo }} en {{ vacante.asociacion.nombre }}. {{ vacante.descripcion[:150] }}{% endblock %}
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "JobPosting",
+  "title": "{{ vacante.cargo }}",
+  "description": "{{ vacante.descripcion }}",
+  "datePosted": "{{ vacante.fecha_publicacion.strftime('%Y-%m-%d') if vacante.fecha_publicacion else '' }}",
+  "validThrough": "{{ vacante.fecha_limite.strftime('%Y-%m-%d') if vacante.fecha_limite else '' }}",
+  "hiringOrganization": {
+    "@type": "Organization",
+    "name": "{{ vacante.asociacion.nombre }}"
+  },
+  "jobLocation": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "{{ vacante.ubicacion }}"
+    }
+  }
+}
+</script>
+{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="/bolsa-empleo">Bolsa de Empleo</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ vacante.cargo }}</li>
+  </ol>
+</nav>
 <h2>{{ vacante.cargo }}</h2>
 <p><strong>Publicado por:</strong> {{ vacante.asociacion.nombre }}</p>
 <p><strong>Ubicación:</strong> {{ vacante.ubicacion or 'No especificada' }}</p>

@@ -1,6 +1,38 @@
 {% extends "base.html" %}
-{% block title %}{{ asociacion.nombre }} | Tienda Campesina{% endblock %}
+{% block title %}{{ asociacion.nombre }} | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block meta_description %}{{ asociacion.descripcion or 'Conoce más sobre esta asociación campesina y sus productos.' }}{% endblock %}
+{% block og_image %}{{ asociacion.logo_url or 'https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png' }}{% endblock %}
+
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "{{ asociacion.nombre }}",
+  "description": "{{ asociacion.descripcion }}",
+  "url": "{{ request.url.scheme }}://{{ request.url.hostname }}/asociacion/{{ asociacion.email }}",
+  "logo": "{{ asociacion.logo_url }}",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "{{ asociacion.direccion }}"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "{{ asociacion.telefono }}",
+    "contactType": "customer service"
+  }
+}
+</script>
+{% endblock %}
+
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="/catalogo">Catálogo</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ asociacion.nombre }}</li>
+  </ol>
+</nav>
 <div class="row">
     <div class="col-md-3">
         {% if asociacion.logo_url %}

@@ -1,6 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Bolsa de Empleo Rural{% endblock %}
+{% block title %}Bolsa de Empleo Rural | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block meta_description %}Encuentra trabajo en el campo colombiano. Las asociaciones campesinas publican vacantes para cosecha, administración, transporte y más.{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Bolsa de Empleo</li>
+  </ol>
+</nav>
 <h2>🧑‍🌾 Bolsa de Empleo Rural</h2>
 <div class="row mt-4">
     {% for v in vacantes %}

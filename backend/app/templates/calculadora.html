@@ -1,6 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Calculadora de Precio Justo{% endblock %}
+{% block title %}Calculadora de Precio Justo | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block meta_description %}Calcula el precio justo de tus productos campesinos considerando insumos, mano de obra y transporte. Herramienta gratuita para productores rurales.{% endblock %}
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Calculadora</li>
+  </ol>
+</nav>
 <h2 class="mb-4">🧮 Calculadora de Precio Justo</h2>
 <p class="lead">Ingresa los costos de producción y obtén un precio sugerido para tus productos.</p>
 

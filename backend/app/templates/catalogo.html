@@ -1,8 +1,43 @@
 {% extends "base.html" %}
+{% block title %}Catálogo de Productos Campesinos | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block meta_description %}Explora productos frescos y servicios de las asociaciones campesinas colombianas. Apoya el campo comprando directamente a los productores.{% endblock %}
+{% block og_image %}https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png{% endblock %}
 
-{% block title %}Catálogo de Productos{% endblock %}
+{% block head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "itemListElement": [
+    {% for producto in productos %}
+    {
+      "@type": "Product",
+      "name": "{{ producto.nombre }}",
+      "description": "{{ producto.descripcion }}",
+      "image": "{{ producto.imagen }}",
+      "offers": {
+        "@type": "Offer",
+        "price": "{{ producto.precio }}",
+        "priceCurrency": "COP",
+        "seller": {
+          "@type": "Organization",
+          "name": "{{ producto.asociacion_nombre or producto.asociacion }}"
+        }
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}
 
 {% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Catálogo</li>
+  </ol>
+</nav>
 <h2 class="mb-3">Productos campesinos</h2>
 
 <form method="get" action="/catalogo" class="row g-2 mb-4">
@@ -103,6 +138,7 @@
 </nav>
 {% endif %}
 
+<!-- Modal para valorar -->
 <div class="modal fade" id="modalValorar" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
