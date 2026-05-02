@@ -1,158 +1,124 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard{% endblock %}
-
-{% block content %}
-<h2>Dashboard de {{ usuario }}</h2>
-
-<div class="row g-4 mt-2">
-    <!-- Total productos -->
-    <div class="col-md-3">
-        <div class="card text-white bg-success h-100 shadow-sm">
-            <div class="card-body text-center">
-                <i class="bi bi-box-seam display-5"></i>
-                <h1 class="display-4 mt-2">{{ total_productos }}</h1>
-                <h5>Productos publicados</h5>
-            </div>
-        </div>
-    </div>
-
-    <!-- Total valoraciones -->
-    <div class="col-md-3">
-        <div class="card text-white bg-warning h-100 shadow-sm">
-            <div class="card-body text-center">
-                <i class="bi bi-star-fill display-5"></i>
-                <h1 class="display-4 mt-2">{{ total_valoraciones }}</h1>
-                <h5>Valoraciones recibidas</h5>
-            </div>
-        </div>
-    </div>
-
-    <!-- Promedio de estrellas -->
-    <div class="col-md-3">
-        <div class="card text-white bg-info h-100 shadow-sm">
-            <div class="card-body text-center">
-                <i class="bi bi-star-half display-5"></i>
-                <h1 class="display-4 mt-2">{{ promedio_estrellas }}</h1>
-                <h5>Promedio de estrellas</h5>
-            </div>
-        </div>
-    </div>
-
-    <!-- Acceso rápido -->
-    <div class="col-md-3">
-        <div class="card border-success h-100 shadow-sm">
-            <div class="card-body text-center d-flex flex-column justify-content-center">
-                <a href="/panel" class="btn btn-outline-success btn-lg mb-2">Agregar producto</a>
-                <a href="/panel" class="btn btn-outline-success btn-lg">Editar mis productos</a>
-                <a href="/panel/editar-perfil" class="btn btn-outline-success btn-lg mt-2">Editar perfil</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Gráfico de distribución de valoraciones -->
-{% if distribucion_estrellas and total_valoraciones > 0 %}
-<div class="card mt-4 shadow-sm">
-    <div class="card-body">
-        <h5>Distribución de valoraciones</h5>
-        <canvas id="chartEstrellas" width="400" height="200"></canvas>
-    </div>
-</div>
-{% endif %}
-
-<!-- Últimas valoraciones -->
-{% if ultimas_valoraciones %}
-<div class="card mt-4 shadow-sm">
-    <div class="card-body">
-        <h5>Últimas valoraciones</h5>
-        <ul class="list-group list-group-flush">
-            {% for v in ultimas_valoraciones %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>{{ v.producto_nombre }}</strong>
-                    <small class="text-muted ms-2">{{ v.comentario or 'Sin comentario' }}</small>
-                </div>
-                <span>
-                    {% for i in range(1, 6) %}
-                    {% if i <= v.estrellas %}⭐{% else %}☆{% endif %}
-                    {% endfor %}
-                </span>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-</div>
-{% endif %}
-
-<!-- Últimos productos agregados -->
-{% if ultimos_productos %}
-<h4 class="mt-5">Últimos productos agregados</h4>
-<div class="row row-cols-1 row-cols-md-3 g-4">
-    {% for p in ultimos_productos %}
-    <div class="col">
-        <div class="card h-100 shadow-sm">
-            {% if p.imagen %}
-            <img src="{{ p.imagen }}" class="card-img-top" alt="{{ p.nombre }}">
-            {% endif %}
-            <div class="card-body">
-                <h6>{{ p.nombre }}</h6>
-                <small>${{ p.precio }} · {{ p.tipo|capitalize }} · {{ p.tipo_precio|capitalize }}</small>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-
-<!-- Gráfico de distribución por tipo -->
-<div class="card mt-4 shadow-sm">
-    <div class="card-body">
-        <h5>Distribución por tipo</h5>
-        <canvas id="chartTipo" width="400" height="200"></canvas>
-    </div>
-</div>
-
+{% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// Productos por tipo
-const ctxTipo = document.getElementById('chartTipo').getContext('2d');
-new Chart(ctxTipo, {
-    type: 'pie',
-    data: {
-        labels: ['Producto', 'Servicio'],
-        datasets: [{
-            label: 'Cantidad',
-            data: [{{ productos_por_tipo.producto }}, {{ productos_por_tipo.servicio }}],
-            backgroundColor: ['#2d6a4f', '#52b788']
-        }]
-    }
-});
+{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">📊 Dashboard de {{ usuario }}</h2>
+            <p class="text-muted mb-0">Resumen de tu actividad y productos.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/panel" class="btn btn-outline-success">🗂️ Panel</a>
+            <a href="/panel/editar-perfil" class="btn btn-outline-success">✏️ Perfil</a>
+        </div>
+    </div>
 
-// Distribución de estrellas
-{% if distribucion_estrellas and total_valoraciones > 0 %}
-const ctxEstrellas = document.getElementById('chartEstrellas').getContext('2d');
-new Chart(ctxEstrellas, {
-    type: 'bar',
-    data: {
-        labels: ['1 estrella', '2 estrellas', '3 estrellas', '4 estrellas', '5 estrellas'],
-        datasets: [{
-            label: 'Cantidad de valoraciones',
-            data: {{ distribucion_estrellas|tojson }},
-            backgroundColor: '#2d6a4f'
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
-            }
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card stat-card--primary">
+                <div class="stat-card__icon"><span>📦</span></div>
+                <div class="stat-card__info">
+                    <h3 class="stat-card__value">{{ total_productos }}</h3>
+                    <p class="stat-card__label">Productos publicados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card stat-card--warning">
+                <div class="stat-card__icon"><span>⭐</span></div>
+                <div class="stat-card__info">
+                    <h3 class="stat-card__value">{{ promedio_estrellas }}</h3>
+                    <p class="stat-card__label">Promedio de estrellas</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card stat-card--info">
+                <div class="stat-card__icon"><span>❤️</span></div>
+                <div class="stat-card__info">
+                    <h3 class="stat-card__value">{{ total_valoraciones }}</h3>
+                    <p class="stat-card__label">Valoraciones recibidas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0"><h5 class="mb-0 fw-semibold">📈 Distribución por tipo</h5></div>
+                <div class="card-body">
+                    <canvas id="chartTipo" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0"><h5 class="mb-0 fw-semibold">⭐ Distribución de valoraciones</h5></div>
+                <div class="card-body">
+                    <canvas id="chartEstrellas" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if ultimas_valoraciones %}
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-header bg-white border-bottom-0"><h5 class="mb-0 fw-semibold">💬 Últimas valoraciones</h5></div>
+        <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+                {% for v in ultimas_valoraciones %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div><strong>{{ v.producto_nombre }}</strong><br><small class="text-muted">{{ v.comentario or 'Sin comentario' }}</small></div>
+                    <span>{% for i in range(1,6) %}{% if i <= v.estrellas %}⭐{% else %}☆{% endif %}{% endfor %}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if ultimos_productos %}
+    <h4 class="mt-5 fw-bold">🆕 Últimos productos agregados</h4>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for p in ultimos_productos %}
+        <div class="col">
+            <div class="card h-100 modern-card">
+                {% if p.imagen %}<img src="{{ p.imagen }}" class="card-img-top" alt="{{ p.nombre }}">{% endif %}
+                <div class="card-body">
+                    <h6>{{ p.nombre }}</h6>
+                    <small>${{ p.precio }} · {{ p.tipo|capitalize }} · {{ p.tipo_precio|capitalize }}</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    new Chart(document.getElementById('chartTipo'), {
+        type: 'pie',
+        data: {
+            labels: ['Producto', 'Servicio'],
+            datasets: [{ data: [{{ productos_por_tipo.producto }}, {{ productos_por_tipo.servicio }}], backgroundColor: ['#2d6a4f', '#52b788'] }]
         }
-    }
+    });
+    {% if distribucion_estrellas and total_valoraciones > 0 %}
+    new Chart(document.getElementById('chartEstrellas'), {
+        type: 'bar',
+        data: {
+            labels: ['1 estrella', '2 estrellas', '3 estrellas', '4 estrellas', '5 estrellas'],
+            datasets: [{ data: {{ distribucion_estrellas|tojson }}, backgroundColor: '#2d6a4f' }]
+        },
+        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+    {% endif %}
 });
-{% endif %}
 </script>
 {% endblock %}

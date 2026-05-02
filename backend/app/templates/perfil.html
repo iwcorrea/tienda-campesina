@@ -2,73 +2,43 @@
 {% block title %}{{ asociacion.nombre }} | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
 {% block meta_description %}{{ asociacion.descripcion or 'Conoce más sobre esta asociación campesina y sus productos.' }}{% endblock %}
 {% block og_image %}{{ asociacion.logo_url or 'https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png' }}{% endblock %}
-
 {% block head %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "{{ asociacion.nombre }}",
-  "description": "{{ asociacion.descripcion }}",
-  "url": "{{ request.url.scheme }}://{{ request.url.hostname }}/asociacion/{{ asociacion.email }}",
-  "logo": "{{ asociacion.logo_url }}",
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": "{{ asociacion.direccion }}"
-  },
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "telephone": "{{ asociacion.telefono }}",
-    "contactType": "customer service"
-  }
-}
-</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"{{ asociacion.nombre }}","description":"{{ asociacion.descripcion }}","url":"{{ request.url.scheme }}://{{ request.url.hostname }}/asociacion/{{ asociacion.email }}","logo":"{{ asociacion.logo_url }}","address":{"@type":"PostalAddress","addressLocality":"{{ asociacion.direccion }}"},"contactPoint":{"@type":"ContactPoint","telephone":"{{ asociacion.telefono }}","contactType":"customer service"}}</script>
 {% endblock %}
-
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
-    <li class="breadcrumb-item"><a href="/catalogo">Catálogo</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ asociacion.nombre }}</li>
-  </ol>
+  <ol class="breadcrumb"><li class="breadcrumb-item"><a href="/">Inicio</a></li><li class="breadcrumb-item"><a href="/catalogo">Catálogo</a></li><li class="breadcrumb-item active">{{ asociacion.nombre }}</li></ol>
 </nav>
-<div class="row">
-    <div class="col-md-3">
-        {% if asociacion.logo_url %}
-        <img src="{{ asociacion.logo_url }}" class="img-fluid rounded shadow-sm mb-3">
-        {% endif %}
-    </div>
-    <div class="col-md-9">
-        <h1>{{ asociacion.nombre }}</h1>
-        <p>{{ asociacion.descripcion }}</p>
-        {% if asociacion.direccion %}<p><strong>Ubicación:</strong> {{ asociacion.direccion }}</p>{% endif %}
-        {% if asociacion.show_whatsapp == '1' and asociacion.telefono %}
-        <a href="https://wa.me/57{{ asociacion.telefono|replace('+','')|replace(' ','') }}?text=Hola,%20vi%20tu%20perfil%20en%20Tienda%20Campesina" target="_blank" class="btn btn-success">💬 Contactar por WhatsApp</a>
-        {% endif %}
-    </div>
-</div>
-<hr>
-<h3>Productos y servicios</h3>
-<div class="row row-cols-1 row-cols-md-3 g-4">
-    {% for p in productos %}
-    <div class="col">
-        <div class="card h-100">
-            <img src="{{ p.imagen }}" class="card-img-top" alt="{{ p.nombre }}">
-            <div class="card-body">
-                <h5 class="card-title">{{ p.nombre }}</h5>
-                <p class="card-text">{{ p.descripcion }}</p>
-                {% if p.tipo %}<span class="badge bg-secondary">{{ p.tipo|capitalize }}</span>{% endif %}
-                <p class="mt-2">
-                    {% if p.tipo_precio == 'convenir' %}
-                    <strong>Precio a convenir</strong>
-                    {% else %}
-                    <strong>${{ p.precio }}</strong>
-                    {% endif %}
-                </p>
-            </div>
+<div class="modern-section">
+    <div class="row">
+        <div class="col-md-3 text-center mb-3">
+            {% if asociacion.logo_url %}<img src="{{ asociacion.logo_url }}" class="img-fluid rounded shadow-sm mb-3">{% endif %}
+            {% if asociacion.show_whatsapp == '1' and asociacion.telefono %}
+            <a href="https://wa.me/57{{ asociacion.telefono|replace('+','')|replace(' ','') }}?text=Hola,%20vi%20tu%20perfil%20en%20Tienda%20Campesina" target="_blank" class="btn btn-success w-100">💬 Contactar por WhatsApp</a>
+            {% endif %}
+        </div>
+        <div class="col-md-9">
+            <h1 class="fw-bold">{{ asociacion.nombre }}</h1>
+            <p class="lead">{{ asociacion.descripcion }}</p>
+            {% if asociacion.direccion %}<p><strong>📍 Ubicación:</strong> {{ asociacion.direccion }}</p>{% endif %}
         </div>
     </div>
-    {% endfor %}
+    <hr class="my-4">
+    <h3 class="fw-bold mb-4">Productos y servicios</h3>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for p in productos %}
+        <div class="col">
+            <div class="card modern-card h-100">
+                <img src="{{ p.imagen }}" class="card-img-top" alt="{{ p.nombre }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ p.nombre }}</h5>
+                    <p class="card-text text-muted small">{{ p.descripcion }}</p>
+                    {% if p.tipo %}<span class="badge bg-secondary">{{ p.tipo|capitalize }}</span>{% endif %}
+                    <p class="mt-2 fw-bold">{% if p.tipo_precio == 'convenir' %}Precio a convenir{% else %}${{ p.precio }}{% endif %}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

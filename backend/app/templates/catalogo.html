@@ -39,9 +39,12 @@
     <li class="breadcrumb-item active" aria-current="page">Catálogo</li>
   </ol>
 </nav>
-<h2 class="mb-3">Productos campesinos</h2>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">📦 Catálogo de Productos</h2>
+    <p class="text-muted mb-0">{{ total_productos }} productos encontrados</p>
+</div>
 
-<form method="get" action="/catalogo" class="row g-2 mb-4">
+<form method="get" action="/catalogo" class="row g-2 mb-4 bg-white p-3 rounded-3 shadow-sm">
     <div class="col-md-4">
         <input type="text" name="q" class="form-control" placeholder="Buscar..." value="{{ q }}">
     </div>
@@ -67,18 +70,14 @@
     </div>
 </form>
 
-{% if total_productos %}
-<p class="text-muted">{{ productos|length }} de {{ total_productos }} resultados.</p>
-{% endif %}
-
 <div class="row row-cols-1 row-cols-md-3 g-4">
     {% for producto in productos %}
     <div class="col">
-        <div class="card h-100">
+        <div class="card h-100 modern-card">
             <img src="{{ producto.imagen }}" class="card-img-top" alt="{{ producto.nombre }}">
             <div class="card-body">
-                <h5 class="card-title">{{ producto.nombre }}</h5>
-                <p class="card-text">{{ producto.descripcion }}</p>
+                <h5 class="card-title fw-bold">{{ producto.nombre }}</h5>
+                <p class="card-text text-muted small">{{ producto.descripcion }}</p>
                 <p class="text-success fw-bold fs-5">
                     {% if producto.tipo_precio == 'convenir' %}
                     Precio a convenir
@@ -86,15 +85,11 @@
                     ${{ producto.precio }}
                     {% endif %}
                 </p>
-                {% if producto.tipo %}<span class="badge bg-secondary">{{ producto.tipo|capitalize }}</span>{% endif %}
+                {% if producto.tipo %}<span class="badge bg-secondary mb-2">{{ producto.tipo|capitalize }}</span>{% endif %}
 
-                <div class="mt-2">
+                <div class="mb-2">
                     {% for i in range(1, 6) %}
-                    {% if i <= producto.estrellas %}
-                    ⭐
-                    {% else %}
-                    ☆
-                    {% endif %}
+                    {% if i <= producto.estrellas %}⭐{% else %}☆{% endif %}
                     {% endfor %}
                     <small class="text-muted">({{ producto.num_valoraciones }})</small>
                 </div>
@@ -111,7 +106,7 @@
                     {% if producto.logo_url %}
                     <img src="{{ producto.logo_url }}" class="logo-mini">
                     {% endif %}
-                    <a href="/asociacion/{{ producto.asociacion }}" class="text-decoration-none text-dark">
+                    <a href="/asociacion/{{ producto.asociacion }}" class="text-decoration-none text-dark small">
                         {{ producto.asociacion_nombre or producto.asociacion }}
                     </a>
                 </div>
@@ -119,7 +114,9 @@
         </div>
     </div>
     {% else %}
-    <p class="text-muted">No se encontraron productos.</p>
+    <div class="col-12 text-center py-5">
+        <p class="text-muted">No se encontraron productos.</p>
+    </div>
     {% endfor %}
 </div>
 

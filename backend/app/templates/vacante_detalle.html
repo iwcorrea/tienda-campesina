@@ -2,56 +2,39 @@
 {% block title %}{{ vacante.cargo }} en {{ vacante.asociacion.nombre }} | Bolsa de Empleo Rural{% endblock %}
 {% block meta_description %}Vacante: {{ vacante.cargo }} en {{ vacante.asociacion.nombre }}. {{ vacante.descripcion[:150] }}{% endblock %}
 {% block head %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "JobPosting",
-  "title": "{{ vacante.cargo }}",
-  "description": "{{ vacante.descripcion }}",
-  "datePosted": "{{ vacante.fecha_publicacion.strftime('%Y-%m-%d') if vacante.fecha_publicacion else '' }}",
-  "validThrough": "{{ vacante.fecha_limite.strftime('%Y-%m-%d') if vacante.fecha_limite else '' }}",
-  "hiringOrganization": {
-    "@type": "Organization",
-    "name": "{{ vacante.asociacion.nombre }}"
-  },
-  "jobLocation": {
-    "@type": "Place",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "{{ vacante.ubicacion }}"
-    }
-  }
-}
-</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"JobPosting","title":"{{ vacante.cargo }}","description":"{{ vacante.descripcion }}","datePosted":"{{ vacante.fecha_publicacion.strftime('%Y-%m-%d') if vacante.fecha_publicacion else '' }}","validThrough":"{{ vacante.fecha_limite.strftime('%Y-%m-%d') if vacante.fecha_limite else '' }}","hiringOrganization":{"@type":"Organization","name":"{{ vacante.asociacion.nombre }}"},"jobLocation":{"@type":"Place","address":{"@type":"PostalAddress","addressLocality":"{{ vacante.ubicacion }}"}}}</script>
 {% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
-    <li class="breadcrumb-item"><a href="/bolsa-empleo">Bolsa de Empleo</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ vacante.cargo }}</li>
-  </ol>
+  <ol class="breadcrumb"><li class="breadcrumb-item"><a href="/">Inicio</a></li><li class="breadcrumb-item"><a href="/bolsa-empleo">Bolsa de Empleo</a></li><li class="breadcrumb-item active">{{ vacante.cargo }}</li></ol>
 </nav>
-<h2>{{ vacante.cargo }}</h2>
-<p><strong>Publicado por:</strong> {{ vacante.asociacion.nombre }}</p>
-<p><strong>Ubicación:</strong> {{ vacante.ubicacion or 'No especificada' }}</p>
-<p><strong>Salario:</strong> {{ vacante.salario or 'A convenir' }}</p>
-<p><strong>Fecha límite:</strong> {{ vacante.fecha_limite.strftime('%d/%m/%Y') }}</p>
-<hr>
-<p>{{ vacante.descripcion }}</p>
-
-{% if request.session.get("tipo_usuario") == "persona" %}
-<form action="/aplicar/{{ vacante.id }}" method="post">
-    <div class="mb-3">
-        <label>Mensaje (opcional)</label>
-        <textarea name="mensaje" class="form-control" rows="3"></textarea>
+<div class="modern-section">
+    <h2 class="fw-bold">{{ vacante.cargo }}</h2>
+    <p class="text-muted">Publicado por <strong>{{ vacante.asociacion.nombre }}</strong></p>
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <p><strong>📍 Ubicación:</strong> {{ vacante.ubicacion or 'No especificada' }}</p>
+            <p><strong>💰 Salario:</strong> {{ vacante.salario or 'A convenir' }}</p>
+            <p><strong>📅 Fecha límite:</strong> {{ vacante.fecha_limite.strftime('%d/%m/%Y') }}</p>
+            <hr>
+            <p>{{ vacante.descripcion }}</p>
+        </div>
     </div>
-    <button type="submit" class="btn btn-success">Postularme</button>
-</form>
-{% elif not request.session.get("usuario") %}
-<p><a href="/auth/login" class="btn btn-outline-success">Inicia sesión para postularte</a></p>
-{% else %}
-<p>Esta sección solo está disponible para usuarios registrados como persona.</p>
-{% endif %}
-<a href="/bolsa-empleo" class="btn btn-secondary mt-2">← Volver a la bolsa</a>
+
+    {% if request.session.get("tipo_usuario") == "persona" %}
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <form action="/aplicar/{{ vacante.id }}" method="post">
+                <div class="mb-3"><label>Mensaje (opcional)</label><textarea name="mensaje" class="form-control" rows="3"></textarea></div>
+                <button type="submit" class="btn btn-success">Postularme</button>
+            </form>
+        </div>
+    </div>
+    {% elif not request.session.get("usuario") %}
+    <p><a href="/auth/login" class="btn btn-outline-success">Inicia sesión para postularte</a></p>
+    {% else %}
+    <p class="text-muted">Esta sección solo está disponible para usuarios registrados como persona.</p>
+    {% endif %}
+    <a href="/bolsa-empleo" class="btn btn-secondary mt-2">← Volver a la bolsa</a>
+</div>
 {% endblock %}

@@ -3,14 +3,14 @@
 {% block title %}{{ config.titulo_inicio or 'Inicio | ' + config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
 {% block meta_description %}{{ config.descripcion_inicio or config.descripcion_meta or 'Plataforma para visibilizar asociaciones rurales.' }}{% endblock %}
 {% block content %}
-<section class="p-4 p-md-5 bg-white rounded-4 shadow-sm">
-    <div class="row align-items-center g-4">
+<section class="modern-section text-center text-md-start">
+    <div class="row align-items-center g-5">
         <div class="col-lg-7">
-            <h1 class="display-6 fw-bold">{{ config.inicio_titulo or 'Asociaciones de productores campesinos' }}</h1>
-            <p class="lead text-muted mt-3">
+            <h1 class="display-5 fw-bold mb-3">{{ config.inicio_titulo or 'Asociaciones de productores campesinos' }}</h1>
+            <p class="lead text-muted mb-4">
                 {{ config.inicio_subtitulo or 'Plataforma para visibilizar asociaciones rurales, publicar productos y conectar directamente con compradores.' }}
             </p>
-            <div class="d-flex flex-wrap gap-2 mt-3">
+            <div class="d-flex flex-wrap gap-2">
                 <a href="/catalogo" class="btn btn-success btn-lg">Ver catálogo</a>
                 {% if request.session.get("tipo_usuario") == "asociacion" %}
                     <a href="/panel" class="btn btn-outline-success btn-lg">Ir al panel</a>
@@ -20,10 +20,10 @@
             </div>
         </div>
         <div class="col-lg-5">
-            <div class="card border-0 bg-success-subtle">
-                <div class="card-body p-4">
-                    <h5 class="card-title">{{ config.inicio_titulo_tarjeta or 'Impulsa tu producción local' }}</h5>
-                    <p class="card-text mb-0">
+            <div class="card border-0 bg-success-subtle shadow-sm">
+                <div class="card-body p-4 p-xl-5">
+                    <h5 class="card-title fw-bold mb-3">{{ config.inicio_titulo_tarjeta or 'Impulsa tu producción local' }}</h5>
+                    <p class="card-text mb-0 text-muted">
                         {{ config.inicio_texto_tarjeta or 'Comparte tu historia, exhibe tus productos y fortalece la economía campesina.' }}
                     </p>
                 </div>
@@ -33,12 +33,12 @@
 </section>
 
 {% if request.session.get("usuario") %}
-<section class="mt-5">
-    <h3 class="mb-3">Acciones rápidas</h3>
+<section class="mt-5 pt-4">
+    <h3 class="mb-4 fw-bold">Acciones rápidas</h3>
     <div class="row g-3">
         <div class="col-md-4">
             <a href="/panel" class="text-decoration-none">
-                <div class="card border-success h-100 p-3">
+                <div class="card border-success h-100 p-3 modern-card">
                     <div class="card-body text-center">
                         <span style="font-size: 2rem;">🗂️</span>
                         <h5 class="mt-2">Panel de gestión</h5>
@@ -49,7 +49,7 @@
         </div>
         <div class="col-md-4">
             <a href="/dashboard" class="text-decoration-none">
-                <div class="card border-success h-100 p-3">
+                <div class="card border-success h-100 p-3 modern-card">
                     <div class="card-body text-center">
                         <span style="font-size: 2rem;">📊</span>
                         <h5 class="mt-2">Dashboard</h5>
@@ -60,7 +60,7 @@
         </div>
         <div class="col-md-4">
             <a href="/calculadora" class="text-decoration-none">
-                <div class="card border-success h-100 p-3">
+                <div class="card border-success h-100 p-3 modern-card">
                     <div class="card-body text-center">
                         <span style="font-size: 2rem;">🧮</span>
                         <h5 class="mt-2">Calculadora</h5>

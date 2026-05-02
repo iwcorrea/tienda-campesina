@@ -1,43 +1,49 @@
 {% extends "base.html" %}
 {% block title %}Editar Producto{% endblock %}
 {% block content %}
-<h2>Editar producto</h2>
-<form action="/panel/producto/actualizar/{{ producto.id }}" method="post" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label class="form-label">Nombre</label>
-        <input type="text" name="nombre" class="form-control" value="{{ producto.nombre }}" required>
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">✏️ Editar producto</h2>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form action="/panel/producto/actualizar/{{ producto.id }}" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label class="form-label">Nombre</label>
+                    <input type="text" name="nombre" class="form-control" value="{{ producto.nombre }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" class="form-control" rows="2">{{ producto.descripcion }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Precio (COP)</label>
+                    <input type="number" name="precio" class="form-control" value="{{ producto.precio }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo" class="form-select">
+                        <option value="producto" {% if producto.tipo == 'producto' %}selected{% endif %}>Producto</option>
+                        <option value="servicio" {% if producto.tipo == 'servicio' %}selected{% endif %}>Servicio</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Modalidad de precio</label>
+                    <select name="tipo_precio" class="form-select">
+                        <option value="fijo" {% if producto.tipo_precio == 'fijo' %}selected{% endif %}>Precio fijo</option>
+                        <option value="convenir" {% if producto.tipo_precio == 'convenir' %}selected{% endif %}>A convenir</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Imagen actual</label><br>
+                    {% if producto.imagen_url %}
+                    <img src="{{ producto.imagen_url }}" width="100" class="mb-2 rounded"><br>
+                    {% endif %}
+                    <label class="form-label">Cambiar imagen (opcional)</label>
+                    <input type="file" name="imagen" class="form-control" accept="image/*">
+                </div>
+                <button type="submit" class="btn btn-success">Guardar cambios</button>
+                <a href="/panel" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
     </div>
-    <div class="mb-3">
-        <label class="form-label">Descripción</label>
-        <textarea name="descripcion" class="form-control" rows="2">{{ producto.descripcion }}</textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Precio (COP)</label>
-        <input type="number" name="precio" class="form-control" value="{{ producto.precio }}" required>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Tipo</label>
-        <select name="tipo" class="form-select">
-            <option value="producto" {% if producto.tipo == 'producto' %}selected{% endif %}>Producto</option>
-            <option value="servicio" {% if producto.tipo == 'servicio' %}selected{% endif %}>Servicio</option>
-        </select>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Modalidad de precio</label>
-        <select name="tipo_precio" class="form-select">
-            <option value="fijo" {% if producto.tipo_precio == 'fijo' %}selected{% endif %}>Precio fijo</option>
-            <option value="convenir" {% if producto.tipo_precio == 'convenir' %}selected{% endif %}>A convenir</option>
-        </select>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Imagen actual</label><br>
-        {% if producto.imagen_url %}
-        <img src="{{ producto.imagen_url }}" width="100" class="mb-2 rounded"><br>
-        {% endif %}
-        <label class="form-label">Cambiar imagen (opcional)</label>
-        <input type="file" name="imagen" class="form-control" accept="image/*">
-    </div>
-    <button type="submit" class="btn btn-success">Guardar cambios</button>
-    <a href="/panel" class="btn btn-secondary">Cancelar</a>
-</form>
+</div>
 {% endblock %}

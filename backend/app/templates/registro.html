@@ -1,63 +1,30 @@
 {% extends "base.html" %}
-
 {% block title %}Registro de Asociación{% endblock %}
-
 {% block content %}
-<h2 class="mb-4">Registrar Asociación Campesina</h2>
-
-<form action="/auth/registro" method="post" enctype="multipart/form-data">
-    <h4 class="text-success">Datos de acceso</h4>
-    <div class="mb-3">
-        <label>Email de la asociación</label>
-        <input type="email" name="email" class="form-control" required>
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">🏢 Registrar Asociación Campesina</h2>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form action="/auth/registro" method="post" enctype="multipart/form-data">
+                <h5 class="text-success">Datos de acceso</h5>
+                <div class="mb-3"><input type="email" name="email" class="form-control" placeholder="Email" required></div>
+                <div class="mb-3"><input type="password" name="password" class="form-control" placeholder="Contraseña" maxlength="72" required></div>
+                <hr>
+                <h5 class="text-success">Información de la asociación</h5>
+                <div class="mb-3"><input type="text" name="nombre_asociacion" class="form-control" placeholder="Nombre" required></div>
+                <div class="mb-3"><textarea name="descripcion" class="form-control" rows="2" placeholder="Descripción"></textarea></div>
+                <div class="mb-3"><input type="text" name="direccion" class="form-control" placeholder="Dirección / Municipio"></div>
+                <div class="mb-3"><input type="text" name="telefono" class="form-control" placeholder="Teléfono"></div>
+                <div class="mb-3 form-check"><input type="checkbox" name="show_whatsapp" value="1" class="form-check-input" id="showWhatsapp"><label class="form-check-label" for="showWhatsapp">Deseo recibir consultas por WhatsApp</label></div>
+                <div class="mb-3"><label>Logo (opcional)</label><input type="file" name="logo" class="form-control" accept="image/*"></div>
+                <hr>
+                <h5 class="text-success">Documentos de verificación</h5>
+                <div class="mb-3"><label>Cámara de Comercio (PDF)</label><input type="file" name="camara_comercio" class="form-control" accept=".pdf" required></div>
+                <div class="mb-3"><label>RUT actualizado (PDF)</label><input type="file" name="rut" class="form-control" accept=".pdf" required></div>
+                <button type="submit" class="btn btn-success btn-lg w-100">Registrar asociación</button>
+            </form>
+            {% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}
+        </div>
     </div>
-    <div class="mb-3">
-        <label>Contraseña</label>
-        <input type="password" name="password" class="form-control" maxlength="72" required>
-    </div>
-
-    <hr>
-    <h4 class="text-success">Información de la asociación</h4>
-    <div class="mb-3">
-        <label>Nombre de la asociación</label>
-        <input type="text" name="nombre_asociacion" class="form-control" required>
-    </div>
-    <div class="mb-3">
-        <label>Descripción</label>
-        <textarea name="descripcion" class="form-control" rows="3"></textarea>
-    </div>
-    <div class="mb-3">
-        <label>Dirección / Municipio</label>
-        <input type="text" name="direccion" class="form-control">
-    </div>
-    <div class="mb-3">
-        <label>Teléfono</label>
-        <input type="text" name="telefono" class="form-control">
-    </div>
-    <div class="mb-3 form-check">
-        <input type="checkbox" name="show_whatsapp" value="1" class="form-check-input" id="showWhatsapp">
-        <label class="form-check-label" for="showWhatsapp">Deseo recibir consultas por WhatsApp</label>
-    </div>
-    <div class="mb-3">
-        <label>Logo de la asociación (opcional)</label>
-        <input type="file" name="logo" class="form-control" accept="image/*">
-    </div>
-
-    <hr>
-    <h4 class="text-success">Documentos de verificación</h4>
-    <div class="mb-3">
-        <label>Cámara de Comercio (PDF)</label>
-        <input type="file" name="camara_comercio" class="form-control" accept=".pdf" required>
-    </div>
-    <div class="mb-3">
-        <label>RUT actualizado (PDF)</label>
-        <input type="file" name="rut" class="form-control" accept=".pdf" required>
-    </div>
-
-    <button type="submit" class="btn btn-success btn-lg">Registrar asociación</button>
-</form>
-
-{% if error %}
-<div class="alert alert-danger mt-3">{{ error }}</div>
-{% endif %}
+</div>
 {% endblock %}

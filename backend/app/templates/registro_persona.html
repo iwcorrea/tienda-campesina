@@ -1,29 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Registro de Persona{% endblock %}
 {% block content %}
-<h2 class="mb-4">Registro para búsqueda de empleo</h2>
-<form action="/auth/registro-persona" method="post" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label>Email</label>
-        <input type="email" name="email" class="form-control" required>
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">🧑 Registro para búsqueda de empleo</h2>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form action="/auth/registro-persona" method="post" enctype="multipart/form-data">
+                <div class="mb-3"><input type="email" name="email" class="form-control" placeholder="Email" required></div>
+                <div class="mb-3"><input type="password" name="password" class="form-control" placeholder="Contraseña" maxlength="72" required></div>
+                <div class="mb-3"><input type="text" name="nombre" class="form-control" placeholder="Nombre completo" required></div>
+                <div class="mb-3"><input type="text" name="telefono" class="form-control" placeholder="Teléfono"></div>
+                <div class="mb-3"><label>Hoja de vida (PDF opcional)</label><input type="file" name="hoja_vida" class="form-control" accept=".pdf"></div>
+                <button type="submit" class="btn btn-success w-100">Registrarse</button>
+            </form>
+            {% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}
+        </div>
     </div>
-    <div class="mb-3">
-        <label>Contraseña</label>
-        <input type="password" name="password" class="form-control" maxlength="72" required>
-    </div>
-    <div class="mb-3">
-        <label>Nombre completo</label>
-        <input type="text" name="nombre" class="form-control" required>
-    </div>
-    <div class="mb-3">
-        <label>Teléfono</label>
-        <input type="text" name="telefono" class="form-control">
-    </div>
-    <div class="mb-3">
-        <label>Hoja de vida (PDF opcional)</label>
-        <input type="file" name="hoja_vida" class="form-control" accept=".pdf">
-    </div>
-    <button type="submit" class="btn btn-success">Registrarse</button>
-</form>
-{% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}
+</div>
 {% endblock %}

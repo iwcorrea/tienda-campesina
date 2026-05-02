@@ -4,27 +4,26 @@
 {% block meta_description %}{{ config.descripcion_bolsa or 'Encuentra trabajo en el campo colombiano.' }}{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Bolsa de Empleo</li>
-  </ol>
+  <ol class="breadcrumb"><li class="breadcrumb-item"><a href="/">Inicio</a></li><li class="breadcrumb-item active">Bolsa de Empleo</li></ol>
 </nav>
-<h2>🧑‍🌾 Bolsa de Empleo Rural</h2>
-<div class="row mt-4">
-    {% for v in vacantes %}
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">{{ v.cargo }}</h5>
-                <p class="card-text">{{ v.descripcion[:150] }}{% if v.descripcion|length > 150 %}...{% endif %}</p>
-                <p><strong>Ubicación:</strong> {{ v.ubicacion or 'No especificada' }} | <strong>Salario:</strong> {{ v.salario or 'A convenir' }}</p>
-                <small class="text-muted">Publicado por {{ v.asociacion.nombre }} – Límite: {{ v.fecha_limite.strftime('%d/%m/%Y') }}</small>
-                <a href="/bolsa-empleo/{{ v.id }}" class="btn btn-sm btn-outline-success mt-2">Ver y aplicar</a>
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">🧑‍🌾 Bolsa de Empleo Rural</h2>
+    <div class="row g-4">
+        {% for v in vacantes %}
+        <div class="col-md-6">
+            <div class="card modern-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">{{ v.cargo }}</h5>
+                    <p class="card-text text-muted">{{ v.descripcion[:150] }}{% if v.descripcion|length > 150 %}...{% endif %}</p>
+                    <p><strong>📍 {{ v.ubicacion or 'No especificada' }}</strong> | <strong>💰 {{ v.salario or 'A convenir' }}</strong></p>
+                    <small class="text-muted">Publicado por {{ v.asociacion.nombre }} – Límite: {{ v.fecha_limite.strftime('%d/%m/%Y') }}</small>
+                    <div class="mt-3"><a href="/bolsa-empleo/{{ v.id }}" class="btn btn-sm btn-outline-success">Ver y aplicar</a></div>
+                </div>
             </div>
         </div>
+        {% else %}
+        <div class="col-12 text-center py-5"><p class="text-muted">No hay vacantes disponibles en este momento.</p></div>
+        {% endfor %}
     </div>
-    {% else %}
-    <p>No hay vacantes disponibles en este momento.</p>
-    {% endfor %}
 </div>
 {% endblock %}
