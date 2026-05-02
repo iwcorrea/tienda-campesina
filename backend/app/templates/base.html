@@ -116,9 +116,6 @@
                     {% if config.menu_mostrar_catalogo != '' %}
                     <li class="nav-item"><a class="nav-link px-3" href="/catalogo">📦 Catálogo</a></li>
                     {% endif %}
-                    {% if config.menu_mostrar_calculadora != '' %}
-                    <li class="nav-item"><a class="nav-link px-3" href="/calculadora">🧮 Calculadora</a></li>
-                    {% endif %}
                     {% if config.menu_mostrar_bolsa != '' %}
                     <li class="nav-item"><a class="nav-link px-3" href="/bolsa-empleo">💼 Bolsa de Empleo</a></li>
                     {% endif %}
@@ -127,6 +124,13 @@
                     {% endif %}
 
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
+                        <!-- HERRAMIENTAS (solo asociaciones) -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle px-3" href="#" role="button" data-bs-toggle="dropdown">🛠️ Herramientas</a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/calculadora">🧮 Calculadora de Precio Justo</a></li>
+                            </ul>
+                        </li>
                         {% if request.session.get("es_admin") %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-warning fw-bold px-3" href="#" role="button" data-bs-toggle="dropdown">🔧 Admin</a>

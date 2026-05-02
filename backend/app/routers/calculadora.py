@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
@@ -7,6 +7,9 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/calculadora", response_class=HTMLResponse)
 def calculadora_get(request: Request):
+    # Solo asociaciones registradas pueden acceder
+    if request.session.get("tipo_usuario") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
     return templates.TemplateResponse("calculadora.html", {"request": request})
 
 @router.post("/calculadora")
@@ -18,6 +21,10 @@ def calculadora_post(
     margen_porcentaje: float = Form(20.0),
     cantidad_producto: float = Form(1.0)
 ):
+    # Solo asociaciones pueden calcular
+    if request.session.get("tipo_usuario") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
+
     costo_total = costos_insumos + costo_mano_obra + costo_transporte
     if cantidad_producto <= 0:
         cantidad_producto = 1.0
