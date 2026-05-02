@@ -150,3 +150,17 @@ class Configuracion(Base):
     menu_mostrar_bolsa = Column(String, default="1")
     menu_enlace_extra = Column(String, default="")
     menu_url_extra = Column(String, default="")
+
+    class Transportador(Base):
+    __tablename__ = "transportadores"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
+    nombre = Column(String, nullable=False)
+    medio = Column(String, default="camioneta")   # moto, camioneta, camion
+    tarifa_base = Column(Integer, default=5000)   # COP
+    costo_km = Column(Integer, default=1500)      # COP por km
+    telefono = Column(String, default="")
+    activo = Column(String, default="1")          # "1" o ""
+
+    asociacion = relationship("Asociacion")

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Mis Transportadores{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">🚚 Mis Transportadores</h2>
+        <p class="text-muted mb-0">Transportadores locales que pueden distribuir tus productos.</p>
+    </div>
+    <a href="/panel" class="btn btn-secondary">⬅ Volver al panel</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white"><strong>Agregar transportador</strong></div>
+            <div class="card-body">
+                <form action="/panel/transportadores/crear" method="post">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Medio de transporte</label>
+                        <select name="medio" class="form-select">
+                            <option value="moto">🏍️ Moto</option>
+                            <option value="camioneta">🚗 Camioneta</option>
+                            <option value="camion">🚛 Camión</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tarifa base (COP)</label>
+                        <input type="number" name="tarifa_base" class="form-control" value="5000" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Costo por kilómetro (COP)</label>
+                        <input type="number" name="costo_km" class="form-control" value="1500" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" name="telefono" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white"><strong>Listado</strong></div>
+            <div class="card-body">
+                {% if transportadores %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead><tr><th>Nombre</th><th>Medio</th><th>Tarifa base</th><th>$/km</th><th>Teléfono</th><th></th></tr></thead>
+                        <tbody>
+                            {% for t in transportadores %}
+                            <tr>
+                                <td>{{ t.nombre }}</td>
+                                <td>{{ t.medio }}</td>
+                                <td>${{ t.tarifa_base }}</td>
+                                <td>${{ t.costo_km }}</td>
+                                <td>{{ t.telefono or 'N/A' }}</td>
+                                <td>
+                                    <form action="/panel/transportadores/eliminar/{{ t.id }}" method="post">
+                                        <button class="btn btn-sm btn-outline-danger">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No tienes transportadores registrados. Agrega el primero.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
