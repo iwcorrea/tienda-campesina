@@ -1,6 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Calculadora de Precio Justo | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
-{% block meta_description %}Calcula el precio justo de tus productos campesinos considerando insumos, mano de obra y transporte. Herramienta gratuita para productores rurales.{% endblock %}
+{% set config = request.state.config %}
+{% block title %}{{ config.titulo_calculadora or 'Calculadora de Precio Justo | ' + config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block meta_description %}{{ config.descripcion_calculadora or 'Calcula el precio justo de tus productos campesinos.' }}{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3">
   <ol class="breadcrumb">

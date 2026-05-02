@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-
-{% block title %}Inicio | Tienda Campesina{% endblock %}
-
+{% set config = request.state.config %}
+{% block title %}{{ config.titulo_inicio or 'Inicio | ' + config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block meta_description %}{{ config.descripcion_inicio or config.descripcion_meta or 'Plataforma para visibilizar asociaciones rurales.' }}{% endblock %}
 {% block content %}
 <section class="p-4 p-md-5 bg-white rounded-4 shadow-sm">
     <div class="row align-items-center g-4">

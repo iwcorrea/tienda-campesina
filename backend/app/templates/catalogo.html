@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Catálogo de Productos Campesinos | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
-{% block meta_description %}Explora productos frescos y servicios de las asociaciones campesinas colombianas. Apoya el campo comprando directamente a los productores.{% endblock %}
-{% block og_image %}https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png{% endblock %}
+{% set config = request.state.config %}
+{% block title %}{{ config.titulo_catalogo or 'Catálogo de Productos Campesinos | ' + config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block meta_description %}{{ config.descripcion_catalogo or 'Explora productos frescos y servicios de las asociaciones campesinas colombianas.' }}{% endblock %}
+{% block og_image %}{{ config.imagen_og_url or 'https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png' }}{% endblock %}
 
 {% block head %}
 <script type="application/ld+json">

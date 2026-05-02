@@ -1,6 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Bolsa de Empleo Rural | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
-{% block meta_description %}Encuentra trabajo en el campo colombiano. Las asociaciones campesinas publican vacantes para cosecha, administración, transporte y más.{% endblock %}
+{% set config = request.state.config %}
+{% block title %}{{ config.titulo_bolsa or 'Bolsa de Empleo Rural | ' + config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block meta_description %}{{ config.descripcion_bolsa or 'Encuentra trabajo en el campo colombiano.' }}{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb" class="mb-3">
   <ol class="breadcrumb">

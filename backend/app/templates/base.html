@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}</title>
-    <meta name="description" content="{% block meta_description %}{{ request.state.config.descripcion_meta or 'Plataforma para visibilizar asociaciones rurales, publicar productos y conectar directamente con compradores.' }}{% endblock %}">
+    {% set config = request.state.config %}
+    <title>{% block title %}{{ config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}{{ config.descripcion_meta or 'Plataforma para asociaciones campesinas.' }}{% endblock %}">
     <link rel="canonical" href="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}" />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}">
     <meta property="og:title" content="{{ self.title() }}">
     <meta property="og:description" content="{{ self.meta_description() }}">
-    <meta property="og:image" content="{% block og_image %}https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ config.imagen_og_url or 'https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png' }}{% endblock %}">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
@@ -21,30 +22,62 @@
     <meta property="twitter:description" content="{{ self.meta_description() }}">
     <meta property="twitter:image" content="{{ self.og_image() }}">
 
-    <!-- Verificación de Google Search Console -->
-    <meta name="google-site-verification" content="n_x8DfggbKs_Wvv6It2oLrwHkOomTZo8Gwt2LVPh39Q" />
+    {% if config.google_verification %}
+    <meta name="google-site-verification" content="{{ config.google_verification }}" />
+    {% endif %}
+
+    <!-- Google Analytics -->
+    {% if config.google_analytics_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ config.google_analytics_id }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '{{ config.google_analytics_id }}');
+    </script>
+    {% endif %}
 
     <!-- Favicons -->
+    {% if config.favicon_32_url %}
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ config.favicon_32_url }}">
+    {% else %}
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    {% endif %}
+    {% if config.favicon_16_url %}
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ config.favicon_16_url }}">
+    {% else %}
     <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    {% endif %}
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <link rel="manifest" href="/static/site.webmanifest">
-    <meta name="theme-color" content="{{ request.state.config.color_primario or '#2d6a4f' }}">
+    <meta name="theme-color" content="{{ config.color_primario or '#2d6a4f' }}">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Estilos personalizados -->
+    {% if config.fuente_url %}
+    <link href="{{ config.fuente_url }}" rel="stylesheet">
+    {% endif %}
     <link rel="stylesheet" href="/static/style.css">
 
     <!-- Estilos dinámicos desde configuración -->
     <style>
         :root {
-            --color-primario: {{ request.state.config.color_primario or '#2d6a4f' }};
-            --color-fondo: {{ request.state.config.color_fondo or '#f8faf5' }};
+            --color-primario: {{ config.color_primario or '#2d6a4f' }};
+            --color-secundario: {{ config.color_secundario or '#1f3b2c' }};
+            --color-fondo: {{ config.color_fondo or '#f8faf5' }};
+            --color-texto: {{ config.color_texto or '#2f3e2f' }};
+            --color-enlaces: {{ config.color_enlaces or '#2d6a4f' }};
+            --color-fondo-tarjetas: {{ config.color_fondo_tarjetas or '#ffffff' }};
+            --color-hover: {{ config.color_hover or '#1b3324' }};
+            --fuente-nombre: '{{ config.fuente_nombre or 'Nunito' }}', system-ui, sans-serif;
+            --fuente-tamano: {{ config.fuente_tamano_base or '16px' }};
         }
-        body { background-color: var(--color-fondo) !important; }
+        body {
+            background-color: var(--color-fondo);
+            color: var(--color-texto);
+            font-family: var(--fuente-nombre);
+            font-size: var(--fuente-tamano);
+        }
         .bg-success, .btn-success, .navbar.bg-success {
             background-color: var(--color-primario) !important;
             border-color: var(--color-primario) !important;
@@ -55,6 +88,11 @@
         .text-success { color: var(--color-primario) !important; }
         .card-header.bg-success { background-color: var(--color-primario) !important; }
         footer { border-top: 3px solid var(--color-primario); }
+        a { color: var(--color-enlaces); }
+        .card { background-color: var(--color-fondo-tarjetas); }
+        .btn:hover { background-color: var(--color-hover) !important; border-color: var(--color-hover) !important; }
+        /* CSS personalizado del admin */
+        {{ config.css_personalizado or '' }}
     </style>
 
     {% block head %}{% endblock %}
@@ -63,10 +101,12 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-success sticky-top shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold fs-4" href="/">
-                {% if request.session.get("logo_url") %}
+                {% if config.logo_url %}
+                <img src="{{ config.logo_url }}" alt="Logo" class="navbar-logo me-2" width="36" height="36">
+                {% elif request.session.get("logo_url") %}
                 <img src="{{ request.session.logo_url }}" alt="Logo" class="navbar-logo me-2" width="36" height="36">
                 {% endif %}
-                🌱 {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}
+                🌱 {{ config.titulo_sitio or 'Tienda Campesina' }}
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -127,7 +167,7 @@
 
     <footer class="py-4 bg-success text-white text-center">
         <div class="container">
-            <p class="mb-1 fw-semibold">{{ request.state.config.titulo_sitio or 'Tienda Campesina' }}</p>
+            <p class="mb-1 fw-semibold">{{ config.titulo_sitio or 'Tienda Campesina' }}</p>
             <small>Apoyando la Reforma Agraria en Colombia 🇨🇴</small>
         </div>
     </footer>

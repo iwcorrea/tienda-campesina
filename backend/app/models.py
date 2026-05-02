@@ -96,7 +96,43 @@ class Configuracion(Base):
     __tablename__ = "configuracion"
 
     id = Column(Integer, primary_key=True, default=1)
+
+    # SEO general
     titulo_sitio = Column(String, default="Tienda Campesina")
     descripcion_meta = Column(Text, default="Plataforma para visibilizar asociaciones rurales.")
+    google_verification = Column(String, default="")
+    google_analytics_id = Column(String, default="")          # ← NUEVO
+    robots_txt_extra = Column(Text, default="")
+    imagen_og_url = Column(Text, default="")
+
+    # Diseño – Colores
     color_primario = Column(String, default="#2d6a4f")
+    color_secundario = Column(String, default="#1f3b2c")
     color_fondo = Column(String, default="#f8faf5")
+    color_texto = Column(String, default="#2f3e2f")
+    color_enlaces = Column(String, default="#2d6a4f")
+    color_fondo_tarjetas = Column(String, default="#ffffff")
+    color_hover = Column(String, default="#1b3324")
+
+    # Tipografía
+    fuente_nombre = Column(String, default="Nunito")
+    fuente_tamano_base = Column(String, default="16px")
+    fuente_url = Column(String, default="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap")
+
+    # Logo y favicon (URLs de Cloudinary)
+    logo_url = Column(Text, default="")
+    favicon_32_url = Column(Text, default="")
+    favicon_16_url = Column(Text, default="")
+
+    # CSS personalizado
+    css_personalizado = Column(Text, default="")
+
+    # Títulos y descripciones por página
+    titulo_inicio = Column(String, default="")
+    descripcion_inicio = Column(String, default="")
+    titulo_catalogo = Column(String, default="")
+    descripcion_catalogo = Column(String, default="")
+    titulo_bolsa = Column(String, default="")
+    descripcion_bolsa = Column(String, default="")
+    titulo_calculadora = Column(String, default="")
+    descripcion_calculadora = Column(String, default="")
