@@ -11,10 +11,10 @@ from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
 import cloudinary
 import time
+from sqlalchemy import inspect, text
 
-# Routers existentes
+# Routers
 from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
-# NUEVOS routers
 from app.routers import personas, empleos
 
 logging.basicConfig(level=logging.INFO)
@@ -27,11 +27,11 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
 # ─── Middleware de sesión y timeout ──────
 class SessionTimeoutMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
+    async def dispatch(self, request: Request, call_next):
         if request.session.get("usuario"):
             last_activity = request.session.get("last_activity", 0)
             now = time.time()
-            if now - last_activity > 300: # 300 segundos = 5 minutos
+            if now - last_activity > 300:   # 5 minutos
                 request.session.clear()
                 from fastapi.responses import RedirectResponse
                 return RedirectResponse(url="/auth/login", status_code=303)
@@ -80,7 +80,6 @@ app.include_router(asociacion.router)
 app.include_router(valoraciones.router)
 app.include_router(admin.router)
 app.include_router(calculadora.router)
-# NUEVOS
 app.include_router(personas.router)
 app.include_router(empleos.router)
 
@@ -108,4 +107,22 @@ def delete_cloudinary_asset(url: str, resource_type: str = "image"):
 
 @app.on_event("startup")
 def on_startup():
+    # Crear tablas que no existan
     Base.metadata.create_all(bind=engine)
+
+    # 🧩 Migración segura: añadir columnas nuevas a la tabla configuracion si faltan
+    with engine.connect() as conn:
+        # Obtener las columnas existentes en la tabla configuracion
+        existing = set()
+        rows = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'"))
+        for row in rows:
+            existing.add(row[0])
+
+        # Columnas que espera el modelo
+        model_columns = Configuracion.__table__.columns
+        for col in model_columns:
+            if col.name not in existing:
+                col_type = col.type.compile(dialect=engine.dialect)
+                sql = f'ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS {col.name} {col_type}'
+                conn.execute(text(sql))
+        conn.commit()
