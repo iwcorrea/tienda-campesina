@@ -91,7 +91,6 @@ class Aplicacion(Base):
     vacante = relationship("Vacante")
     persona = relationship("Persona")
 
-# ─── CONFIGURACIÓN SEO Y DISEÑO ─────────────────────
 class Configuracion(Base):
     __tablename__ = "configuracion"
 
@@ -101,7 +100,7 @@ class Configuracion(Base):
     titulo_sitio = Column(String, default="Tienda Campesina")
     descripcion_meta = Column(Text, default="Plataforma para visibilizar asociaciones rurales.")
     google_verification = Column(String, default="")
-    google_analytics_id = Column(String, default="")          # ← NUEVO
+    google_analytics_id = Column(String, default="")
     robots_txt_extra = Column(Text, default="")
     imagen_og_url = Column(Text, default="")
 
@@ -136,3 +135,18 @@ class Configuracion(Base):
     descripcion_bolsa = Column(String, default="")
     titulo_calculadora = Column(String, default="")
     descripcion_calculadora = Column(String, default="")
+
+    # ─── NUEVOS CAMPOS DE CONTENIDO ───
+    inicio_titulo = Column(String, default="Asociaciones de productores campesinos")
+    inicio_subtitulo = Column(Text, default="Plataforma para visibilizar asociaciones rurales, publicar productos y conectar directamente con compradores.")
+    inicio_texto_tarjeta = Column(Text, default="Comparte tu historia, exhibe tus productos y fortalece la economía campesina.")
+    inicio_titulo_tarjeta = Column(String, default="Impulsa tu producción local")
+
+    footer_texto = Column(String, default="Tienda Campesina")
+    footer_subtexto = Column(String, default="Apoyando la Reforma Agraria en Colombia")
+
+    menu_mostrar_catalogo = Column(String, default="1")
+    menu_mostrar_calculadora = Column(String, default="1")
+    menu_mostrar_bolsa = Column(String, default="1")
+    menu_enlace_extra = Column(String, default="")
+    menu_url_extra = Column(String, default="")

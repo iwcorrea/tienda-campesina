@@ -113,9 +113,18 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-lg-center">
+                    {% if config.menu_mostrar_catalogo != '' %}
                     <li class="nav-item"><a class="nav-link px-3" href="/catalogo">📦 Catálogo</a></li>
+                    {% endif %}
+                    {% if config.menu_mostrar_calculadora != '' %}
                     <li class="nav-item"><a class="nav-link px-3" href="/calculadora">🧮 Calculadora</a></li>
+                    {% endif %}
+                    {% if config.menu_mostrar_bolsa != '' %}
                     <li class="nav-item"><a class="nav-link px-3" href="/bolsa-empleo">💼 Bolsa de Empleo</a></li>
+                    {% endif %}
+                    {% if config.menu_enlace_extra and config.menu_url_extra %}
+                    <li class="nav-item"><a class="nav-link px-3" href="{{ config.menu_url_extra }}">{{ config.menu_enlace_extra }}</a></li>
+                    {% endif %}
 
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
                         {% if request.session.get("es_admin") %}
@@ -167,8 +176,8 @@
 
     <footer class="py-4 bg-success text-white text-center">
         <div class="container">
-            <p class="mb-1 fw-semibold">{{ config.titulo_sitio or 'Tienda Campesina' }}</p>
-            <small>Apoyando la Reforma Agraria en Colombia 🇨🇴</small>
+            <p class="mb-1 fw-semibold">{{ config.footer_texto or 'Tienda Campesina' }}</p>
+            <small>{{ config.footer_subtexto or 'Apoyando la Reforma Agraria en Colombia 🇨🇴' }}</small>
         </div>
     </footer>
 

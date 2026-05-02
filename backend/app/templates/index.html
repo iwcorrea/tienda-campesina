@@ -6,14 +6,12 @@
 <section class="p-4 p-md-5 bg-white rounded-4 shadow-sm">
     <div class="row align-items-center g-4">
         <div class="col-lg-7">
-            <h1 class="display-6 fw-bold">Asociaciones de productores campesinos</h1>
+            <h1 class="display-6 fw-bold">{{ config.inicio_titulo or 'Asociaciones de productores campesinos' }}</h1>
             <p class="lead text-muted mt-3">
-                Plataforma para visibilizar asociaciones rurales, publicar productos y conectar
-                directamente con compradores.
+                {{ config.inicio_subtitulo or 'Plataforma para visibilizar asociaciones rurales, publicar productos y conectar directamente con compradores.' }}
             </p>
             <div class="d-flex flex-wrap gap-2 mt-3">
                 <a href="/catalogo" class="btn btn-success btn-lg">Ver catálogo</a>
-
                 {% if request.session.get("tipo_usuario") == "asociacion" %}
                     <a href="/panel" class="btn btn-outline-success btn-lg">Ir al panel</a>
                 {% elif not request.session.get("usuario") %}
@@ -24,9 +22,9 @@
         <div class="col-lg-5">
             <div class="card border-0 bg-success-subtle">
                 <div class="card-body p-4">
-                    <h5 class="card-title">Impulsa tu producción local</h5>
+                    <h5 class="card-title">{{ config.inicio_titulo_tarjeta or 'Impulsa tu producción local' }}</h5>
                     <p class="card-text mb-0">
-                        Comparte tu historia, exhibe tus productos y fortalece la economía campesina.
+                        {{ config.inicio_texto_tarjeta or 'Comparte tu historia, exhibe tus productos y fortalece la economía campesina.' }}
                     </p>
                 </div>
             </div>
