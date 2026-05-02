@@ -1,12 +1,12 @@
 import logging
 import os
 import uuid
-from fastapi import APIRouter, Request, Form, File, UploadFile, Depends
+from fastapi import APIRouter, Request, Form, File, UploadFile, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Asociacion, Producto
+from app.models import Asociacion, Producto, Transportador
 import cloudinary.uploader
 
 router = APIRouter()
@@ -164,7 +164,7 @@ def eliminar_producto(request: Request, producto_id: str, db: Session = Depends(
         db.commit()
     return RedirectResponse(url="/panel", status_code=303)
 
-    # ─── TRANSPORTADORES ─────────────────────────────
+# ─── TRANSPORTADORES ─────────────────────────────
 @router.get("/panel/transportadores", response_class=HTMLResponse)
 def panel_transportadores(request: Request, db: Session = Depends(get_db)):
     if request.session.get("tipo_usuario") != "asociacion":
