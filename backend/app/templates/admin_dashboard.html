@@ -1,135 +1,155 @@
 {% extends "base.html" %}
 {% block title %}Dashboard Admin{% endblock %}
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>📊 Dashboard Administrativo</h2>
-    <div>
-        <a href="/admin/asociaciones" class="btn btn-outline-success me-2">🏢 Asociaciones</a>
-        <a href="/admin/archivos" class="btn btn-outline-success">📁 Archivos</a>
-    </div>
-</div>
-
-<div class="row g-4">
-    <div class="col-md-3">
-        <div class="card text-white bg-dark h-100">
-            <div class="card-body text-center">
-                <h5>🏢 Asociaciones</h5>
-                <p class="display-4">{{ total_asociaciones }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-dark h-100">
-            <div class="card-body text-center">
-                <h5>📦 Productos</h5>
-                <p class="display-4">{{ total_productos }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-dark h-100">
-            <div class="card-body text-center">
-                <h5>👤 Personas</h5>
-                <p class="display-4">{{ total_personas }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-dark h-100">
-            <div class="card-body text-center">
-                <h5>💼 Vacantes activas</h5>
-                <p class="display-4">{{ total_vacantes }}</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-5">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5>Asociaciones registradas por mes</h5>
-                <canvas id="chartAsociaciones"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5>Últimas asociaciones</h5>
-                <ul class="list-group list-group-flush">
-                    {% for a in ultimas_asociaciones %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>{{ a.nombre }}</span>
-                        <span>
-                            <small class="text-muted me-3">
-                                {% if a.fecha_registro %}
-                                    {{ a.fecha_registro.strftime('%d/%m/%Y') }}
-                                {% else %}
-                                    Sin fecha
-                                {% endif %}
-                            </small>
-                            <a href="/admin/asociacion/{{ a.email }}/editar" class="btn btn-sm btn-outline-primary">Editar</a>
-                        </span>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <h5>Últimas vacantes</h5>
-                <table class="table table-sm">
-                    <thead>
-                        <tr><th>Cargo</th><th>Asociación</th><th>Fecha</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for v in ultimas_vacantes %}
-                        <tr>
-                            <td>{{ v.cargo }}</td>
-                            <td>{{ v.asociacion.nombre }}</td>
-                            <td>
-                                {% if v.fecha_publicacion %}
-                                    {{ v.fecha_publicacion.strftime('%d/%m/%Y') }}
-                                {% else %}
-                                    Sin fecha
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
+{% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+{% block content %}
+<div class="admin-dashboard">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">📊 Panel de Control</h2>
+            <p class="text-muted mb-0">Bienvenido, administrador. Aquí tienes una visión general de la plataforma.</p>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="/admin/asociaciones" class="btn btn-outline-success">🏢 Asociaciones</a>
+            <a href="/admin/archivos" class="btn btn-outline-success">📁 Archivos</a>
+            <a href="/admin/configuracion" class="btn btn-outline-success">🎨 Configuración</a>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card stat-card--primary">
+                <div class="stat-card__icon"><span>🏢</span></div>
+                <div class="stat-card__info">
+                    <h3 class="stat-card__value">{{ total_asociaciones }}</h3>
+                    <p class="stat-card__label">Asociaciones</p>
+                </div>
+                <div class="stat-card__trend text-success small"><span>↗️ Activas</span></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card stat-card--info">
+                <div class="stat-card__icon"><span>📦</span></div>
+                <div class="stat-card__info">
+                    <h3 class="stat-card__value">{{ total_productos }}</h3>
+                    <p class="stat-card__label">Productos</p>
+                </div>
+                <div class="stat-card__trend text-info small"><span>En catálogo</span></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card stat-card--warning">
+                <div class="stat-card__icon"><span>👤</span></div>
+                <div class="stat-card__info">
+                    <h3 class="stat-card__value">{{ total_personas }}</h3>
+                    <p class="stat-card__label">Personas</p>
+                </div>
+                <div class="stat-card__trend text-warning small"><span>Registradas</span></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card stat-card--secondary">
+                <div class="stat-card__icon"><span>💼</span></div>
+                <div class="stat-card__info">
+                    <h3 class="stat-card__value">{{ total_vacantes }}</h3>
+                    <p class="stat-card__label">Vacantes activas</p>
+                </div>
+                <div class="stat-card__trend text-secondary small"><span>Publicadas</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-semibold">📈 Asociaciones registradas por mes</h5>
+                    <span class="badge bg-success">Últimos 6 meses</span>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartAsociaciones" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0 fw-semibold">🆕 Últimas asociaciones</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for a in ultimas_asociaciones %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <span class="fw-semibold">{{ a.nombre }}</span><br>
+                                <small class="text-muted">
+                                    {% if a.fecha_registro %}{{ a.fecha_registro.strftime('%d/%m/%Y') }}{% else %}Sin fecha{% endif %}
+                                </small>
+                            </div>
+                            <a href="/admin/asociacion/{{ a.email }}/editar" class="btn btn-sm btn-outline-primary rounded-pill">Editar</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0 fw-semibold">💼 Últimas vacantes publicadas</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr><th>Cargo</th><th>Asociación</th><th class="text-end">Fecha</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for v in ultimas_vacantes %}
+                                <tr>
+                                    <td class="fw-semibold">{{ v.cargo }}</td>
+                                    <td>{{ v.asociacion.nombre }}</td>
+                                    <td class="text-end text-muted">
+                                        {% if v.fecha_publicacion %}{{ v.fecha_publicacion.strftime('%d/%m/%Y') }}{% else %}Sin fecha{% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
 <script>
-const ctx = document.getElementById('chartAsociaciones').getContext('2d');
-new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: {{ labels_mes | tojson }},
-        datasets: [{
-            label: 'Nuevas asociaciones',
-            data: {{ data_mensual | tojson }},
-            backgroundColor: '#2d6a4f'
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: { stepSize: 1 }
+document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('chartAsociaciones').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ labels_mes | tojson }},
+            datasets: [{
+                label: 'Nuevas asociaciones',
+                data: {{ data_mensual | tojson }},
+                backgroundColor: 'rgba(45, 106, 79, 0.7)',
+                borderColor: '#2d6a4f',
+                borderWidth: 1,
+                borderRadius: 5,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { display: false } },
+                x: { grid: { display: false } }
             }
         }
-    }
+    });
 });
 </script>
 {% endblock %}

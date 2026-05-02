@@ -1,58 +1,50 @@
 {% extends "base.html" %}
 {% block title %}Asociaciones - Admin{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>🏢 Asociaciones registradas</h2>
-    <div>
-        <a href="/admin" class="btn btn-outline-success me-2">📊 Dashboard</a>
-        <a href="/admin/archivos" class="btn btn-outline-success">📁 Archivos</a>
+<div class="admin-dashboard">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">🏢 Asociaciones registradas</h2>
+            <p class="text-muted mb-0">Gestiona las organizaciones campesinas.</p>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="/admin" class="btn btn-outline-success">📊 Dashboard</a>
+            <a href="/admin/archivos" class="btn btn-outline-success">📁 Archivos</a>
+            <a href="/admin/configuracion" class="btn btn-outline-success">🎨 Configuración</a>
+        </div>
     </div>
-</div>
-
-<div class="table-responsive">
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Email</th>
-                <th>Nombre</th>
-                <th>Documentos</th>
-                <th>Estado</th>
-                <th>Acción</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for a in asociaciones %}
-            <tr>
-                <td>{{ a.email }}</td>
-                <td>
-                    <a href="/admin/asociacion/{{ a.email }}/editar">{{ a.nombre }}</a>
-                </td>
-                <td>
-                    {% if a.camara_url %}
-                    <a href="{{ a.camara_url }}" target="_blank">Cámara</a>
-                    {% else %}—{% endif %}
-                    |
-                    {% if a.rut_url %}
-                    <a href="{{ a.rut_url }}" target="_blank">RUT</a>
-                    {% else %}—{% endif %}
-                </td>
-                <td>
-                    {% if a.verificado == '1' %}
-                    <span class="badge bg-success">Aprobado</span>
-                    {% else %}
-                    <span class="badge bg-warning text-dark">Pendiente</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <form method="post" action="/admin/toggle-estado/{{ a.email }}" style="display:inline">
-                        <button class="btn btn-sm {% if a.verificado == '1' %}btn-outline-danger{% else %}btn-success{% endif %}">
-                            {% if a.verificado == '1' %}Desaprobar{% else %}Aprobar{% endif %}
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Email</th><th>Nombre</th><th>Documentos</th><th>Estado</th><th>Acción</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for a in asociaciones %}
+                        <tr>
+                            <td>{{ a.email }}</td>
+                            <td class="fw-semibold"><a href="/admin/asociacion/{{ a.email }}/editar" class="text-decoration-none">{{ a.nombre }}</a></td>
+                            <td>
+                                {% if a.camara_url %}<a href="{{ a.camara_url }}" target="_blank" class="btn btn-sm btn-outline-secondary me-1">Cámara</a>{% else %}—{% endif %}
+                                {% if a.rut_url %}<a href="{{ a.rut_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">RUT</a>{% else %}—{% endif %}
+                            </td>
+                            <td>
+                                {% if a.verificado == '1' %}<span class="badge bg-success rounded-pill">Aprobado</span>{% else %}<span class="badge bg-warning text-dark rounded-pill">Pendiente</span>{% endif %}
+                            </td>
+                            <td>
+                                <form method="post" action="/admin/toggle-estado/{{ a.email }}" style="display:inline">
+                                    <button class="btn btn-sm {% if a.verificado == '1' %}btn-outline-danger{% else %}btn-success{% endif %} rounded-pill">
+                                        {% if a.verificado == '1' %}Desaprobar{% else %}Aprobar{% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

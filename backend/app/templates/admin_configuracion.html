@@ -1,284 +1,126 @@
 {% extends "base.html" %}
 {% block title %}Configuración Avanzada{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>🎨 Configuración SEO y Diseño</h2>
-    <a href="/admin" class="btn btn-outline-success">📊 Dashboard</a>
-</div>
-
-<form method="post" action="/admin/configuracion" enctype="multipart/form-data">
-    <ul class="nav nav-tabs mb-3" id="configTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="seo-tab" data-bs-toggle="tab" data-bs-target="#seo" type="button" role="tab">SEO</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="diseno-tab" data-bs-toggle="tab" data-bs-target="#diseno" type="button" role="tab">🎨 Colores</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tipografia-tab" data-bs-toggle="tab" data-bs-target="#tipografia" type="button" role="tab">🔤 Tipografía</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="assets-tab" data-bs-toggle="tab" data-bs-target="#assets" type="button" role="tab">🖼️ Recursos</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="contenidos-tab" data-bs-toggle="tab" data-bs-target="#contenidos" type="button" role="tab">📝 Contenidos</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="avanzado-tab" data-bs-toggle="tab" data-bs-target="#avanzado" type="button" role="tab">⚙️ CSS / Robots</button>
-        </li>
-    </ul>
-
-    <div class="tab-content">
-        <!-- Pestaña SEO -->
-        <div class="tab-pane fade show active" id="seo" role="tabpanel">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>SEO General</h5>
-                    <div class="mb-3">
-                        <label class="form-label">Título del sitio</label>
-                        <input type="text" name="titulo_sitio" class="form-control" value="{{ config.titulo_sitio or 'Tienda Campesina' }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Descripción meta (global)</label>
-                        <textarea name="descripcion_meta" class="form-control" rows="2" required>{{ config.descripcion_meta or '' }}</textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Código de verificación Google Search Console</label>
-                        <input type="text" name="google_verification" class="form-control" value="{{ config.google_verification }}">
-                        <small class="text-muted">El meta tag completo se generará automáticamente. Solo ingresa el código.</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">ID de Google Analytics (ej. G-XXXXXXXXXX)</label>
-                        <input type="text" name="google_analytics_id" class="form-control" value="{{ config.google_analytics_id or '' }}" placeholder="G-XXXXXXXXXX">
-                        <small class="text-muted">Si agregas tu ID, se insertará el script de Google Analytics automáticamente en todas las páginas.</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Títulos y descripciones por página</h5>
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <label>Inicio – Título</label>
-                            <input type="text" name="titulo_inicio" class="form-control" value="{{ config.titulo_inicio }}">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label>Inicio – Descripción</label>
-                            <input type="text" name="descripcion_inicio" class="form-control" value="{{ config.descripcion_inicio }}">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label>Catálogo – Título</label>
-                            <input type="text" name="titulo_catalogo" class="form-control" value="{{ config.titulo_catalogo }}">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label>Catálogo – Descripción</label>
-                            <input type="text" name="descripcion_catalogo" class="form-control" value="{{ config.descripcion_catalogo }}">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label>Bolsa de empleo – Título</label>
-                            <input type="text" name="titulo_bolsa" class="form-control" value="{{ config.titulo_bolsa }}">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label>Bolsa de empleo – Descripción</label>
-                            <input type="text" name="descripcion_bolsa" class="form-control" value="{{ config.descripcion_bolsa }}">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label>Calculadora – Título</label>
-                            <input type="text" name="titulo_calculadora" class="form-control" value="{{ config.titulo_calculadora }}">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label>Calculadora – Descripción</label>
-                            <input type="text" name="descripcion_calculadora" class="form-control" value="{{ config.descripcion_calculadora }}">
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="admin-dashboard">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">🎨 Configuración SEO y Diseño</h2>
+            <p class="text-muted mb-0">Personaliza la apariencia y el SEO de la plataforma.</p>
         </div>
-
-        <!-- Pestaña Diseño -->
-        <div class="tab-pane fade" id="diseno" role="tabpanel">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Colores</h5>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Primario</label>
-                            <input type="color" name="color_primario" class="form-control" value="{{ config.color_primario or '#2d6a4f' }}">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Secundario</label>
-                            <input type="color" name="color_secundario" class="form-control" value="{{ config.color_secundario or '#1f3b2c' }}">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Fondo</label>
-                            <input type="color" name="color_fondo" class="form-control" value="{{ config.color_fondo or '#f8faf5' }}">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Texto</label>
-                            <input type="color" name="color_texto" class="form-control" value="{{ config.color_texto or '#2f3e2f' }}">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Enlaces</label>
-                            <input type="color" name="color_enlaces" class="form-control" value="{{ config.color_enlaces or '#2d6a4f' }}">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Fondo tarjetas</label>
-                            <input type="color" name="color_fondo_tarjetas" class="form-control" value="{{ config.color_fondo_tarjetas or '#ffffff' }}">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Hover</label>
-                            <input type="color" name="color_hover" class="form-control" value="{{ config.color_hover or '#1b3324' }}">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pestaña Tipografía -->
-        <div class="tab-pane fade" id="tipografia" role="tabpanel">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Tipografía</h5>
-                    <div class="mb-3">
-                        <label class="form-label">Nombre de la fuente (Google Fonts)</label>
-                        <input type="text" name="fuente_nombre" class="form-control" value="{{ config.fuente_nombre or 'Nunito' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Tamaño base (ej. 16px)</label>
-                        <input type="text" name="fuente_tamano_base" class="form-control" value="{{ config.fuente_tamano_base or '16px' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">URL de Google Fonts</label>
-                        <input type="url" name="fuente_url" class="form-control" value="{{ config.fuente_url or 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap' }}">
-                        <small class="text-muted">Pega la URL completa que te da Google Fonts.</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pestaña Recursos -->
-        <div class="tab-pane fade" id="assets" role="tabpanel">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Logo del sitio</h5>
-                    {% if config.logo_url %}
-                    <img src="{{ config.logo_url }}" class="mb-2" style="max-height:60px"><br>
-                    {% endif %}
-                    <input type="file" name="logo" class="form-control" accept="image/*">
-                    <small class="text-muted">Reemplazará el logo de la barra de navegación principal.</small>
-                </div>
-            </div>
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Favicon</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label>Favicon 32x32</label>
-                            <input type="file" name="favicon_32" class="form-control" accept="image/png">
-                        </div>
-                        <div class="col-md-6">
-                            <label>Favicon 16x16</label>
-                            <input type="file" name="favicon_16" class="form-control" accept="image/png">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Imagen Open Graph por defecto</h5>
-                    <input type="file" name="imagen_og" class="form-control" accept="image/*">
-                    {% if config.imagen_og_url %}
-                    <img src="{{ config.imagen_og_url }}" class="mt-2" style="max-height:80px">
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- PESTAÑA CONTENIDOS (NUEVA) -->
-        <div class="tab-pane fade" id="contenidos" role="tabpanel">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Página de Inicio</h5>
-                    <div class="mb-3">
-                        <label class="form-label">Título principal</label>
-                        <input type="text" name="inicio_titulo" class="form-control" value="{{ config.inicio_titulo or '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Subtítulo</label>
-                        <textarea name="inicio_subtitulo" class="form-control" rows="2">{{ config.inicio_subtitulo or '' }}</textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Título de la tarjeta lateral</label>
-                        <input type="text" name="inicio_titulo_tarjeta" class="form-control" value="{{ config.inicio_titulo_tarjeta or '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Texto de la tarjeta lateral</label>
-                        <textarea name="inicio_texto_tarjeta" class="form-control" rows="2">{{ config.inicio_texto_tarjeta or '' }}</textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Footer</h5>
-                    <div class="mb-3">
-                        <label class="form-label">Texto principal</label>
-                        <input type="text" name="footer_texto" class="form-control" value="{{ config.footer_texto or '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Subtítulo</label>
-                        <input type="text" name="footer_subtexto" class="form-control" value="{{ config.footer_subtexto or '' }}">
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Menú de navegación</h5>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" name="menu_mostrar_catalogo" value="1" id="chkCatalogo" {% if config.menu_mostrar_catalogo != '' %}checked{% endif %}>
-                        <label class="form-check-label" for="chkCatalogo">Mostrar Catálogo</label>
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" name="menu_mostrar_calculadora" value="1" id="chkCalculadora" {% if config.menu_mostrar_calculadora != '' %}checked{% endif %}>
-                        <label class="form-check-label" for="chkCalculadora">Mostrar Calculadora</label>
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" name="menu_mostrar_bolsa" value="1" id="chkBolsa" {% if config.menu_mostrar_bolsa != '' %}checked{% endif %}>
-                        <label class="form-check-label" for="chkBolsa">Mostrar Bolsa de Empleo</label>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Enlace extra (nombre)</label>
-                        <input type="text" name="menu_enlace_extra" class="form-control" value="{{ config.menu_enlace_extra or '' }}" placeholder="Ej: Blog">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">URL del enlace extra</label>
-                        <input type="url" name="menu_url_extra" class="form-control" value="{{ config.menu_url_extra or '' }}" placeholder="https://...">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pestaña Avanzado -->
-        <div class="tab-pane fade" id="avanzado" role="tabpanel">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>CSS Personalizado</h5>
-                    <textarea name="css_personalizado" class="form-control" rows="8" style="font-family: monospace;">{{ config.css_personalizado or '' }}</textarea>
-                    <small class="text-muted">Se inyectará en todas las páginas.</small>
-                </div>
-            </div>
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>Robots.txt adicional</h5>
-                    <textarea name="robots_txt_extra" class="form-control" rows="4" style="font-family: monospace;">{{ config.robots_txt_extra or '' }}</textarea>
-                    <small class="text-muted">Se añadirá al final del robots.txt generado.</small>
-                </div>
-            </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="/admin" class="btn btn-outline-success">📊 Dashboard</a>
+            <a href="/admin/asociaciones" class="btn btn-outline-success">🏢 Asociaciones</a>
+            <a href="/admin/archivos" class="btn btn-outline-success">📁 Archivos</a>
         </div>
     </div>
 
-    <button type="submit" class="btn btn-success btn-lg mt-3">Guardar todos los cambios</button>
-</form>
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <form method="post" action="/admin/configuracion" enctype="multipart/form-data">
+                <ul class="nav nav-tabs mb-3" id="configTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="seo-tab" data-bs-toggle="tab" data-bs-target="#seo" type="button" role="tab">SEO</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="diseno-tab" data-bs-toggle="tab" data-bs-target="#diseno" type="button" role="tab">🎨 Colores</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tipografia-tab" data-bs-toggle="tab" data-bs-target="#tipografia" type="button" role="tab">🔤 Tipografía</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="assets-tab" data-bs-toggle="tab" data-bs-target="#assets" type="button" role="tab">🖼️ Recursos</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="contenidos-tab" data-bs-toggle="tab" data-bs-target="#contenidos" type="button" role="tab">📝 Contenidos</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="avanzado-tab" data-bs-toggle="tab" data-bs-target="#avanzado" type="button" role="tab">⚙️ CSS / Robots</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Pestaña SEO -->
+                    <div class="tab-pane fade show active" id="seo" role="tabpanel">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5>SEO General</h5>
+                                <div class="mb-3"><label class="form-label">Título del sitio</label><input type="text" name="titulo_sitio" class="form-control" value="{{ config.titulo_sitio or 'Tienda Campesina' }}" required></div>
+                                <div class="mb-3"><label class="form-label">Descripción meta (global)</label><textarea name="descripcion_meta" class="form-control" rows="2" required>{{ config.descripcion_meta or '' }}</textarea></div>
+                                <div class="mb-3"><label class="form-label">Código de verificación Google Search Console</label><input type="text" name="google_verification" class="form-control" value="{{ config.google_verification }}"><small class="text-muted">El meta tag completo se generará automáticamente. Solo ingresa el código.</small></div>
+                                <div class="mb-3"><label class="form-label">ID de Google Analytics (ej. G-XXXXXXXXXX)</label><input type="text" name="google_analytics_id" class="form-control" value="{{ config.google_analytics_id or '' }}" placeholder="G-XXXXXXXXXX"><small class="text-muted">Si agregas tu ID, se insertará el script de Google Analytics automáticamente en todas las páginas.</small></div>
+                            </div>
+                        </div>
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5>Títulos y descripciones por página</h5>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2"><label>Inicio – Título</label><input type="text" name="titulo_inicio" class="form-control" value="{{ config.titulo_inicio }}"></div>
+                                    <div class="col-md-6 mb-2"><label>Inicio – Descripción</label><input type="text" name="descripcion_inicio" class="form-control" value="{{ config.descripcion_inicio }}"></div>
+                                    <div class="col-md-6 mb-2"><label>Catálogo – Título</label><input type="text" name="titulo_catalogo" class="form-control" value="{{ config.titulo_catalogo }}"></div>
+                                    <div class="col-md-6 mb-2"><label>Catálogo – Descripción</label><input type="text" name="descripcion_catalogo" class="form-control" value="{{ config.descripcion_catalogo }}"></div>
+                                    <div class="col-md-6 mb-2"><label>Bolsa de empleo – Título</label><input type="text" name="titulo_bolsa" class="form-control" value="{{ config.titulo_bolsa }}"></div>
+                                    <div class="col-md-6 mb-2"><label>Bolsa de empleo – Descripción</label><input type="text" name="descripcion_bolsa" class="form-control" value="{{ config.descripcion_bolsa }}"></div>
+                                    <div class="col-md-6 mb-2"><label>Calculadora – Título</label><input type="text" name="titulo_calculadora" class="form-control" value="{{ config.titulo_calculadora }}"></div>
+                                    <div class="col-md-6 mb-2"><label>Calculadora – Descripción</label><input type="text" name="descripcion_calculadora" class="form-control" value="{{ config.descripcion_calculadora }}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña Diseño -->
+                    <div class="tab-pane fade" id="diseno" role="tabpanel">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5>Colores</h5>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3"><label class="form-label">Primario</label><input type="color" name="color_primario" class="form-control" value="{{ config.color_primario or '#2d6a4f' }}"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">Secundario</label><input type="color" name="color_secundario" class="form-control" value="{{ config.color_secundario or '#1f3b2c' }}"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">Fondo</label><input type="color" name="color_fondo" class="form-control" value="{{ config.color_fondo or '#f8faf5' }}"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">Texto</label><input type="color" name="color_texto" class="form-control" value="{{ config.color_texto or '#2f3e2f' }}"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">Enlaces</label><input type="color" name="color_enlaces" class="form-control" value="{{ config.color_enlaces or '#2d6a4f' }}"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">Fondo tarjetas</label><input type="color" name="color_fondo_tarjetas" class="form-control" value="{{ config.color_fondo_tarjetas or '#ffffff' }}"></div>
+                                    <div class="col-md-4 mb-3"><label class="form-label">Hover</label><input type="color" name="color_hover" class="form-control" value="{{ config.color_hover or '#1b3324' }}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña Tipografía -->
+                    <div class="tab-pane fade" id="tipografia" role="tabpanel">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5>Tipografía</h5>
+                                <div class="mb-3"><label class="form-label">Nombre de la fuente (Google Fonts)</label><input type="text" name="fuente_nombre" class="form-control" value="{{ config.fuente_nombre or 'Nunito' }}"></div>
+                                <div class="mb-3"><label class="form-label">Tamaño base (ej. 16px)</label><input type="text" name="fuente_tamano_base" class="form-control" value="{{ config.fuente_tamano_base or '16px' }}"></div>
+                                <div class="mb-3"><label class="form-label">URL de Google Fonts</label><input type="url" name="fuente_url" class="form-control" value="{{ config.fuente_url or 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap' }}"><small class="text-muted">Pega la URL completa que te da Google Fonts.</small></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña Recursos -->
+                    <div class="tab-pane fade" id="assets" role="tabpanel">
+                        <div class="card mb-4"><div class="card-body"><h5>Logo del sitio</h5>{% if config.logo_url %}<img src="{{ config.logo_url }}" class="mb-2" style="max-height:60px"><br>{% endif %}<input type="file" name="logo" class="form-control" accept="image/*"><small class="text-muted">Reemplazará el logo de la barra de navegación principal.</small></div></div>
+                        <div class="card mb-4"><div class="card-body"><h5>Favicon</h5><div class="row"><div class="col-md-6"><label>Favicon 32x32</label><input type="file" name="favicon_32" class="form-control" accept="image/png"></div><div class="col-md-6"><label>Favicon 16x16</label><input type="file" name="favicon_16" class="form-control" accept="image/png"></div></div></div></div>
+                        <div class="card mb-4"><div class="card-body"><h5>Imagen Open Graph por defecto</h5><input type="file" name="imagen_og" class="form-control" accept="image/*">{% if config.imagen_og_url %}<img src="{{ config.imagen_og_url }}" class="mt-2" style="max-height:80px">{% endif %}</div></div>
+                    </div>
+
+                    <!-- Pestaña Contenidos -->
+                    <div class="tab-pane fade" id="contenidos" role="tabpanel">
+                        <div class="card mb-4"><div class="card-body"><h5>Página de Inicio</h5><div class="mb-3"><label class="form-label">Título principal</label><input type="text" name="inicio_titulo" class="form-control" value="{{ config.inicio_titulo or '' }}"></div><div class="mb-3"><label class="form-label">Subtítulo</label><textarea name="inicio_subtitulo" class="form-control" rows="2">{{ config.inicio_subtitulo or '' }}</textarea></div><div class="mb-3"><label class="form-label">Título de la tarjeta lateral</label><input type="text" name="inicio_titulo_tarjeta" class="form-control" value="{{ config.inicio_titulo_tarjeta or '' }}"></div><div class="mb-3"><label class="form-label">Texto de la tarjeta lateral</label><textarea name="inicio_texto_tarjeta" class="form-control" rows="2">{{ config.inicio_texto_tarjeta or '' }}</textarea></div></div></div>
+                        <div class="card mb-4"><div class="card-body"><h5>Footer</h5><div class="mb-3"><label class="form-label">Texto principal</label><input type="text" name="footer_texto" class="form-control" value="{{ config.footer_texto or '' }}"></div><div class="mb-3"><label class="form-label">Subtítulo</label><input type="text" name="footer_subtexto" class="form-control" value="{{ config.footer_subtexto or '' }}"></div></div></div>
+                        <div class="card mb-4"><div class="card-body"><h5>Menú de navegación</h5><div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="menu_mostrar_catalogo" value="1" id="chkCatalogo" {% if config.menu_mostrar_catalogo != '' %}checked{% endif %}><label class="form-check-label" for="chkCatalogo">Mostrar Catálogo</label></div><div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="menu_mostrar_calculadora" value="1" id="chkCalculadora" {% if config.menu_mostrar_calculadora != '' %}checked{% endif %}><label class="form-check-label" for="chkCalculadora">Mostrar Calculadora</label></div><div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="menu_mostrar_bolsa" value="1" id="chkBolsa" {% if config.menu_mostrar_bolsa != '' %}checked{% endif %}><label class="form-check-label" for="chkBolsa">Mostrar Bolsa de Empleo</label></div><div class="mb-3"><label class="form-label">Enlace extra (nombre)</label><input type="text" name="menu_enlace_extra" class="form-control" value="{{ config.menu_enlace_extra or '' }}" placeholder="Ej: Blog"></div><div class="mb-3"><label class="form-label">URL del enlace extra</label><input type="url" name="menu_url_extra" class="form-control" value="{{ config.menu_url_extra or '' }}" placeholder="https://..."></div></div></div>
+                    </div>
+
+                    <!-- Pestaña Avanzado -->
+                    <div class="tab-pane fade" id="avanzado" role="tabpanel">
+                        <div class="card mb-4"><div class="card-body"><h5>CSS Personalizado</h5><textarea name="css_personalizado" class="form-control" rows="8" style="font-family: monospace;">{{ config.css_personalizado or '' }}</textarea><small class="text-muted">Se inyectará en todas las páginas.</small></div></div>
+                        <div class="card mb-4"><div class="card-body"><h5>Robots.txt adicional</h5><textarea name="robots_txt_extra" class="form-control" rows="4" style="font-family: monospace;">{{ config.robots_txt_extra or '' }}</textarea><small class="text-muted">Se añadirá al final del robots.txt generado.</small></div></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-lg mt-3">Guardar todos los cambios</button>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
