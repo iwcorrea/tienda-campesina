@@ -13,9 +13,11 @@ import cloudinary
 import time
 from sqlalchemy import inspect, text
 
-# Routers
+# Routers existentes
 from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
 from app.routers import personas, empleos
+# NUEVOS routers
+from app.routers import herramientas
 
 logging.basicConfig(level=logging.INFO)
 
@@ -82,6 +84,8 @@ app.include_router(admin.router)
 app.include_router(calculadora.router)
 app.include_router(personas.router)
 app.include_router(empleos.router)
+# NUEVO router de herramientas (contrato, etc.)
+app.include_router(herramientas.router)
 
 # Utilidad para eliminar assets de Cloudinary
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
@@ -110,15 +114,12 @@ def on_startup():
     # Crear tablas que no existan
     Base.metadata.create_all(bind=engine)
 
-    # 🧩 Migración segura: añadir columnas nuevas a la tabla configuracion si faltan
+    # Migración segura para nuevas columnas de la tabla configuracion
     with engine.connect() as conn:
-        # Obtener las columnas existentes en la tabla configuracion
         existing = set()
         rows = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'"))
         for row in rows:
             existing.add(row[0])
-
-        # Columnas que espera el modelo
         model_columns = Configuracion.__table__.columns
         for col in model_columns:
             if col.name not in existing:

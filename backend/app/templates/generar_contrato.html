@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Generar Contrato de Compraventa{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">📄 Generar Contrato de Compraventa</h2>
+    <p class="text-muted mb-4">Complete los datos y descargue un contrato en PDF listo para firmar.</p>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form method="post" action="/herramientas/contrato">
+                <div class="mb-3">
+                    <label class="form-label">Nombre del vendedor (asociación)</label>
+                    <input type="text" name="vendedor" class="form-control" value="{{ request.session.get('nombre_usuario', '') }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nombre del comprador</label>
+                    <input type="text" name="comprador" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Producto</label>
+                    <input type="text" name="producto" class="form-control" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Cantidad (ej. 100 kg, 20 bultos)</label>
+                        <input type="text" name="cantidad" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Precio unitario ($)</label>
+                        <input type="text" name="precio_unitario" class="form-control" placeholder="Ej: 2500,50" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Fecha de entrega</label>
+                    <input type="date" name="fecha_entrega" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Condiciones adicionales</label>
+                    <textarea name="condiciones" class="form-control" rows="3" placeholder="Ej: pago contra entrega, transporte por cuenta del comprador..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">Descargar contrato (PDF)</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

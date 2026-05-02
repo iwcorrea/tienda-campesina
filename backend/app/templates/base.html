@@ -91,7 +91,6 @@
         a { color: var(--color-enlaces); }
         .card { background-color: var(--color-fondo-tarjetas); }
         .btn:hover { background-color: var(--color-hover) !important; border-color: var(--color-hover) !important; }
-        /* CSS personalizado del admin */
         {{ config.css_personalizado or '' }}
     </style>
 
@@ -124,11 +123,12 @@
                     {% endif %}
 
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
-                        <!-- HERRAMIENTAS (solo asociaciones) -->
+                        <!-- 🛠️ Herramientas (solo asociaciones) -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle px-3" href="#" role="button" data-bs-toggle="dropdown">🛠️ Herramientas</a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="/calculadora">🧮 Calculadora de Precio Justo</a></li>
+                                <li><a class="dropdown-item" href="/herramientas/contrato">📄 Generar Contrato</a></li>
                             </ul>
                         </li>
                         {% if request.session.get("es_admin") %}
