@@ -1,10 +1,10 @@
 import logging
 import os
 from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.auth import router as auth_router
 from app.database import engine, Base, SessionLocal
@@ -25,8 +25,8 @@ cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
-# ─── MIDDLEWARES (orden correcto) ────────────────────
-# 1. SessionMiddleware DEBE ser el primero (se ejecuta último)
+# ─── MIDDLEWARES (orden estricto) ────────────────────
+# 1. SessionMiddleware: debe ser el primero para que request.session esté disponible
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
@@ -34,25 +34,15 @@ app.add_middleware(
     https_only=True,
 )
 
-# 2. Middleware de timeout (necesita sesión)
-class SessionTimeoutMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.session.get("usuario"):
-            last_activity = request.session.get("last_activity", 0)
-            now = time.time()
-            if now - last_activity > 300:   # 5 minutos
-                request.session.clear()
-                from fastapi.responses import RedirectResponse
-                return RedirectResponse(url="/auth/login", status_code=303)
-            request.session["last_activity"] = now
+# 2. Middleware combinado: timeout + configuración (sin BaseHTTPMiddleware)
+@app.middleware("http")
+async def timeout_y_configuracion(request: Request, call_next):
+    # --- RUTAS ESTÁTICAS Y PÚBLICAS: las dejamos pasar sin procesar sesión ---
+    if request.url.path.startswith("/static") or request.url.path.startswith("/auth/login"):
         response = await call_next(request)
         return response
 
-app.add_middleware(SessionTimeoutMiddleware)
-
-# 3. Middleware de configuración (sin acceso a sesión)
-@app.middleware("http")
-async def cargar_configuracion(request: Request, call_next):
+    # --- CARGAR CONFIGURACIÓN DESDE DB ---
     db = SessionLocal()
     try:
         config = db.query(Configuracion).first()
@@ -64,10 +54,21 @@ async def cargar_configuracion(request: Request, call_next):
         request.state.config = config
     finally:
         db.close()
+
+    # --- VERIFICAR TIMEOUT DE SESIÓN ---
+    if request.session.get("usuario"):
+        last_activity = request.session.get("last_activity", 0)
+        now = time.time()
+        if now - last_activity > 300:  # 5 minutos
+            request.session.clear()
+            return RedirectResponse(url="/auth/login", status_code=303)
+        # Actualizar la marca de actividad
+        request.session["last_activity"] = now
+
     response = await call_next(request)
     return response
 
-# 4. CORS (no depende de sesión)
+# 3. CORS (opcional, sin dependencia de sesión)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
