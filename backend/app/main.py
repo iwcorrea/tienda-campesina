@@ -11,8 +11,9 @@ from app.database import engine, Base, SessionLocal
 from app.models import Configuracion, Mensaje
 import cloudinary
 import time
-from sqlalchemy import inspect, text
+from sqlalchemy import text
 
+# Routers
 from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
 from app.routers import personas, empleos, herramientas, mensajes
 
@@ -24,12 +25,22 @@ cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
+# ─── MIDDLEWARES (orden correcto) ────────────────────
+# 1. SessionMiddleware DEBE ser el primero (se ejecuta último)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    same_site="lax",
+    https_only=True,
+)
+
+# 2. Middleware de timeout (necesita sesión)
 class SessionTimeoutMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.session.get("usuario"):
             last_activity = request.session.get("last_activity", 0)
             now = time.time()
-            if now - last_activity > 300:
+            if now - last_activity > 300:   # 5 minutos
                 request.session.clear()
                 from fastapi.responses import RedirectResponse
                 return RedirectResponse(url="/auth/login", status_code=303)
@@ -38,15 +49,8 @@ class SessionTimeoutMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(SessionTimeoutMiddleware)
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, same_site="lax", https_only=True)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
+# 3. Middleware de configuración (necesita sesión para contar no leídos)
 @app.middleware("http")
 async def cargar_configuracion(request: Request, call_next):
     db = SessionLocal()
@@ -59,6 +63,7 @@ async def cargar_configuracion(request: Request, call_next):
             db.refresh(config)
         request.state.config = config
 
+        # Contar mensajes no leídos para el badge del nav
         no_leidos = 0
         if request.session.get("usuario"):
             usuario_email = request.session["usuario"]
@@ -69,12 +74,23 @@ async def cargar_configuracion(request: Request, call_next):
         request.state.no_leidos = no_leidos
     finally:
         db.close()
+
     response = await call_next(request)
     return response
+
+# 4. CORS (no depende de sesión)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+# Incluir routers
 app.include_router(auth_router, prefix="/auth")
 app.include_router(home.router)
 app.include_router(catalogo.router)
@@ -90,6 +106,7 @@ app.include_router(empleos.router)
 app.include_router(herramientas.router)
 app.include_router(mensajes.router)
 
+# Utilidad para eliminar assets de Cloudinary
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
     if not url or "cloudinary.com" not in url:
         return
@@ -113,7 +130,9 @@ def delete_cloudinary_asset(url: str, resource_type: str = "image"):
 
 @app.on_event("startup")
 def on_startup():
+    # Crear tablas que no existan
     Base.metadata.create_all(bind=engine)
+    # Migración segura de nuevas columnas en configuracion
     with engine.connect() as conn:
         existing = set()
         rows = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'"))
