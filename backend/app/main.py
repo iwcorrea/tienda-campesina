@@ -8,7 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.auth import router as auth_router
 from app.database import engine, Base, SessionLocal
-from app.models import Configuracion, Mensaje
+from app.models import Configuracion
 import cloudinary
 import time
 from sqlalchemy import text
@@ -50,7 +50,7 @@ class SessionTimeoutMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(SessionTimeoutMiddleware)
 
-# 3. Middleware de configuración (necesita sesión para contar no leídos)
+# 3. Middleware de configuración (sin acceso a sesión)
 @app.middleware("http")
 async def cargar_configuracion(request: Request, call_next):
     db = SessionLocal()
@@ -62,19 +62,8 @@ async def cargar_configuracion(request: Request, call_next):
             db.commit()
             db.refresh(config)
         request.state.config = config
-
-        # Contar mensajes no leídos para el badge del nav
-        no_leidos = 0
-        if request.session.get("usuario"):
-            usuario_email = request.session["usuario"]
-            no_leidos = db.query(Mensaje).filter(
-                Mensaje.destinatario_email == usuario_email,
-                Mensaje.leido == "0"
-            ).count()
-        request.state.no_leidos = no_leidos
     finally:
         db.close()
-
     response = await call_next(request)
     return response
 
