@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Conversación{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <a href="/mensajes" class="btn btn-sm btn-outline-success mb-3">← Volver a mensajes</a>
+    <h4 class="fw-bold mb-4">💬 Conversación</h4>
+    <div class="mb-4">
+        {% for msg in hilo %}
+        <div class="card mb-2 {% if msg.remitente_email == request.session.usuario %}border-primary{% else %}border-success{% endif %}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <strong>{{ msg.remitente.nombre if msg.remitente else msg.remitente_email }}</strong>
+                    <small class="text-muted">{{ msg.fecha_envio.strftime('%d/%m/%Y %H:%M') }}</small>
+                </div>
+                <p class="mb-0 mt-2">{{ msg.texto }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <form method="post" action="/mensajes/responder/{{ mensaje.id }}">
+        <div class="mb-3">
+            <textarea name="texto" class="form-control" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Enviar respuesta</button>
+    </form>
+</div>
+{% endblock %}

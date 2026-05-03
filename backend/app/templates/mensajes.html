@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Mensajes{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">📨 {{ 'Mensajes recibidos' if tipo_bandeja == 'entrada' else 'Mensajes enviados' }}</h2>
+    <div class="mb-3">
+        <a href="/mensajes" class="btn btn-sm btn-outline-success me-2">📥 Recibidos</a>
+        <a href="/mensajes/enviados" class="btn btn-sm btn-outline-success">📤 Enviados</a>
+    </div>
+    {% if mensajes %}
+    <div class="list-group">
+        {% for m in mensajes %}
+        <a href="/mensajes/{{ m.id }}" class="list-group-item list-group-item-action {% if m.leido == '0' and tipo_bandeja == 'entrada' %}fw-bold{% endif %}">
+            <div class="d-flex justify-content-between">
+                <span>
+                    <strong>{{ 'Tú' if tipo_bandeja == 'salida' else (m.remitente.nombre if m.remitente else m.remitente_email) }}</strong>
+                    {% if tipo_bandeja == 'salida' %}
+                    → {{ m.destinatario.nombre if m.destinatario else m.destinatario_email }}
+                    {% endif %}
+                </span>
+                <small class="text-muted">{{ m.fecha_envio.strftime('%d/%m/%Y %H:%M') }}</small>
+            </div>
+            <p class="mb-0 text-muted small">{{ m.texto[:100] }}{% if m.texto|length > 100 %}...{% endif %}</p>
+            {% if m.producto %}<small class="text-success">Producto: {{ m.producto.nombre }}</small>{% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No tienes mensajes {{ 'recibidos' if tipo_bandeja == 'entrada' else 'enviados' }}.</p>
+    {% endif %}
+</div>
+{% endblock %}
