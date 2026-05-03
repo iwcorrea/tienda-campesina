@@ -96,7 +96,6 @@ class Configuracion(Base):
 
     id = Column(Integer, primary_key=True, default=1)
 
-    # SEO general
     titulo_sitio = Column(String, default="Tienda Campesina")
     descripcion_meta = Column(Text, default="Plataforma para visibilizar asociaciones rurales.")
     google_verification = Column(String, default="")
@@ -104,7 +103,6 @@ class Configuracion(Base):
     robots_txt_extra = Column(Text, default="")
     imagen_og_url = Column(Text, default="")
 
-    # Diseño – Colores
     color_primario = Column(String, default="#2d6a4f")
     color_secundario = Column(String, default="#1f3b2c")
     color_fondo = Column(String, default="#f8faf5")
@@ -113,20 +111,16 @@ class Configuracion(Base):
     color_fondo_tarjetas = Column(String, default="#ffffff")
     color_hover = Column(String, default="#1b3324")
 
-    # Tipografía
     fuente_nombre = Column(String, default="Nunito")
     fuente_tamano_base = Column(String, default="16px")
     fuente_url = Column(String, default="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap")
 
-    # Logo y favicon (URLs de Cloudinary)
     logo_url = Column(Text, default="")
     favicon_32_url = Column(Text, default="")
     favicon_16_url = Column(Text, default="")
 
-    # CSS personalizado
     css_personalizado = Column(Text, default="")
 
-    # Títulos y descripciones por página
     titulo_inicio = Column(String, default="")
     descripcion_inicio = Column(String, default="")
     titulo_catalogo = Column(String, default="")
@@ -136,7 +130,6 @@ class Configuracion(Base):
     titulo_calculadora = Column(String, default="")
     descripcion_calculadora = Column(String, default="")
 
-    # ─── NUEVOS CAMPOS DE CONTENIDO ───
     inicio_titulo = Column(String, default="Asociaciones de productores campesinos")
     inicio_subtitulo = Column(Text, default="Plataforma para visibilizar asociaciones rurales, publicar productos y conectar directamente con compradores.")
     inicio_texto_tarjeta = Column(Text, default="Comparte tu historia, exhibe tus productos y fortalece la economía campesina.")
@@ -157,10 +150,27 @@ class Transportador(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
     nombre = Column(String, nullable=False)
-    medio = Column(String, default="camioneta")   # moto, camioneta, camion
-    tarifa_base = Column(Integer, default=5000)   # COP
-    costo_km = Column(Integer, default=1500)      # COP por km
+    medio = Column(String, default="camioneta")
+    tarifa_base = Column(Integer, default=5000)
+    costo_km = Column(Integer, default=1500)
     telefono = Column(String, default="")
-    activo = Column(String, default="1")          # "1" o ""
+    activo = Column(String, default="1")
 
     asociacion = relationship("Asociacion")
+
+class Mensaje(Base):
+    __tablename__ = "mensajes"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    remitente_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
+    destinatario_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
+    producto_id = Column(String, ForeignKey("productos.id"), nullable=True)
+    texto = Column(Text, nullable=False)
+    leido = Column(String, default="0")
+    fecha_envio = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    mensaje_padre_id = Column(String, ForeignKey("mensajes.id"), nullable=True)
+
+    remitente = relationship("Asociacion", foreign_keys=[remitente_email])
+    destinatario = relationship("Asociacion", foreign_keys=[destinatario_email])
+    producto = relationship("Producto")
+    respuestas = relationship("Mensaje", backref="padre", remote_side=[id], lazy="dynamic")

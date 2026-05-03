@@ -8,16 +8,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.auth import router as auth_router
 from app.database import engine, Base, SessionLocal
-from app.models import Configuracion
+from app.models import Configuracion, Mensaje
 import cloudinary
 import time
 from sqlalchemy import inspect, text
 
-# Routers existentes
 from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
-from app.routers import personas, empleos
-# NUEVOS routers
-from app.routers import herramientas
+from app.routers import personas, empleos, herramientas, mensajes
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,13 +24,12 @@ cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
-# ─── Middleware de sesión y timeout ──────
 class SessionTimeoutMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.session.get("usuario"):
             last_activity = request.session.get("last_activity", 0)
             now = time.time()
-            if now - last_activity > 300:   # 5 minutos
+            if now - last_activity > 300:
                 request.session.clear()
                 from fastapi.responses import RedirectResponse
                 return RedirectResponse(url="/auth/login", status_code=303)
@@ -51,7 +47,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─── Middleware de configuración SEO / Diseño ──────
 @app.middleware("http")
 async def cargar_configuracion(request: Request, call_next):
     db = SessionLocal()
@@ -63,6 +58,15 @@ async def cargar_configuracion(request: Request, call_next):
             db.commit()
             db.refresh(config)
         request.state.config = config
+
+        no_leidos = 0
+        if request.session.get("usuario"):
+            usuario_email = request.session["usuario"]
+            no_leidos = db.query(Mensaje).filter(
+                Mensaje.destinatario_email == usuario_email,
+                Mensaje.leido == "0"
+            ).count()
+        request.state.no_leidos = no_leidos
     finally:
         db.close()
     response = await call_next(request)
@@ -71,7 +75,6 @@ async def cargar_configuracion(request: Request, call_next):
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Incluir routers
 app.include_router(auth_router, prefix="/auth")
 app.include_router(home.router)
 app.include_router(catalogo.router)
@@ -84,10 +87,9 @@ app.include_router(admin.router)
 app.include_router(calculadora.router)
 app.include_router(personas.router)
 app.include_router(empleos.router)
-# NUEVO router de herramientas (contrato, etc.)
 app.include_router(herramientas.router)
+app.include_router(mensajes.router)
 
-# Utilidad para eliminar assets de Cloudinary
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
     if not url or "cloudinary.com" not in url:
         return
@@ -111,10 +113,7 @@ def delete_cloudinary_asset(url: str, resource_type: str = "image"):
 
 @app.on_event("startup")
 def on_startup():
-    # Crear tablas que no existan
     Base.metadata.create_all(bind=engine)
-
-    # Migración segura para nuevas columnas de la tabla configuracion
     with engine.connect() as conn:
         existing = set()
         rows = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'"))

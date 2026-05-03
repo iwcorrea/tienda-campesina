@@ -102,6 +102,10 @@
                 <a href="https://wa.me/57{{ producto.telefono|replace('+','')|replace(' ','') }}?text=Hola,%20vi%20tu%20producto%20{{ producto.nombre|urlencode }}%20en%20Tienda%20Campesina" target="_blank" class="btn btn-sm btn-success mt-1">💬 WhatsApp</a>
                 {% endif %}
 
+                {% if request.session.get("usuario") and producto.asociacion %}
+                <button class="btn btn-sm btn-outline-info mt-1" data-bs-toggle="modal" data-bs-target="#modalConsultar" data-destinatario="{{ producto.asociacion }}" data-producto-id="{{ producto.id }}" data-producto-nombre="{{ producto.nombre }}">💬 Consultar</button>
+                {% endif %}
+
                 {% if producto.asociacion %}
                 <button class="btn btn-sm btn-outline-info mt-1" data-bs-toggle="modal" data-bs-target="#modalEnvio" data-asociacion="{{ producto.asociacion }}" data-nombre="{{ producto.nombre }}">🚚 Calcular envío</button>
                 {% endif %}
@@ -174,6 +178,32 @@
     </div>
 </div>
 
+<!-- Modal para consultar sobre un producto -->
+<div class="modal fade" id="modalConsultar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="formConsultar">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">💬 Consultar sobre el producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="consultarDestinatario" value="">
+                    <input type="hidden" id="consultarProductoId" value="">
+                    <p id="consultarProductoNombre" class="fw-bold"></p>
+                    <div class="mb-3">
+                        <label class="form-label">Tu mensaje</label>
+                        <textarea id="consultarTexto" class="form-control" rows="4" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Enviar consulta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Modal de cálculo de envío -->
 <div class="modal fade" id="modalEnvio" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -210,6 +240,36 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('productoId').value = id;
         document.getElementById('nombreProducto').textContent = nombre;
         document.getElementById('formValorar').action = '/valorar/' + id;
+    });
+});
+
+// Modal de consulta
+document.addEventListener('DOMContentLoaded', function() {
+    var modalConsultar = document.getElementById('modalConsultar');
+    modalConsultar.addEventListener('show.bs.modal', function(event) {
+        var button = event.relatedTarget;
+        document.getElementById('consultarDestinatario').value = button.getAttribute('data-destinatario');
+        document.getElementById('consultarProductoId').value = button.getAttribute('data-producto-id');
+        document.getElementById('consultarProductoNombre').textContent = button.getAttribute('data-producto-nombre');
+        document.getElementById('consultarTexto').value = '';
+    });
+
+    document.getElementById('formConsultar').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        let destinatario = document.getElementById('consultarDestinatario').value;
+        let productoId = document.getElementById('consultarProductoId').value;
+        let texto = document.getElementById('consultarTexto').value;
+        let formData = new FormData();
+        formData.append('destinatario_email', destinatario);
+        formData.append('producto_id', productoId);
+        formData.append('texto', texto);
+        let resp = await fetch('/mensajes/enviar', { method: 'POST', body: formData });
+        if (resp.ok) {
+            bootstrap.Modal.getInstance(modalConsultar).hide();
+            alert('Mensaje enviado correctamente');
+        } else {
+            alert('Error al enviar el mensaje');
+        }
     });
 });
 

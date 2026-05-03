@@ -8,14 +8,12 @@
     <meta name="description" content="{% block meta_description %}{{ config.descripcion_meta or 'Plataforma para asociaciones campesinas.' }}{% endblock %}">
     <link rel="canonical" href="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}" />
 
-    <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}">
     <meta property="og:title" content="{{ self.title() }}">
     <meta property="og:description" content="{{ self.meta_description() }}">
     <meta property="og:image" content="{% block og_image %}{{ config.imagen_og_url or 'https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png' }}{% endblock %}">
 
-    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}">
     <meta property="twitter:title" content="{{ self.title() }}">
@@ -26,7 +24,6 @@
     <meta name="google-site-verification" content="{{ config.google_verification }}" />
     {% endif %}
 
-    <!-- Google Analytics -->
     {% if config.google_analytics_id %}
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ config.google_analytics_id }}"></script>
     <script>
@@ -37,7 +34,6 @@
     </script>
     {% endif %}
 
-    <!-- Favicons -->
     {% if config.favicon_32_url %}
     <link rel="icon" type="image/png" sizes="32x32" href="{{ config.favicon_32_url }}">
     {% else %}
@@ -52,14 +48,12 @@
     <link rel="manifest" href="/static/site.webmanifest">
     <meta name="theme-color" content="{{ config.color_primario or '#2d6a4f' }}">
 
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     {% if config.fuente_url %}
     <link href="{{ config.fuente_url }}" rel="stylesheet">
     {% endif %}
     <link rel="stylesheet" href="/static/style.css">
 
-    <!-- Estilos dinámicos desde configuración -->
     <style>
         :root {
             --color-primario: {{ config.color_primario or '#2d6a4f' }};
@@ -123,7 +117,6 @@
                     {% endif %}
 
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
-                        <!-- 🛠️ Herramientas (solo asociaciones) -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle px-3" href="#" role="button" data-bs-toggle="dropdown">🛠️ Herramientas</a>
                             <ul class="dropdown-menu">
@@ -144,9 +137,19 @@
                         {% endif %}
                         <li class="nav-item"><a class="nav-link px-3" href="/panel">🗂️ Panel</a></li>
                         <li class="nav-item"><a class="nav-link px-3" href="/panel/vacantes">📋 Vacantes</a></li>
+                        <li class="nav-item"><a class="nav-link px-3 position-relative" href="/mensajes">📨 Mensajes
+                            {% if request.state.no_leidos > 0 %}
+                            <span class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle">{{ request.state.no_leidos }}</span>
+                            {% endif %}
+                        </a></li>
                         <li class="nav-item"><a class="nav-link px-3 text-warning" href="/auth/logout">🚪 Cerrar sesión</a></li>
                     {% elif request.session.get("tipo_usuario") == "persona" %}
                         <li class="nav-item"><a class="nav-link px-3" href="/perfil">👤 Perfil</a></li>
+                        <li class="nav-item"><a class="nav-link px-3 position-relative" href="/mensajes">📨 Mensajes
+                            {% if request.state.no_leidos > 0 %}
+                            <span class="badge bg-danger rounded-pill position-absolute top-0 start-100 translate-middle">{{ request.state.no_leidos }}</span>
+                            {% endif %}
+                        </a></li>
                         <li class="nav-item"><a class="nav-link px-3 text-warning" href="/auth/logout">🚪 Cerrar sesión</a></li>
                     {% else %}
                         <li class="nav-item"><a class="nav-link px-3" href="/auth/login">🔐 Iniciar sesión</a></li>
