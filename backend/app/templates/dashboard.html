@@ -7,8 +7,8 @@
 <div class="modern-section">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold mb-1">📊 Dashboard de {{ usuario }}</h2>
-            <p class="text-muted mb-0">Resumen de tu actividad y productos.</p>
+            <h2 class="fw-bold mb-1">📊 Panel de {{ usuario }}</h2>
+            <p class="text-muted mb-0">Métricas clave de tu actividad.</p>
         </div>
         <div class="d-flex gap-2">
             <a href="/panel" class="btn btn-outline-success">🗂️ Panel</a>
@@ -16,107 +16,177 @@
         </div>
     </div>
 
+    <!-- KPI cards -->
     <div class="row g-4 mb-4">
-        <div class="col-md-4">
+        <div class="col-xl-3 col-md-6">
             <div class="stat-card stat-card--primary">
                 <div class="stat-card__icon"><span>📦</span></div>
                 <div class="stat-card__info">
                     <h3 class="stat-card__value">{{ total_productos }}</h3>
-                    <p class="stat-card__label">Productos publicados</p>
+                    <p class="stat-card__label">Productos</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-xl-3 col-md-6">
             <div class="stat-card stat-card--warning">
                 <div class="stat-card__icon"><span>⭐</span></div>
                 <div class="stat-card__info">
                     <h3 class="stat-card__value">{{ promedio_estrellas }}</h3>
-                    <p class="stat-card__label">Promedio de estrellas</p>
+                    <p class="stat-card__label">Promedio estrellas</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-xl-3 col-md-6">
             <div class="stat-card stat-card--info">
-                <div class="stat-card__icon"><span>❤️</span></div>
+                <div class="stat-card__icon"><span>📨</span></div>
                 <div class="stat-card__info">
-                    <h3 class="stat-card__value">{{ total_valoraciones }}</h3>
-                    <p class="stat-card__label">Valoraciones recibidas</p>
+                    <h3 class="stat-card__value">{{ total_mensajes }}</h3>
+                    <p class="stat-card__label">Mensajes recibidos</p>
+                    {% if no_leidos > 0 %}<small class="text-danger fw-semibold">{{ no_leidos }} sin leer</small>{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card stat-card--secondary">
+                <div class="stat-card__icon"><span>💼</span></div>
+                <div class="stat-card__info">
+                    <h3 class="stat-card__value">{{ total_vacantes }}</h3>
+                    <p class="stat-card__label">Vacantes activas</p>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="row g-4">
+        <!-- Últimos mensajes -->
         <div class="col-lg-6">
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom-0"><h5 class="mb-0 fw-semibold">📈 Distribución por tipo</h5></div>
+                <div class="card-header bg-white border-bottom-0 d-flex justify-content-between">
+                    <h5 class="mb-0 fw-semibold">💬 Últimos mensajes</h5>
+                    <a href="/mensajes" class="btn btn-sm btn-outline-success">Ver todos</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if ultimos_mensajes %}
+                    <ul class="list-group list-group-flush">
+                        {% for m in ultimos_mensajes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center {% if m.leido == '0' %}fw-bold{% endif %}">
+                            <div>
+                                <span class="small">{{ m.remitente.nombre or m.remitente_email }}</span><br>
+                                <small class="text-muted">{{ m.texto[:60] }}{% if m.texto|length > 60 %}...{% endif %}</small>
+                            </div>
+                            <small class="text-muted">{{ m.fecha_envio.strftime('%d/%m/%Y') }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted p-3 mb-0">No tienes mensajes todavía.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Productos por tipo -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0 fw-semibold">📈 Distribución por tipo</h5>
+                </div>
                 <div class="card-body">
                     <canvas id="chartTipo" height="150"></canvas>
                 </div>
             </div>
         </div>
+
+        <!-- Últimas valoraciones -->
+        {% if ultimas_valoraciones %}
         <div class="col-lg-6">
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-bottom-0"><h5 class="mb-0 fw-semibold">⭐ Distribución de valoraciones</h5></div>
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0 fw-semibold">⭐ Últimas valoraciones</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for v in ultimas_valoraciones %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ v.producto_nombre }}</strong>
+                                <small class="text-muted ms-2">{{ v.comentario or 'Sin comentario' }}</small>
+                            </div>
+                            <span>{% for i in range(1,6) %}{% if i <= v.estrellas %}⭐{% else %}☆{% endif %}{% endfor %}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Distribución de estrellas -->
+        {% if total_valoraciones > 0 %}
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="mb-0 fw-semibold">📊 Estrellas recibidas</h5>
+                </div>
                 <div class="card-body">
                     <canvas id="chartEstrellas" height="150"></canvas>
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 
-    {% if ultimas_valoraciones %}
-    <div class="card shadow-sm border-0 mt-4">
-        <div class="card-header bg-white border-bottom-0"><h5 class="mb-0 fw-semibold">💬 Últimas valoraciones</h5></div>
-        <div class="card-body p-0">
-            <ul class="list-group list-group-flush">
-                {% for v in ultimas_valoraciones %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div><strong>{{ v.producto_nombre }}</strong><br><small class="text-muted">{{ v.comentario or 'Sin comentario' }}</small></div>
-                    <span>{% for i in range(1,6) %}{% if i <= v.estrellas %}⭐{% else %}☆{% endif %}{% endfor %}</span>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-    {% endif %}
-
+    <!-- Últimos productos -->
     {% if ultimos_productos %}
-    <h4 class="mt-5 fw-bold">🆕 Últimos productos agregados</h4>
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        {% for p in ultimos_productos %}
-        <div class="col">
-            <div class="card h-100 modern-card">
-                {% if p.imagen %}<img src="{{ p.imagen }}" class="card-img-top" alt="{{ p.nombre }}">{% endif %}
-                <div class="card-body">
-                    <h6>{{ p.nombre }}</h6>
-                    <small>${{ p.precio }} · {{ p.tipo|capitalize }} · {{ p.tipo_precio|capitalize }}</small>
+    <div class="mt-5">
+        <h4 class="fw-bold mb-3">🆕 Últimos productos agregados</h4>
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for p in ultimos_productos %}
+            <div class="col">
+                <div class="card h-100 modern-card">
+                    {% if p.imagen %}<img src="{{ p.imagen }}" class="card-img-top" alt="{{ p.nombre }}">{% endif %}
+                    <div class="card-body">
+                        <h6>{{ p.nombre }}</h6>
+                        <small>${{ p.precio }} · {{ p.tipo|capitalize }} · {{ p.tipo_precio|capitalize }}</small>
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
     {% endif %}
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Productos por tipo
     new Chart(document.getElementById('chartTipo'), {
         type: 'pie',
         data: {
             labels: ['Producto', 'Servicio'],
-            datasets: [{ data: [{{ productos_por_tipo.producto }}, {{ productos_por_tipo.servicio }}], backgroundColor: ['#2d6a4f', '#52b788'] }]
+            datasets: [{
+                data: [{{ productos_por_tipo.producto }}, {{ productos_por_tipo.servicio }}],
+                backgroundColor: ['#2d6a4f', '#52b788']
+            }]
         }
     });
+
     {% if distribucion_estrellas and total_valoraciones > 0 %}
     new Chart(document.getElementById('chartEstrellas'), {
         type: 'bar',
         data: {
             labels: ['1 estrella', '2 estrellas', '3 estrellas', '4 estrellas', '5 estrellas'],
-            datasets: [{ data: {{ distribucion_estrellas|tojson }}, backgroundColor: '#2d6a4f' }]
+            datasets: [{
+                label: 'Valoraciones',
+                data: {{ distribucion_estrellas|tojson }},
+                backgroundColor: '#2d6a4f'
+            }]
         },
-        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        options: {
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
     });
     {% endif %}
 });

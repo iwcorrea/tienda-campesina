@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.database import get_db
-from app.models import Asociacion, Producto, Valoracion
+from app.models import Asociacion, Producto, Valoracion, Mensaje, Vacante
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -37,6 +37,7 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
             "tipo_precio": p.tipo_precio
         })
 
+    # Valoraciones
     total_valoraciones = 0
     suma_estrellas = 0
     distribucion_estrellas = [0, 0, 0, 0, 0]
@@ -62,6 +63,24 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
 
     promedio_estrellas = round(suma_estrellas / total_valoraciones, 1) if total_valoraciones > 0 else 0
 
+    # Mensajes
+    total_mensajes = db.query(func.count(Mensaje.id)).filter(
+        Mensaje.destinatario_email == email
+    ).scalar()
+    no_leidos = db.query(func.count(Mensaje.id)).filter(
+        Mensaje.destinatario_email == email,
+        Mensaje.leido == "0"
+    ).scalar()
+    ultimos_mensajes = db.query(Mensaje).filter(
+        Mensaje.destinatario_email == email
+    ).order_by(Mensaje.fecha_envio.desc()).limit(3).all()
+
+    # Vacantes activas
+    total_vacantes = db.query(func.count(Vacante.id)).filter(
+        Vacante.asociacion_email == email,
+        Vacante.fecha_limite >= func.now()
+    ).scalar()
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "usuario": asociacion.nombre,
@@ -71,5 +90,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         "total_valoraciones": total_valoraciones,
         "promedio_estrellas": promedio_estrellas,
         "distribucion_estrellas": distribucion_estrellas,
-        "ultimas_valoraciones": ultimas_valoraciones
+        "ultimas_valoraciones": ultimas_valoraciones,
+        "total_mensajes": total_mensajes,
+        "no_leidos": no_leidos,
+        "ultimos_mensajes": ultimos_mensajes,
+        "total_vacantes": total_vacantes
     })
