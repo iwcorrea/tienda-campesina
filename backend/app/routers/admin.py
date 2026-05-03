@@ -176,6 +176,7 @@ def admin_configuracion_guardar(
     titulo_sitio: str = Form(...),
     descripcion_meta: str = Form(...),
     google_verification: str = Form(""),
+    google_analytics_id: str = Form(""),
     robots_txt_extra: str = Form(""),
     # Diseño colores
     color_primario: str = Form(...),
@@ -200,6 +201,18 @@ def admin_configuracion_guardar(
     descripcion_bolsa: str = Form(""),
     titulo_calculadora: str = Form(""),
     descripcion_calculadora: str = Form(""),
+    # Contenidos (nuevos)
+    inicio_titulo: str = Form(""),
+    inicio_subtitulo: str = Form(""),
+    inicio_titulo_tarjeta: str = Form(""),
+    inicio_texto_tarjeta: str = Form(""),
+    footer_texto: str = Form(""),
+    footer_subtexto: str = Form(""),
+    menu_mostrar_catalogo: str = Form(""),
+    menu_mostrar_calculadora: str = Form(""),
+    menu_mostrar_bolsa: str = Form(""),
+    menu_enlace_extra: str = Form(""),
+    menu_url_extra: str = Form(""),
     # Archivos
     logo: UploadFile = File(None),
     favicon_32: UploadFile = File(None),
@@ -217,6 +230,7 @@ def admin_configuracion_guardar(
     config.titulo_sitio = titulo_sitio.strip()
     config.descripcion_meta = descripcion_meta.strip()
     config.google_verification = google_verification.strip()
+    config.google_analytics_id = google_analytics_id.strip()
     config.robots_txt_extra = robots_txt_extra.strip()
     config.color_primario = color_primario.strip()
     config.color_secundario = color_secundario.strip()
@@ -237,6 +251,17 @@ def admin_configuracion_guardar(
     config.descripcion_bolsa = descripcion_bolsa.strip()
     config.titulo_calculadora = titulo_calculadora.strip()
     config.descripcion_calculadora = descripcion_calculadora.strip()
+    config.inicio_titulo = inicio_titulo.strip()
+    config.inicio_subtitulo = inicio_subtitulo.strip()
+    config.inicio_titulo_tarjeta = inicio_titulo_tarjeta.strip()
+    config.inicio_texto_tarjeta = inicio_texto_tarjeta.strip()
+    config.footer_texto = footer_texto.strip()
+    config.footer_subtexto = footer_subtexto.strip()
+    config.menu_mostrar_catalogo = menu_mostrar_catalogo.strip()
+    config.menu_mostrar_calculadora = menu_mostrar_calculadora.strip()
+    config.menu_mostrar_bolsa = menu_mostrar_bolsa.strip()
+    config.menu_enlace_extra = menu_enlace_extra.strip()
+    config.menu_url_extra = menu_url_extra.strip()
 
     # Subir archivos a Cloudinary (si se proporcionan)
     if logo and logo.filename:
