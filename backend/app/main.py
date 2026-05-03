@@ -25,16 +25,10 @@ cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
-# ─── MIDDLEWARE COMBINADO (sin BaseHTTPMiddleware) ──
-# Se debe añadir ANTES que SessionMiddleware para que este último se ejecute primero.
+# ─── MIDDLEWARE COMBINADO (siempre carga config, timeout opcional) ──
 @app.middleware("http")
 async def timeout_y_configuracion(request: Request, call_next):
-    # Rutas que no requieren sesión ni configuración: pasan directo
-    if request.url.path.startswith("/static") or request.url.path.startswith("/auth/login"):
-        response = await call_next(request)
-        return response
-
-    # Cargar configuración de la BD (disponible para todas las vistas)
+    # Cargar configuración de la BD para TODAS las rutas
     db = SessionLocal()
     try:
         config = db.query(Configuracion).first()
@@ -47,19 +41,20 @@ async def timeout_y_configuracion(request: Request, call_next):
     finally:
         db.close()
 
-    # Verificar timeout de sesión (solo si hay sesión)
-    if request.session.get("usuario"):
-        last_activity = request.session.get("last_activity", 0)
-        now = time.time()
-        if now - last_activity > 300:  # 5 minutos
-            request.session.clear()
-            return RedirectResponse(url="/auth/login", status_code=303)
-        request.session["last_activity"] = now
+    # Verificar timeout de sesión SOLO para rutas no públicas
+    if not request.url.path.startswith("/static") and not request.url.path.startswith("/auth/login"):
+        if request.session.get("usuario"):
+            last_activity = request.session.get("last_activity", 0)
+            now = time.time()
+            if now - last_activity > 300:  # 5 minutos
+                request.session.clear()
+                return RedirectResponse(url="/auth/login", status_code=303)
+            request.session["last_activity"] = now
 
     response = await call_next(request)
     return response
 
-# ─── SESSION MIDDLEWARE (se añade al final para que sea el primero en ejecutarse) ──
+# ─── SESSION MIDDLEWARE ──
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
@@ -67,7 +62,7 @@ app.add_middleware(
     https_only=True,
 )
 
-# ─── CORS (no depende de sesión) ────────────────────
+# ─── CORS ──
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
