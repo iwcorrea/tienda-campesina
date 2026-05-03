@@ -25,24 +25,16 @@ cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
-# ─── MIDDLEWARES (orden estricto) ────────────────────
-# 1. SessionMiddleware: debe ser el primero para que request.session esté disponible
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=SECRET_KEY,
-    same_site="lax",
-    https_only=True,
-)
-
-# 2. Middleware combinado: timeout + configuración (sin BaseHTTPMiddleware)
+# ─── MIDDLEWARE COMBINADO (sin BaseHTTPMiddleware) ──
+# Se debe añadir ANTES que SessionMiddleware para que este último se ejecute primero.
 @app.middleware("http")
 async def timeout_y_configuracion(request: Request, call_next):
-    # --- RUTAS ESTÁTICAS Y PÚBLICAS: las dejamos pasar sin procesar sesión ---
+    # Rutas que no requieren sesión ni configuración: pasan directo
     if request.url.path.startswith("/static") or request.url.path.startswith("/auth/login"):
         response = await call_next(request)
         return response
 
-    # --- CARGAR CONFIGURACIÓN DESDE DB ---
+    # Cargar configuración de la BD (disponible para todas las vistas)
     db = SessionLocal()
     try:
         config = db.query(Configuracion).first()
@@ -55,20 +47,27 @@ async def timeout_y_configuracion(request: Request, call_next):
     finally:
         db.close()
 
-    # --- VERIFICAR TIMEOUT DE SESIÓN ---
+    # Verificar timeout de sesión (solo si hay sesión)
     if request.session.get("usuario"):
         last_activity = request.session.get("last_activity", 0)
         now = time.time()
         if now - last_activity > 300:  # 5 minutos
             request.session.clear()
             return RedirectResponse(url="/auth/login", status_code=303)
-        # Actualizar la marca de actividad
         request.session["last_activity"] = now
 
     response = await call_next(request)
     return response
 
-# 3. CORS (opcional, sin dependencia de sesión)
+# ─── SESSION MIDDLEWARE (se añade al final para que sea el primero en ejecutarse) ──
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    same_site="lax",
+    https_only=True,
+)
+
+# ─── CORS (no depende de sesión) ────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
