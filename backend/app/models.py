@@ -173,4 +173,6 @@ class Mensaje(Base):
     remitente = relationship("Asociacion", foreign_keys=[remitente_email])
     destinatario = relationship("Asociacion", foreign_keys=[destinatario_email])
     producto = relationship("Producto")
-    respuestas = relationship("Mensaje", backref="padre", remote_side=[id], lazy="dynamic")
+    # Relación autoreferenciada corregida
+    padre = relationship("Mensaje", back_populates="respuestas", remote_side=[id])
+    respuestas = relationship("Mensaje", back_populates="padre", lazy="dynamic")
