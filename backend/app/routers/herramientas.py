@@ -11,10 +11,9 @@ import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+from reportlab.lib.enums import TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib import colors
-from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate, Frame
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -31,7 +30,6 @@ def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
     except Exception:
         return ""
 
-# ─── FORMULARIO DEL CONTRATO ─────────────────────────
 @router.get("/herramientas/contrato", response_class=HTMLResponse)
 def contrato_get(request: Request, db: Session = Depends(get_db)):
     if request.session.get("tipo_usuario") != "asociacion":
@@ -43,7 +41,6 @@ def contrato_get(request: Request, db: Session = Depends(get_db)):
         "asociacion": asociacion
     })
 
-# ─── GENERAR PDF DEL CONTRATO ────────────────────────
 @router.post("/herramientas/contrato/generar")
 def generar_contrato_pdf(
     request: Request,
@@ -52,7 +49,7 @@ def generar_contrato_pdf(
     comprador_nombre: str = Form(...),
     comprador_documento: str = Form(...),
     producto: str = Form(...),
-    cantidad: str = Form(...),
+    cantidad: float = Form(...),       # ahora solo acepta números
     precio_unitario: float = Form(...),
     fecha_entrega: str = Form(...),
     condiciones_adicionales: str = Form(""),
@@ -71,7 +68,6 @@ def generar_contrato_pdf(
         logo_url = asociacion.logo_url
     elif logo_opcion == "personalizado" and logo_personalizado and logo_personalizado.filename:
         logo_url = upload_file_cloudinary(logo_personalizado, "logos_contratos")
-    # else sin logo
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -87,14 +83,11 @@ def generar_contrato_pdf(
     styles = getSampleStyleSheet()
     style_title = ParagraphStyle('Title', parent=styles['Title'], alignment=TA_CENTER, fontSize=16, spaceAfter=12)
     style_normal = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=10, leading=14, alignment=TA_JUSTIFY, spaceAfter=8)
-    style_bold = ParagraphStyle('Bold', parent=style_normal, fontWeight='bold')
 
     elements = []
 
-    # Logo (si existe)
     if logo_url:
         try:
-            # Descargar la imagen desde Cloudinary (URL)
             import requests
             response = requests.get(logo_url)
             img = Image(io.BytesIO(response.content), width=80, height=80)
@@ -104,58 +97,59 @@ def generar_contrato_pdf(
         except Exception:
             pass
 
-    # Título
     elements.append(Paragraph("CONTRATO DE COMPRAVENTA DE PRODUCTO AGRÍCOLA", style_title))
     elements.append(Spacer(1, 6))
     elements.append(Paragraph(f"Fecha de emisión: {datetime.datetime.now().strftime('%d/%m/%Y')}", style_normal))
 
-    # Cláusulas
-    clausulas = [
+    elements.append(Paragraph(
         f"<b>1. PARTES</b><br/>"
         f"<b>VENDEDOR:</b> {vendedor_nombre}, identificado con {vendedor_documento}.<br/>"
         f"<b>COMPRADOR:</b> {comprador_nombre}, identificado con {comprador_documento}.<br/>"
         f"Ambas partes acuerdan celebrar el presente contrato de compraventa, el cual se regirá por las siguientes cláusulas.",
+        style_normal
+    ))
 
+    elements.append(Paragraph(
         f"<b>2. OBJETO</b><br/>"
         f"El VENDEDOR se obliga a transferir la propiedad y entregar al COMPRADOR los siguientes productos: "
-        f"{producto}, en cantidad de {cantidad}, a un precio unitario de ${precio_unitario:,.0f} COP.",
+        f"{producto}, en cantidad de {cantidad:,.0f}, a un precio unitario de ${precio_unitario:,.0f} COP.",
+        style_normal
+    ))
 
+    precio_total = precio_unitario * cantidad
+    elements.append(Paragraph(
         f"<b>3. PRECIO Y FORMA DE PAGO</b><br/>"
-        f"El precio total del contrato asciende a la suma de ${precio_unitario * float(cantidad):,.0f} COP, "
+        f"El precio total del contrato asciende a la suma de ${precio_total:,.0f} COP, "
         f"que el COMPRADOR se obliga a pagar al VENDEDOR en su totalidad al momento de la firma del presente documento, "
         f"salvo pacto en contrario.",
+        style_normal
+    ))
 
+    clausulas = [
         f"<b>4. PLAZO Y LUGAR DE ENTREGA</b><br/>"
         f"El VENDEDOR se obliga a entregar los productos objeto de este contrato a más tardar el día {fecha_entrega}, "
         f"en el lugar acordado por las partes o, en su defecto, en el domicilio del VENDEDOR.",
-
         f"<b>5. OBLIGACIONES DEL VENDEDOR</b><br/>"
         f"El VENDEDOR declara que los productos objeto de este contrato se encuentran en buen estado, "
         f"cumplen con las normas sanitarias aplicables y son de su legítima propiedad, "
         f"libres de todo gravamen o limitación.",
-
         f"<b>6. OBLIGACIONES DEL COMPRADOR</b><br/>"
         f"El COMPRADOR se obliga a recibir los productos en la fecha y lugar pactados y a pagar el precio acordado. "
         f"La no recepción injustificada dará lugar a la indemnización de perjuicios a favor del VENDEDOR.",
-
         f"<b>7. CLÁUSULA PENAL</b><br/>"
         f"En caso de incumplimiento de cualquiera de las obligaciones derivadas del presente contrato, "
         f"la parte incumplida deberá pagar a la otra una suma equivalente al 20% del valor total del contrato "
         f"como sanción, sin perjuicio de la indemnización de los daños y perjuicios causados.",
-
         f"<b>8. RESOLUCIÓN DE CONFLICTOS</b><br/>"
         f"Para todos los efectos legales, las partes se someten a la jurisdicción de los jueces civiles de Colombia "
         f"y renuncian expresamente a cualquier otro fuero que pudiera corresponderles.",
-
         f"<b>9. CONDICIONES ADICIONALES</b><br/>"
         f"{condiciones_adicionales if condiciones_adicionales.strip() else 'No se pactan condiciones adicionales.'}"
     ]
-
     for texto in clausulas:
         elements.append(Paragraph(texto, style_normal))
         elements.append(Spacer(1, 4))
 
-    # Firma
     elements.append(Spacer(1, 20))
     data = [
         ["_________________________", "_________________________"],
