@@ -179,3 +179,19 @@ class Mensaje(Base):
     producto = relationship("Producto")
     padre = relationship("Mensaje", back_populates="respuestas", remote_side=[id])
     respuestas = relationship("Mensaje", back_populates="padre", lazy="dynamic")
+
+class Transportista(Base):
+    __tablename__ = "transportistas"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    email = Column(String, unique=True, nullable=False, index=True)
+    hashed_password = Column(String, nullable=False)
+    nombre = Column(String, nullable=False)
+    telefono = Column(String, default="")
+    tipo_vehiculo = Column(String, default="camioneta")  # moto, camioneta, camion
+    capacidad = Column(String, default="500 kg")         # descripción de carga útil
+    zona_cobertura = Column(String, default="Local")
+    tarifa_base = Column(Integer, default=5000)
+    costo_km = Column(Integer, default=1500)
+    activo = Column(String, default="1")
+    fecha_registro = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

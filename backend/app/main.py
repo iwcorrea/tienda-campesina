@@ -16,6 +16,7 @@ from sqlalchemy import text
 # Routers
 from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
 from app.routers import personas, empleos, herramientas, mensajes
+from app.routers import transportistas     # NUEVO
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,7 +26,7 @@ cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
-# ─── MIDDLEWARE COMBINADO (siempre carga config, timeout opcional) ──
+# ─── MIDDLEWARE COMBINADO ──
 @app.middleware("http")
 async def timeout_y_configuracion(request: Request, call_next):
     # Cargar configuración de la BD para TODAS las rutas
@@ -89,6 +90,7 @@ app.include_router(personas.router)
 app.include_router(empleos.router)
 app.include_router(herramientas.router)
 app.include_router(mensajes.router)
+app.include_router(transportistas.router)     # NUEVO
 
 # Utilidad para eliminar assets de Cloudinary
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
@@ -131,7 +133,7 @@ def on_startup():
                 sql = f'ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS {col.name} {col_type}'
                 conn.execute(text(sql))
 
-        # Asociaciones (pregunta_secreta, respuesta_secreta_hash)
+        # Asociaciones
         existing_asoc = set()
         rows_asoc = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='asociaciones'"))
         for row in rows_asoc:
@@ -141,7 +143,7 @@ def on_startup():
                 sql = f'ALTER TABLE asociaciones ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))
 
-        # Personas (pregunta_secreta, respuesta_secreta_hash)
+        # Personas
         existing_pers = set()
         rows_pers = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='personas'"))
         for row in rows_pers:

@@ -143,6 +143,9 @@
                         <li class="nav-item"><a class="nav-link px-3" href="/perfil">👤 Perfil</a></li>
                         <li class="nav-item"><a class="nav-link px-3" href="/mensajes">📨 Mensajes</a></li>
                         <li class="nav-item"><a class="nav-link px-3 text-warning" href="/auth/logout">🚪 Cerrar sesión</a></li>
+                    {% elif request.session.get("tipo_usuario") == "transportista" %}
+                        <li class="nav-item"><a class="nav-link px-3" href="/perfil-transportista">🚚 Perfil</a></li>
+                        <li class="nav-item"><a class="nav-link px-3 text-warning" href="/auth/logout">🚪 Cerrar sesión</a></li>
                     {% else %}
                         <li class="nav-item"><a class="nav-link px-3" href="/auth/login">🔐 Iniciar sesión</a></li>
                         <li class="nav-item dropdown">
@@ -150,6 +153,7 @@
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="/auth/registro">🏢 Registrar asociación</a></li>
                                 <li><a class="dropdown-item" href="/auth/registro-persona">🧑 Registrar persona</a></li>
+                                <li><a class="dropdown-item" href="/auth/registro-transportista">🚚 Registrar transportista</a></li>
                             </ul>
                         </li>
                     {% endif %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Registro de Transportista{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">🚚 Registro de Transportista</h2>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form action="/auth/registro-transportista" method="post">
+                <div class="mb-3"><input type="email" name="email" class="form-control" placeholder="Email" required></div>
+                <div class="mb-3"><input type="password" name="password" class="form-control" placeholder="Contraseña" maxlength="72" required></div>
+                <div class="mb-3"><input type="text" name="nombre" class="form-control" placeholder="Nombre completo" required></div>
+                <div class="mb-3"><input type="text" name="telefono" class="form-control" placeholder="Teléfono"></div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <select name="tipo_vehiculo" class="form-select mb-3">
+                            <option value="moto">🏍️ Moto</option>
+                            <option value="camioneta" selected>🚗 Camioneta</option>
+                            <option value="camion">🚛 Camión</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="capacidad" class="form-control mb-3" placeholder="Capacidad (ej. 500 kg)">
+                    </div>
+                </div>
+                <div class="mb-3"><input type="text" name="zona_cobertura" class="form-control" placeholder="Zona de cobertura (ej. Tierralta – Montería)"></div>
+                <div class="row">
+                    <div class="col-md-6"><input type="number" name="tarifa_base" class="form-control mb-3" value="5000" placeholder="Tarifa base (COP)"></div>
+                    <div class="col-md-6"><input type="number" name="costo_km" class="form-control mb-3" value="1500" placeholder="Costo por km (COP)"></div>
+                </div>
+                <button type="submit" class="btn btn-success w-100">Registrarse como transportista</button>
+            </form>
+            {% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
