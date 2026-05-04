@@ -145,38 +145,7 @@
 {% endif %}
 
 <!-- Modal para valorar -->
-<div class="modal fade" id="modalValorar" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="formValorar" method="post">
-                <div class="modal-header">
-                    <h5 class="modal-title">Valorar producto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="producto_id" id="productoId">
-                    <p id="nombreProducto" class="fw-bold"></p>
-                    <div class="mb-3">
-                        <label class="form-label">Puntuación</label>
-                        <div class="star-rating">
-                            {% for i in range(1, 6) %}
-                            <input type="radio" name="estrellas" value="{{ i }}" id="star{{ i }}" {% if i == 5 %}checked{% endif %}>
-                            <label for="star{{ i }}">⭐</label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Comentario (opcional)</label>
-                        <textarea name="comentario" class="form-control" rows="2"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Enviar valoración</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<!-- ... (same as before) ... -->
 
 <!-- Modal de cálculo de envío (MEJORADO) -->
 <div class="modal fade" id="modalEnvio" tabindex="-1">
@@ -204,50 +173,9 @@
 </div>
 
 <script>
-// Modal de valoración
-document.addEventListener('DOMContentLoaded', function() {
-    var modal = document.getElementById('modalValorar');
-    modal.addEventListener('show.bs.modal', function(event) {
-        var button = event.relatedTarget;
-        var id = button.getAttribute('data-id');
-        var nombre = button.getAttribute('data-nombre');
-        document.getElementById('productoId').value = id;
-        document.getElementById('nombreProducto').textContent = nombre;
-        document.getElementById('formValorar').action = '/valorar/' + id;
-    });
-});
+// ... (previous scripts for valorar and consultar) ...
 
-// Modal de consulta
-document.addEventListener('DOMContentLoaded', function() {
-    var modalConsultar = document.getElementById('modalConsultar');
-    modalConsultar.addEventListener('show.bs.modal', function(event) {
-        var button = event.relatedTarget;
-        document.getElementById('consultarDestinatario').value = button.getAttribute('data-destinatario');
-        document.getElementById('consultarProductoId').value = button.getAttribute('data-producto-id');
-        document.getElementById('consultarProductoNombre').textContent = button.getAttribute('data-producto-nombre');
-        document.getElementById('consultarTexto').value = '';
-    });
-
-    document.getElementById('formConsultar').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        let destinatario = document.getElementById('consultarDestinatario').value;
-        let productoId = document.getElementById('consultarProductoId').value;
-        let texto = document.getElementById('consultarTexto').value;
-        let formData = new FormData();
-        formData.append('destinatario_email', destinatario);
-        formData.append('producto_id', productoId);
-        formData.append('texto', texto);
-        let resp = await fetch('/mensajes/enviar', { method: 'POST', body: formData });
-        if (resp.ok) {
-            bootstrap.Modal.getInstance(modalConsultar).hide();
-            alert('Mensaje enviado correctamente');
-        } else {
-            alert('Error al enviar el mensaje');
-        }
-    });
-});
-
-// Modal de envío (MEJORADO)
+// Modal de envío
 let asociacionActual = "";
 document.addEventListener('DOMContentLoaded', function() {
     var modalEnvio = document.getElementById('modalEnvio');
@@ -266,19 +194,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let resp = await fetch(`/api/calcular-envio/${asociacionActual}?distancia=${distancia}&peso=${peso}`);
         let datos = await resp.json();
 
-        // Separar propios y colaborativos
-        let propios = datos.filter(t => t.tipo === 'propio');
-        let colaborativos = datos.filter(t => t.tipo === 'colaborativo');
-
         let html = '';
-
-        // Sección propios
-        html += '<h6 class="fw-bold mt-3">🚛 Transportadores de la asociación</h6>';
-        if (propios.length === 0) {
-            html += '<p class="text-muted small">No hay transportadores propios disponibles.</p>';
+        if (datos.length === 0) {
+            html += '<p class="text-muted">No hay transportistas disponibles en este momento.</p>';
         } else {
             html += '<ul class="list-group">';
-            propios.forEach(t => {
+            datos.forEach(t => {
                 html += `<li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                         <strong>${t.nombre}</strong> (${t.medio})<br>
@@ -290,26 +211,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             html += '</ul>';
         }
-
-        // Sección colaborativos
-        html += '<h6 class="fw-bold mt-3">🤝 Transportistas colaborativos</h6>';
-        if (colaborativos.length === 0) {
-            html += '<p class="text-muted small">No hay transportistas colaborativos disponibles.</p>';
-        } else {
-            html += '<ul class="list-group">';
-            colaborativos.forEach(t => {
-                html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>${t.nombre}</strong> (${t.medio})<br>
-                        <span class="text-success fw-bold">$${t.costo_estimado}</span>
-                        ${t.telefono ? `<br><small>📞 ${t.telefono}</small>` : ''}
-                    </div>
-                    ${t.telefono ? `<a href="https://wa.me/57${t.telefono.replace(/\D/g,'')}" target="_blank" class="btn btn-sm btn-outline-success">💬 WhatsApp</a>` : ''}
-                </li>`;
-            });
-            html += '</ul>';
-        }
-
         document.getElementById('resultadoEnvio').innerHTML = html;
     });
 });

@@ -42,12 +42,127 @@ def panel(request: Request, db: Session = Depends(get_db)):
 
 # ─── CREAR PRODUCTO ────────────────────────────────
 @router.post("/panel/producto")
-def crear_producto(...): # sin cambios
-    # (mantén todo igual que antes, lo omito por brevedad pero va igual)
-    pass
+def crear_producto(
+    request: Request,
+    nombre: str = Form(...),
+    descripcion: str = Form(None),
+    precio: int = Form(...),
+    tipo: str = Form("producto"),
+    tipo_precio: str = Form("fijo"),
+    imagen: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    if "usuario" not in request.session:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    email = request.session["usuario"]
+    imagen_url = ""
+    if imagen and imagen.filename:
+        try:
+            result = cloudinary.uploader.upload(
+                imagen.file,
+                folder="productos",
+                filename=imagen.filename,
+                use_filename=True,
+                unique_filename=True,
+                access_mode="public"
+            )
+            imagen_url = result.get("secure_url", "")
+        except Exception:
+            pass
 
-# ─── EDITAR/ACTUALIZAR/ELIMINAR PRODUCTO (igual, sin cambios) ───
-# ...
+    nuevo = Producto(
+        id=str(uuid.uuid4()),
+        asociacion_email=email,
+        nombre=nombre,
+        descripcion=descripcion or "",
+        precio=precio,
+        imagen_url=imagen_url,
+        tipo=tipo,
+        tipo_precio=tipo_precio
+    )
+    db.add(nuevo)
+    db.commit()
+    return RedirectResponse(url="/panel", status_code=303)
+
+# ─── EDITAR PRODUCTO (GET) ─────────────────────────
+@router.get("/panel/producto/editar/{producto_id}", response_class=HTMLResponse)
+def editar_producto_form(request: Request, producto_id: str, db: Session = Depends(get_db)):
+    if "usuario" not in request.session:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    email = request.session["usuario"]
+    p = db.query(Producto).filter(Producto.id == producto_id, Producto.asociacion_email == email).first()
+    if not p:
+        return RedirectResponse(url="/panel", status_code=303)
+    producto = {
+        "id": p.id,
+        "nombre": p.nombre,
+        "descripcion": p.descripcion,
+        "precio": p.precio,
+        "imagen_url": p.imagen_url,
+        "tipo": p.tipo,
+        "tipo_precio": p.tipo_precio
+    }
+    return templates.TemplateResponse("editar_producto.html", {"request": request, "producto": producto})
+
+# ─── ACTUALIZAR PRODUCTO ───────────────────────────
+@router.post("/panel/producto/actualizar/{producto_id}")
+def actualizar_producto(
+    request: Request,
+    producto_id: str,
+    nombre: str = Form(...),
+    descripcion: str = Form(None),
+    precio: int = Form(...),
+    tipo: str = Form("producto"),
+    tipo_precio: str = Form("fijo"),
+    imagen: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    if "usuario" not in request.session:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    email = request.session["usuario"]
+    p = db.query(Producto).filter(Producto.id == producto_id, Producto.asociacion_email == email).first()
+    if not p:
+        return RedirectResponse(url="/panel", status_code=303)
+
+    if imagen and imagen.filename:
+        if p.imagen_url:
+            from app.main import delete_cloudinary_asset
+            delete_cloudinary_asset(p.imagen_url, resource_type="image")
+        try:
+            result = cloudinary.uploader.upload(
+                imagen.file,
+                folder="productos",
+                filename=imagen.filename,
+                use_filename=True,
+                unique_filename=True,
+                access_mode="public"
+            )
+            p.imagen_url = result.get("secure_url", "")
+        except Exception:
+            pass
+
+    p.nombre = nombre
+    p.descripcion = descripcion or ""
+    p.precio = precio
+    p.tipo = tipo
+    p.tipo_precio = tipo_precio
+    db.commit()
+    return RedirectResponse(url="/panel", status_code=303)
+
+# ─── ELIMINAR PRODUCTO ─────────────────────────────
+@router.post("/panel/producto/eliminar/{producto_id}")
+def eliminar_producto(request: Request, producto_id: str, db: Session = Depends(get_db)):
+    if "usuario" not in request.session:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    email = request.session["usuario"]
+    p = db.query(Producto).filter(Producto.id == producto_id, Producto.asociacion_email == email).first()
+    if p:
+        if p.imagen_url:
+            from app.main import delete_cloudinary_asset
+            delete_cloudinary_asset(p.imagen_url, resource_type="image")
+        db.delete(p)
+        db.commit()
+    return RedirectResponse(url="/panel", status_code=303)
 
 # ─── FAVORITOS DE TRANSPORTISTAS ─────────────────
 @router.get("/panel/transportistas-favoritos", response_class=HTMLResponse)
@@ -58,7 +173,6 @@ def listar_favoritos(request: Request, db: Session = Depends(get_db)):
     favoritos = db.query(TransportistaFavorito).filter(
         TransportistaFavorito.asociacion_email == email
     ).all()
-    # Obtener todos los transportistas para poder agregar nuevos
     todos = db.query(Transportista).filter(Transportista.activo == "1").all()
     return templates.TemplateResponse("panel_transportistas_favoritos.html", {
         "request": request,
@@ -75,7 +189,6 @@ def agregar_favorito(
     if request.session.get("tipo_usuario") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
     email = request.session["usuario"]
-    # Verificar que no exista ya
     existe = db.query(TransportistaFavorito).filter(
         TransportistaFavorito.asociacion_email == email,
         TransportistaFavorito.transportista_id == transportista_id
@@ -107,7 +220,7 @@ def eliminar_favorito(
         db.commit()
     return RedirectResponse(url="/panel/transportistas-favoritos", status_code=303)
 
-# ─── API PARA CALCULAR ENVÍO (ahora usa todos los transportistas activos) ─
+# ─── API PARA CALCULAR ENVÍO ─
 @router.get("/api/calcular-envio/{asociacion_email}")
 def calcular_envio(
     asociacion_email: str,
@@ -115,7 +228,6 @@ def calcular_envio(
     peso: float = Query(0),
     db: Session = Depends(get_db)
 ):
-    # Ya no se usan transportadores propios, solo transportistas
     transportistas = db.query(Transportista).filter(Transportista.activo == "1").all()
     resultados = []
     for t in transportistas:
