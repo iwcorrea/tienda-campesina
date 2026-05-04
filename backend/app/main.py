@@ -119,7 +119,7 @@ def on_startup():
     # Crear tablas que no existan
     Base.metadata.create_all(bind=engine)
 
-    # Migración segura de nuevas columnas en configuracion, asociaciones y personas
+    # Migración segura de nuevas columnas y tablas
     with engine.connect() as conn:
         # Configuracion
         existing = set()
@@ -152,5 +152,25 @@ def on_startup():
             if col_name not in existing_pers:
                 sql = f'ALTER TABLE personas ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))
+
+        # Transportistas (columna documento_url)
+        existing_trans = set()
+        rows_trans = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='transportistas'"))
+        if rows_trans.rowcount > 0:  # solo si la tabla ya existe
+            for row in rows_trans:
+                existing_trans.add(row[0])
+            for col_name in ["documento_url"]:
+                if col_name not in existing_trans:
+                    sql = f'ALTER TABLE transportistas ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
+                    conn.execute(text(sql))
+
+        # Crear tabla transportistas_favoritos si no existe (create_all ya lo haría, pero por seguridad)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS transportistas_favoritos (
+                id TEXT PRIMARY KEY,
+                asociacion_email TEXT NOT NULL REFERENCES asociaciones(email),
+                transportista_id TEXT NOT NULL REFERENCES transportistas(id)
+            )
+        """))
 
         conn.commit()

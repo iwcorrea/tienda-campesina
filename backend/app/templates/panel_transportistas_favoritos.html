@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Mis Transportistas Favoritos{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">🚚 Mis Transportistas Favoritos</h2>
+        <p class="text-muted mb-0">Gestiona tus transportistas de confianza.</p>
+    </div>
+    <a href="/panel" class="btn btn-secondary">⬅ Volver al panel</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white"><strong>Mis favoritos</strong></div>
+            <div class="card-body">
+                {% if favoritos %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead><tr><th>Nombre</th><th>Vehículo</th><th>Zona</th><th></th></tr></thead>
+                        <tbody>
+                            {% for f in favoritos %}
+                            <tr>
+                                <td>{{ f.transportista.nombre }}</td>
+                                <td>{{ f.transportista.tipo_vehiculo }}</td>
+                                <td>{{ f.transportista.zona_cobertura }}</td>
+                                <td>
+                                    <form action="/panel/transportistas-favoritos/eliminar/{{ f.id }}" method="post">
+                                        <button class="btn btn-sm btn-outline-danger">Quitar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">Aún no tienes transportistas favoritos. Agrégarlos te permitirá contactarlos fácilmente.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white"><strong>Transportistas disponibles</strong></div>
+            <div class="card-body">
+                {% if transportistas %}
+                <ul class="list-group">
+                    {% for t in transportistas %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ t.nombre }}</strong><br>
+                            <small>{{ t.tipo_vehiculo }} · {{ t.zona_cobertura }}</small>
+                        </div>
+                        <form action="/panel/transportistas-favoritos/agregar" method="post">
+                            <input type="hidden" name="transportista_id" value="{{ t.id }}">
+                            <button class="btn btn-sm btn-outline-success">Agregar</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">No hay transportistas registrados aún.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

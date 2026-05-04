@@ -27,6 +27,7 @@ class Asociacion(Base):
     respuesta_secreta_hash = Column(String, default="")
 
     productos = relationship("Producto", back_populates="asociacion", cascade="all, delete-orphan")
+    transportistas_favoritos = relationship("TransportistaFavorito", back_populates="asociacion", cascade="all, delete-orphan")
 
 class Producto(Base):
     __tablename__ = "productos"
@@ -148,20 +149,6 @@ class Configuracion(Base):
     menu_enlace_extra = Column(String, default="")
     menu_url_extra = Column(String, default="")
 
-class Transportador(Base):
-    __tablename__ = "transportadores"
-
-    id = Column(String, primary_key=True, default=generate_uuid)
-    asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
-    nombre = Column(String, nullable=False)
-    medio = Column(String, default="camioneta")
-    tarifa_base = Column(Integer, default=5000)
-    costo_km = Column(Integer, default=1500)
-    telefono = Column(String, default="")
-    activo = Column(String, default="1")
-
-    asociacion = relationship("Asociacion")
-
 class Mensaje(Base):
     __tablename__ = "mensajes"
 
@@ -188,10 +175,23 @@ class Transportista(Base):
     hashed_password = Column(String, nullable=False)
     nombre = Column(String, nullable=False)
     telefono = Column(String, default="")
-    tipo_vehiculo = Column(String, default="camioneta")  # moto, camioneta, camion
-    capacidad = Column(String, default="500 kg")         # descripción de carga útil
+    tipo_vehiculo = Column(String, default="camioneta")
+    capacidad = Column(String, default="500 kg")
     zona_cobertura = Column(String, default="Local")
     tarifa_base = Column(Integer, default=5000)
     costo_km = Column(Integer, default=1500)
     activo = Column(String, default="1")
     fecha_registro = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    documento_url = Column(Text, default="")
+
+    favoritos = relationship("TransportistaFavorito", back_populates="transportista", cascade="all, delete-orphan")
+
+class TransportistaFavorito(Base):
+    __tablename__ = "transportistas_favoritos"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
+    transportista_id = Column(String, ForeignKey("transportistas.id"), nullable=False)
+
+    asociacion = relationship("Asociacion", back_populates="transportistas_favoritos")
+    transportista = relationship("Transportista", back_populates="favoritos")
