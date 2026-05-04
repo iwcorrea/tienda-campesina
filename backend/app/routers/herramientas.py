@@ -1,131 +1,182 @@
-from fastapi import APIRouter, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.units import inch
-from reportlab.platypus import Paragraph, Frame, PageTemplate, BaseDocTemplate
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.enums import TA_JUSTIFY
 import io
+import uuid
+from fastapi import APIRouter, Request, Form, File, UploadFile, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.models import Asociacion
+import cloudinary.uploader
 import datetime
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.lib import colors
+from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate, Frame
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
+def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
+    if not file or not file.filename:
+        return ""
+    try:
+        kwargs = dict(folder=folder, filename=file.filename, use_filename=True, unique_filename=True, access_mode="public")
+        if raw:
+            kwargs["resource_type"] = "raw"
+        result = cloudinary.uploader.upload(file.file, **kwargs)
+        return result.get("secure_url", "")
+    except Exception:
+        return ""
+
+# ─── FORMULARIO DEL CONTRATO ─────────────────────────
 @router.get("/herramientas/contrato", response_class=HTMLResponse)
-def generar_contrato_form(request: Request):
+def contrato_get(request: Request, db: Session = Depends(get_db)):
     if request.session.get("tipo_usuario") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    return templates.TemplateResponse("generar_contrato.html", {"request": request})
+    email = request.session["usuario"]
+    asociacion = db.query(Asociacion).filter(Asociacion.email == email).first()
+    return templates.TemplateResponse("generar_contrato.html", {
+        "request": request,
+        "asociacion": asociacion
+    })
 
-@router.post("/herramientas/contrato")
+# ─── GENERAR PDF DEL CONTRATO ────────────────────────
+@router.post("/herramientas/contrato/generar")
 def generar_contrato_pdf(
     request: Request,
-    comprador: str = Form(...),
-    vendedor: str = Form(...),
+    vendedor_nombre: str = Form(...),
+    vendedor_documento: str = Form(...),
+    comprador_nombre: str = Form(...),
+    comprador_documento: str = Form(...),
     producto: str = Form(...),
     cantidad: str = Form(...),
-    precio_unitario: str = Form(...),
+    precio_unitario: float = Form(...),
     fecha_entrega: str = Form(...),
-    condiciones: str = Form(None)
+    condiciones_adicionales: str = Form(""),
+    logo_opcion: str = Form("asociacion"),
+    logo_personalizado: UploadFile = File(None),
+    db: Session = Depends(get_db)
 ):
     if request.session.get("tipo_usuario") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    # Normalizar precios
-    def parse_num(s):
-        s = s.strip().replace(" ", "")
-        if not s:
-            return 0.0
-        if "," in s and "." in s:
-            s = s.replace(".", "").replace(",", ".")
-        elif "," in s:
-            s = s.replace(",", ".")
-        try:
-            return float(s)
-        except ValueError:
-            return 0.0
+    email = request.session["usuario"]
+    asociacion = db.query(Asociacion).filter(Asociacion.email == email).first()
+    logo_url = None
 
-    precio_unit = parse_num(precio_unitario)
-    precio_total = precio_unit * parse_num(cantidad)
+    if logo_opcion == "asociacion" and asociacion and asociacion.logo_url:
+        logo_url = asociacion.logo_url
+    elif logo_opcion == "personalizado" and logo_personalizado and logo_personalizado.filename:
+        logo_url = upload_file_cloudinary(logo_personalizado, "logos_contratos")
+    # else sin logo
 
-    # Crear PDF en memoria
     buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
-
-    # Título
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, height - 50, "CONTRATO DE COMPRAVENTA")
-
-    # Fecha
-    p.setFont("Helvetica", 11)
-    p.drawString(50, height - 80, f"Fecha: {datetime.date.today().strftime('%d de %B de %Y')}")
-
-    # Cláusulas
-    y = height - 120
-    estilo = {
-        "comprador": comprador,
-        "vendedor": vendedor,
-        "producto": producto,
-        "cantidad": cantidad,
-        "precio_unit": format_price(precio_unit),
-        "precio_total": format_price(precio_total),
-        "fecha_entrega": fecha_entrega,
-        "condiciones": condiciones or "Ninguna"
-    }
-
-    lineas = [
-        f"Entre el vendedor {estilo['vendedor']} y el comprador {estilo['comprador']} se celebra el presente contrato de compraventa conforme a las siguientes cláusulas:",
-        "",
-        "PRIMERA: OBJETO. El vendedor se obliga a vender y entregar al comprador, y este a comprar y recibir, el siguiente producto:",
-        f"Producto: {estilo['producto']}",
-        f"Cantidad: {estilo['cantidad']}",
-        "",
-        "SEGUNDA: PRECIO. El precio acordado es el siguiente:",
-        f"Precio unitario: $ {estilo['precio_unit']}",
-        f"Precio total: $ {estilo['precio_total']}",
-        "",
-        "TERCERA: PLAZO Y LUGAR DE ENTREGA. El vendedor se obliga a entregar el producto en el lugar y fecha siguientes:",
-        f"Fecha de entrega: {estilo['fecha_entrega']}. Lugar: a convenir entre las partes.",
-        "",
-        "CUARTA: OBLIGACIONES DEL VENDEDOR. El vendedor garantiza que el producto cumple con las condiciones de calidad e inocuidad exigidas por la ley colombiana.",
-        "",
-        "QUINTA: OBLIGACIONES DEL COMPRADOR. El comprador se obliga a pagar el precio total en la fecha de entrega, salvo pacto en contrario.",
-        "",
-        "SEXTA: INCUMPLIMIENTO Y CLÁUSULA PENAL. En caso de incumplimiento de cualquiera de las partes, la parte cumplida podrá exigir el pago de una suma equivalente al 20% del valor del contrato como cláusula penal, sin perjuicio de reclamar daños y perjuicios adicionales.",
-        "",
-        "SÉPTIMA: RESOLUCIÓN DE CONFLICTOS. Cualquier diferencia que surja entre las partes será resuelta preferiblemente mediante arreglo directo; en su defecto, por la jurisdicción ordinaria colombiana.",
-        "",
-        "OCTAVA: CONDICIONES ADICIONALES.",
-        estilo['condiciones'],
-        "",
-        "Para constancia se firma el presente contrato a los ____ días del mes de __________ de __________.",
-        "",
-        "________________________                   ________________________",
-        "VENDEDOR                                      COMPRADOR",
-        "C.C.                                       C.C."
-    ]
-
-    for linea in lineas:
-        if y < 50:
-            p.showPage()
-            y = height - 50
-        if linea.startswith("_"):
-            continue
-        p.setFont("Helvetica", 11)
-        p.drawString(50, y, linea)
-        y -= 16
-
-    p.save()
-    buffer.seek(0)
-
-    return StreamingResponse(
+    doc = SimpleDocTemplate(
         buffer,
-        media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=contrato_compraventa.pdf"}
+        pagesize=A4,
+        leftMargin=2*cm,
+        rightMargin=2*cm,
+        topMargin=2*cm,
+        bottomMargin=2*cm,
+        title="Contrato de Compraventa"
     )
 
-def format_price(value):
-    return "{:,.2f}".format(value).replace(",", "X").replace(".", ",").replace("X", ".")
+    styles = getSampleStyleSheet()
+    style_title = ParagraphStyle('Title', parent=styles['Title'], alignment=TA_CENTER, fontSize=16, spaceAfter=12)
+    style_normal = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=10, leading=14, alignment=TA_JUSTIFY, spaceAfter=8)
+    style_bold = ParagraphStyle('Bold', parent=style_normal, fontWeight='bold')
+
+    elements = []
+
+    # Logo (si existe)
+    if logo_url:
+        try:
+            # Descargar la imagen desde Cloudinary (URL)
+            import requests
+            response = requests.get(logo_url)
+            img = Image(io.BytesIO(response.content), width=80, height=80)
+            img.hAlign = 'CENTER'
+            elements.append(img)
+            elements.append(Spacer(1, 12))
+        except Exception:
+            pass
+
+    # Título
+    elements.append(Paragraph("CONTRATO DE COMPRAVENTA DE PRODUCTO AGRÍCOLA", style_title))
+    elements.append(Spacer(1, 6))
+    elements.append(Paragraph(f"Fecha de emisión: {datetime.datetime.now().strftime('%d/%m/%Y')}", style_normal))
+
+    # Cláusulas
+    clausulas = [
+        f"<b>1. PARTES</b><br/>"
+        f"<b>VENDEDOR:</b> {vendedor_nombre}, identificado con {vendedor_documento}.<br/>"
+        f"<b>COMPRADOR:</b> {comprador_nombre}, identificado con {comprador_documento}.<br/>"
+        f"Ambas partes acuerdan celebrar el presente contrato de compraventa, el cual se regirá por las siguientes cláusulas.",
+
+        f"<b>2. OBJETO</b><br/>"
+        f"El VENDEDOR se obliga a transferir la propiedad y entregar al COMPRADOR los siguientes productos: "
+        f"{producto}, en cantidad de {cantidad}, a un precio unitario de ${precio_unitario:,.0f} COP.",
+
+        f"<b>3. PRECIO Y FORMA DE PAGO</b><br/>"
+        f"El precio total del contrato asciende a la suma de ${precio_unitario * float(cantidad):,.0f} COP, "
+        f"que el COMPRADOR se obliga a pagar al VENDEDOR en su totalidad al momento de la firma del presente documento, "
+        f"salvo pacto en contrario.",
+
+        f"<b>4. PLAZO Y LUGAR DE ENTREGA</b><br/>"
+        f"El VENDEDOR se obliga a entregar los productos objeto de este contrato a más tardar el día {fecha_entrega}, "
+        f"en el lugar acordado por las partes o, en su defecto, en el domicilio del VENDEDOR.",
+
+        f"<b>5. OBLIGACIONES DEL VENDEDOR</b><br/>"
+        f"El VENDEDOR declara que los productos objeto de este contrato se encuentran en buen estado, "
+        f"cumplen con las normas sanitarias aplicables y son de su legítima propiedad, "
+        f"libres de todo gravamen o limitación.",
+
+        f"<b>6. OBLIGACIONES DEL COMPRADOR</b><br/>"
+        f"El COMPRADOR se obliga a recibir los productos en la fecha y lugar pactados y a pagar el precio acordado. "
+        f"La no recepción injustificada dará lugar a la indemnización de perjuicios a favor del VENDEDOR.",
+
+        f"<b>7. CLÁUSULA PENAL</b><br/>"
+        f"En caso de incumplimiento de cualquiera de las obligaciones derivadas del presente contrato, "
+        f"la parte incumplida deberá pagar a la otra una suma equivalente al 20% del valor total del contrato "
+        f"como sanción, sin perjuicio de la indemnización de los daños y perjuicios causados.",
+
+        f"<b>8. RESOLUCIÓN DE CONFLICTOS</b><br/>"
+        f"Para todos los efectos legales, las partes se someten a la jurisdicción de los jueces civiles de Colombia "
+        f"y renuncian expresamente a cualquier otro fuero que pudiera corresponderles.",
+
+        f"<b>9. CONDICIONES ADICIONALES</b><br/>"
+        f"{condiciones_adicionales if condiciones_adicionales.strip() else 'No se pactan condiciones adicionales.'}"
+    ]
+
+    for texto in clausulas:
+        elements.append(Paragraph(texto, style_normal))
+        elements.append(Spacer(1, 4))
+
+    # Firma
+    elements.append(Spacer(1, 20))
+    data = [
+        ["_________________________", "_________________________"],
+        [f"{vendedor_nombre}", f"{comprador_nombre}"],
+        ["VENDEDOR", "COMPRADOR"]
+    ]
+    table = Table(data, colWidths=[7*cm, 7*cm])
+    table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,0), (-1,0), 8),
+        ('LINEBELOW', (0,0), (-1,0), 0.5, colors.black),
+    ]))
+    elements.append(table)
+
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    headers = {
+        'Content-Disposition': f'attachment; filename="contrato_{vendedor_nombre.replace(" ", "_")}_{datetime.datetime.now().strftime("%Y%m%d")}.pdf"'
+    }
+    return Response(content=pdf, media_type="application/pdf", headers=headers)

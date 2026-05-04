@@ -3,30 +3,56 @@
 {% block content %}
 <div class="modern-section">
     <h2 class="fw-bold mb-4">📄 Generar Contrato de Compraventa</h2>
-    <p class="text-muted mb-4">Complete los datos y descargue un contrato en PDF listo para firmar.</p>
+    <p class="lead text-muted mb-4">Complete los datos para crear un contrato profesional adaptado a la legislación colombiana.</p>
+
     <div class="card shadow-sm border-0">
         <div class="card-body p-4">
-            <form method="post" action="/herramientas/contrato">
-                <div class="mb-3">
-                    <label class="form-label">Nombre del vendedor (asociación)</label>
-                    <input type="text" name="vendedor" class="form-control" value="{{ request.session.get('nombre_usuario', '') }}" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Nombre del comprador</label>
-                    <input type="text" name="comprador" class="form-control" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Producto</label>
-                    <input type="text" name="producto" class="form-control" required>
-                </div>
+            <form method="post" action="/herramientas/contrato/generar" enctype="multipart/form-data" target="_blank">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Cantidad (ej. 100 kg, 20 bultos)</label>
-                        <input type="text" name="cantidad" class="form-control" required>
+                    <div class="col-md-6">
+                        <h5 class="text-success">Datos del Vendedor</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Nombre o Razón Social</label>
+                            <input type="text" name="vendedor_nombre" class="form-control" value="{{ asociacion.nombre if asociacion else '' }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Documento de Identidad (NIT o CC)</label>
+                            <input type="text" name="vendedor_documento" class="form-control" placeholder="NIT o Cédula" required>
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Precio unitario ($)</label>
-                        <input type="text" name="precio_unitario" class="form-control" placeholder="Ej: 2500,50" required>
+                    <div class="col-md-6">
+                        <h5 class="text-success">Datos del Comprador</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Nombre o Razón Social</label>
+                            <input type="text" name="comprador_nombre" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Documento de Identidad (NIT o CC)</label>
+                            <input type="text" name="comprador_documento" class="form-control" placeholder="NIT o Cédula" required>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+                <h5 class="text-success">Detalles del Producto</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Producto</label>
+                            <input type="text" name="producto" class="form-control" placeholder="Ej: Café pergamino seco" required>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Cantidad</label>
+                            <input type="text" name="cantidad" class="form-control" placeholder="Ej: 500 kg" required>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Precio unitario (COP)</label>
+                            <input type="number" name="precio_unitario" class="form-control" required>
+                        </div>
                     </div>
                 </div>
                 <div class="mb-3">
@@ -34,12 +60,49 @@
                     <input type="date" name="fecha_entrega" class="form-control" required>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Condiciones adicionales</label>
-                    <textarea name="condiciones" class="form-control" rows="3" placeholder="Ej: pago contra entrega, transporte por cuenta del comprador..."></textarea>
+                    <label class="form-label">Condiciones adicionales (opcional)</label>
+                    <textarea name="condiciones_adicionales" class="form-control" rows="3" placeholder="Ej: El comprador se hará cargo del transporte..."></textarea>
                 </div>
-                <button type="submit" class="btn btn-success">Descargar contrato (PDF)</button>
+
+                <hr>
+                <h5 class="text-success">Logo del contrato</h5>
+                <div class="mb-3">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="logo_opcion" id="logo_asociacion" value="asociacion" {% if asociacion and asociacion.logo_url %}checked{% endif %}>
+                        <label class="form-check-label" for="logo_asociacion">Usar logo de la asociación</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="logo_opcion" id="logo_personalizado_radio" value="personalizado">
+                        <label class="form-check-label" for="logo_personalizado_radio">Subir un logo personalizado</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="logo_opcion" id="logo_sin" value="sin" {% if not asociacion or not asociacion.logo_url %}checked{% endif %}>
+                        <label class="form-check-label" for="logo_sin">Sin logo</label>
+                    </div>
+                </div>
+                <div class="mb-3" id="div_logo_personalizado" style="display: none;">
+                    <label class="form-label">Archivo de logo (imagen)</label>
+                    <input type="file" name="logo_personalizado" class="form-control" accept="image/*">
+                </div>
+
+                <button type="submit" class="btn btn-success btn-lg">📥 Generar y descargar PDF</button>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radioPersonalizado = document.getElementById('logo_personalizado_radio');
+    const divLogo = document.getElementById('div_logo_personalizado');
+    const radios = document.querySelectorAll('input[name="logo_opcion"]');
+    radios.forEach(r => {
+        r.addEventListener('change', function() {
+            divLogo.style.display = this.value === 'personalizado' ? 'block' : 'none';
+        });
+    });
+    // Inicializar estado
+    if (radioPersonalizado.checked) divLogo.style.display = 'block';
+});
+</script>
 {% endblock %}
