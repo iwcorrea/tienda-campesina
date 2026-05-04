@@ -11,7 +11,7 @@ import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY          # ¡Importante!
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib import colors
 
@@ -30,6 +30,7 @@ def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
     except Exception:
         return ""
 
+# ─── FORMULARIO DEL CONTRATO ─────────────────────────
 @router.get("/herramientas/contrato", response_class=HTMLResponse)
 def contrato_get(request: Request, db: Session = Depends(get_db)):
     if request.session.get("tipo_usuario") != "asociacion":
@@ -41,6 +42,7 @@ def contrato_get(request: Request, db: Session = Depends(get_db)):
         "asociacion": asociacion
     })
 
+# ─── GENERAR PDF DEL CONTRATO ────────────────────────
 @router.post("/herramientas/contrato/generar")
 def generar_contrato_pdf(
     request: Request,
@@ -49,7 +51,7 @@ def generar_contrato_pdf(
     comprador_nombre: str = Form(...),
     comprador_documento: str = Form(...),
     producto: str = Form(...),
-    cantidad: float = Form(...),       # ahora solo acepta números
+    cantidad: float = Form(...),       # solo números
     precio_unitario: float = Form(...),
     fecha_entrega: str = Form(...),
     condiciones_adicionales: str = Form(""),
