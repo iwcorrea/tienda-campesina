@@ -195,3 +195,17 @@ class TransportistaFavorito(Base):
 
     asociacion = relationship("Asociacion", back_populates="transportistas_favoritos")
     transportista = relationship("Transportista", back_populates="favoritos")
+
+class Demanda(Base):
+    __tablename__ = "demandas"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    titulo = Column(String, nullable=False)
+    descripcion = Column(Text, default="")
+    cantidad = Column(String, default="")        # puede ser "500 kg" o solo "500"
+    unidad = Column(String, default="")          # kg, bultos, etc.
+    precio_referencia = Column(Integer, default=0)  # precio unitario sugerido
+    email_creador = Column(String, nullable=False)  # email de quien publica
+    tipo_creador = Column(String, default="persona") # "asociacion" o "persona"
+    fecha_publicacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    activo = Column(String, default="1")         # "1" o ""   

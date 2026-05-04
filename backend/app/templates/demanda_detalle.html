@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ demanda.titulo }} | Tablón de Demandas{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <a href="/demandas" class="btn btn-outline-success mb-3">← Volver al tablón</a>
+    <h2 class="fw-bold">{{ demanda.titulo }}</h2>
+    <p class="lead">{{ demanda.descripcion }}</p>
+    {% if demanda.cantidad %}<p><strong>Cantidad:</strong> {{ demanda.cantidad }} {{ demanda.unidad }}</p>{% endif %}
+    {% if demanda.precio_referencia > 0 %}<p><strong>Precio de referencia:</strong> ${{ demanda.precio_referencia }} COP / unidad</p>{% endif %}
+    <p><strong>Publicado por:</strong> {{ creador_nombre or demanda.email_creador }}</p>
+    <p><strong>Fecha:</strong> {{ demanda.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }}</p>
+
+    {% if request.session.get("tipo_usuario") == "asociacion" %}
+    <hr>
+    <h5>💬 Responder a esta demanda</h5>
+    <form method="post" action="/demandas/{{ demanda.id }}/responder">
+        <div class="mb-3">
+            <textarea name="mensaje" class="form-control" rows="4" placeholder="Escribe tu oferta o propuesta..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Enviar respuesta</button>
+    </form>
+    <p class="text-muted small mt-2">Tu respuesta se enviará como mensaje privado al comprador.</p>
+    {% elif not request.session.get("usuario") %}
+    <p class="mt-3"><a href="/auth/login" class="btn btn-outline-success">Inicia sesión para responder</a></p>
+    {% else %}
+    <p class="text-muted mt-3">Solo las asociaciones pueden responder a las demandas.</p>
+    {% endif %}
+</div>
+{% endblock %}

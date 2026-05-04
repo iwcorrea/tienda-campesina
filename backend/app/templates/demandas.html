@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Tablón de Demandas{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">📋 Tablón de Demandas</h2>
+        <p class="text-muted mb-0">Lo que los compradores están buscando.</p>
+    </div>
+    {% if request.session.get("usuario") %}
+    <a href="/demandas/nueva" class="btn btn-success">✨ Publicar demanda</a>
+    {% endif %}
+</div>
+
+<div class="row g-4">
+    {% for d in demandas %}
+    <div class="col-md-6">
+        <div class="card modern-card h-100">
+            <div class="card-body">
+                <h5 class="card-title fw-bold">{{ d.titulo }}</h5>
+                <p class="card-text text-muted">{{ d.descripcion[:120] }}{% if d.descripcion|length > 120 %}...{% endif %}</p>
+                <p>
+                    {% if d.cantidad %}<span class="badge bg-secondary me-1">{{ d.cantidad }} {{ d.unidad }}</span>{% endif %}
+                    {% if d.precio_referencia > 0 %}<span class="badge bg-success">${{ d.precio_referencia }} ref.</span>{% endif %}
+                </p>
+                <small class="text-muted">
+                    Publicado por {% if d.tipo_creador == 'asociacion' %}<strong>{{ d.email_creador }}</strong>{% else %}<strong>{{ d.email_creador }}</strong>{% endif %} – {{ d.fecha_publicacion.strftime('%d/%m/%Y') }}
+                </small>
+                <div class="mt-2">
+                    <a href="/demandas/{{ d.id }}" class="btn btn-sm btn-outline-success">Ver detalle</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <p class="text-muted">No hay demandas publicadas todavía.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Publicar Demanda{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">✨ Publicar nueva demanda</h2>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form method="post" action="/demandas/nueva">
+                <div class="mb-3">
+                    <label class="form-label">Título</label>
+                    <input type="text" name="titulo" class="form-control" placeholder="Ej: Necesito 100 kg de café" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" class="form-control" rows="3" placeholder="Describe lo que buscas, calidad, presentación..."></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Cantidad</label>
+                        <input type="text" name="cantidad" class="form-control" placeholder="Ej: 500">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Unidad (kg, bultos, etc.)</label>
+                        <input type="text" name="unidad" class="form-control" placeholder="Ej: kg">
+                    </div>
+                </div>
+                <div class="mb-3 mt-3">
+                    <label class="form-label">Precio unitario de referencia (COP)</label>
+                    <input type="number" name="precio_referencia" class="form-control" value="0">
+                </div>
+                <button type="submit" class="btn btn-success btn-lg">Publicar demanda</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

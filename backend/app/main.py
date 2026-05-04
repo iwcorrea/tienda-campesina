@@ -16,7 +16,8 @@ from sqlalchemy import text
 # Routers
 from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
 from app.routers import personas, empleos, herramientas, mensajes
-from app.routers import transportistas     # NUEVO
+from app.routers import transportistas
+from app.routers import demandas          # NUEVO
 
 logging.basicConfig(level=logging.INFO)
 
@@ -90,7 +91,8 @@ app.include_router(personas.router)
 app.include_router(empleos.router)
 app.include_router(herramientas.router)
 app.include_router(mensajes.router)
-app.include_router(transportistas.router)     # NUEVO
+app.include_router(transportistas.router)
+app.include_router(demandas.router)       # NUEVO
 
 # Utilidad para eliminar assets de Cloudinary
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
@@ -156,7 +158,7 @@ def on_startup():
         # Transportistas (columna documento_url)
         existing_trans = set()
         rows_trans = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='transportistas'"))
-        if rows_trans.rowcount > 0:  # solo si la tabla ya existe
+        if rows_trans.rowcount > 0:
             for row in rows_trans:
                 existing_trans.add(row[0])
             for col_name in ["documento_url"]:
@@ -164,7 +166,7 @@ def on_startup():
                     sql = f'ALTER TABLE transportistas ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                     conn.execute(text(sql))
 
-        # Crear tabla transportistas_favoritos si no existe (create_all ya lo haría, pero por seguridad)
+        # Crear tabla transportistas_favoritos si no existe
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS transportistas_favoritos (
                 id TEXT PRIMARY KEY,
