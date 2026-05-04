@@ -11,7 +11,7 @@ import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib import colors
 import urllib.request
@@ -89,22 +89,39 @@ def generar_contrato_pdf(
 
     elements = []
 
+    # ---- ENCABEZADO CON LOGO Y TÍTULO ----
+    header_data = []
     if logo_url:
         try:
-            # Descargar el logo usando urllib (incluido en Python)
             with urllib.request.urlopen(logo_url) as response:
                 img_data = response.read()
-            img = Image(io.BytesIO(img_data), width=80, height=80)
-            img.hAlign = 'CENTER'
-            elements.append(img)
-            elements.append(Spacer(1, 12))
+            img = Image(io.BytesIO(img_data), width=70, height=70)     # logo de 2.5 cm aprox
+            img.hAlign = 'LEFT'
+            header_data.append(img)
         except Exception as e:
             logger.warning(f"No se pudo cargar el logo desde {logo_url}: {e}")
+            header_data.append("")    # celda vacía si falla el logo
+    else:
+        header_data.append("")
 
-    elements.append(Paragraph("CONTRATO DE COMPRAVENTA DE PRODUCTO AGRÍCOLA", style_title))
-    elements.append(Spacer(1, 6))
-    elements.append(Paragraph(f"Fecha de emisión: {datetime.datetime.now().strftime('%d/%m/%Y')}", style_normal))
+    # Celda derecha: título y fecha
+    titulo_cabecera = Paragraph("CONTRATO DE COMPRAVENTA DE PRODUCTO AGRÍCOLA", style_title)
+    fecha_actual = Paragraph(f"Fecha de emisión: {datetime.datetime.now().strftime('%d/%m/%Y')}", style_normal)
+    header_data.append([titulo_cabecera, Spacer(1, 6), fecha_actual])
 
+    # Construimos la tabla del encabezado: una fila, dos columnas
+    header_table = Table([header_data], colWidths=[2.5*cm, 13.5*cm])   # ancho del logo 2.5cm, el resto para el texto
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (0,0), 0),
+        ('RIGHTPADDING', (0,0), (0,0), 10),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+    ]))
+    elements.append(header_table)
+    elements.append(Spacer(1, 12))
+
+    # ---- CLÁUSULAS ----
     elements.append(Paragraph(
         f"<b>1. PARTES</b><br/>"
         f"<b>VENDEDOR:</b> {vendedor_nombre}, identificado con {vendedor_documento}.<br/>"
