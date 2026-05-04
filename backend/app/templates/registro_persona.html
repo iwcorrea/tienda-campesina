@@ -11,6 +11,16 @@
                 <div class="mb-3"><input type="text" name="nombre" class="form-control" placeholder="Nombre completo" required></div>
                 <div class="mb-3"><input type="text" name="telefono" class="form-control" placeholder="Teléfono"></div>
                 <div class="mb-3"><label>Hoja de vida (PDF opcional)</label><input type="file" name="hoja_vida" class="form-control" accept=".pdf"></div>
+                <hr>
+                <h5 class="text-success">Seguridad</h5>
+                <div class="mb-3">
+                    <label class="form-label">Pregunta secreta (para recuperar contraseña)</label>
+                    <input type="text" name="pregunta" class="form-control" placeholder="Ej: ¿Nombre de mi primera mascota?">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Respuesta secreta</label>
+                    <input type="text" name="respuesta_secreta" class="form-control" placeholder="Escribe la respuesta">
+                </div>
                 <button type="submit" class="btn btn-success w-100">Registrarse</button>
             </form>
             {% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}

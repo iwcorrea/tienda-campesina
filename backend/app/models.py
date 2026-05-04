@@ -23,6 +23,8 @@ class Asociacion(Base):
     rut_url = Column(Text, default="")
     verificado = Column(String, default="")
     fecha_registro = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    pregunta_secreta = Column(String, default="")
+    respuesta_secreta_hash = Column(String, default="")
 
     productos = relationship("Producto", back_populates="asociacion", cascade="all, delete-orphan")
 
@@ -64,6 +66,8 @@ class Persona(Base):
     telefono = Column(String, default="")
     hoja_vida_url = Column(Text, default="")
     fecha_registro = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    pregunta_secreta = Column(String, default="")
+    respuesta_secreta_hash = Column(String, default="")
 
 class Vacante(Base):
     __tablename__ = "vacantes"
@@ -173,6 +177,5 @@ class Mensaje(Base):
     remitente = relationship("Asociacion", foreign_keys=[remitente_email])
     destinatario = relationship("Asociacion", foreign_keys=[destinatario_email])
     producto = relationship("Producto")
-    # Relación autoreferenciada corregida
     padre = relationship("Mensaje", back_populates="respuestas", remote_side=[id])
     respuestas = relationship("Mensaje", back_populates="padre", lazy="dynamic")

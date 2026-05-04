@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Verificar teléfono{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <h2 class="fw-bold mb-4">📞 Verificar teléfono</h2>
+            <p class="text-muted">Confirma tu número de teléfono para restablecer la contraseña.</p>
+            {% if pista %}<p class="lead">Pista: tu número termina en <strong>••• {{ pista }}</strong></p>{% endif %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form method="post" action="/auth/recuperar-telefono">
+                        <div class="mb-3">
+                            <label class="form-label">Tu número completo (como lo registraste)</label>
+                            <input type="text" name="telefono" class="form-control" required>
+                        </div>
+                        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+                        <button type="submit" class="btn btn-success w-100">Verificar</button>
+                    </form>
+                    <p class="text-center mt-3"><a href="/auth/recuperar">← Volver</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

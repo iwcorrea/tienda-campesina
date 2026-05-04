@@ -70,7 +70,7 @@ def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/", status_code=303)
 
-# ─── REGISTRO DE ASOCIACIÓN (sin cambios) ──────────
+# ─── REGISTRO DE ASOCIACIÓN ──────────────────────────
 @router.get("/registro", response_class=HTMLResponse)
 def registro_asociacion_get(request: Request):
     if request.session.get("usuario"):
@@ -90,6 +90,8 @@ def registro_asociacion_post(
     logo: UploadFile = File(None),
     camara_comercio: UploadFile = File(None),
     rut: UploadFile = File(None),
+    pregunta: str = Form(""),
+    respuesta_secreta: str = Form(""),
     db: Session = Depends(get_db)
 ):
     if db.query(Asociacion).filter(Asociacion.email == email).first() or db.query(Persona).filter(Persona.email == email).first():
@@ -98,18 +100,21 @@ def registro_asociacion_post(
     camara_url = upload_file_cloudinary(camara_comercio, "documentos", raw=True)
     rut_url = upload_file_cloudinary(rut, "documentos", raw=True)
     hashed = bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
+    resp_hash = bcrypt.hashpw(respuesta_secreta.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8") if respuesta_secreta.strip() else ""
     nueva = Asociacion(
         email=email, hashed_password=hashed, nombre=nombre_asociacion,
         descripcion=descripcion or "", direccion=direccion or "", telefono=telefono or "",
         logo_url=logo_url, show_whatsapp="1" if show_whatsapp=="1" else "",
-        camara_url=camara_url, rut_url=rut_url, verificado=""
+        camara_url=camara_url, rut_url=rut_url, verificado="",
+        pregunta_secreta=pregunta.strip(),
+        respuesta_secreta_hash=resp_hash
     )
     db.add(nueva)
     db.commit()
     logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)
     return RedirectResponse(url="/auth/login", status_code=303)
 
-# ─── REGISTRO DE PERSONA (sin cambios) ──────────────
+# ─── REGISTRO DE PERSONA ──────────────────────────────
 @router.get("/registro-persona", response_class=HTMLResponse)
 def registro_persona_get(request: Request):
     if request.session.get("usuario"):
@@ -124,19 +129,23 @@ def registro_persona_post(
     nombre: str = Form(...),
     telefono: str = Form(None),
     hoja_vida: UploadFile = File(None),
+    pregunta: str = Form(""),
+    respuesta_secreta: str = Form(""),
     db: Session = Depends(get_db)
 ):
     if db.query(Asociacion).filter(Asociacion.email == email).first() or db.query(Persona).filter(Persona.email == email).first():
         return templates.TemplateResponse("registro_persona.html", {"request": request, "error": "Este email ya está registrado."})
     hoja_url = upload_file_cloudinary(hoja_vida, "hojas_vida", raw=True)
     hashed = bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
-    nueva = Persona(email=email, hashed_password=hashed, nombre=nombre, telefono=telefono or "", hoja_vida_url=hoja_url)
+    resp_hash = bcrypt.hashpw(respuesta_secreta.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8") if respuesta_secreta.strip() else ""
+    nueva = Persona(email=email, hashed_password=hashed, nombre=nombre, telefono=telefono or "", hoja_vida_url=hoja_url,
+                    pregunta_secreta=pregunta.strip(), respuesta_secreta_hash=resp_hash)
     db.add(nueva)
     db.commit()
     logger.info("Persona registrada: %s (%s)", nombre, email)
     return RedirectResponse(url="/auth/login", status_code=303)
 
-# ─── CAMBIO DE CONTRASEÑA (UNIFICADO) ─────────────────
+# ─── CAMBIO DE CONTRASEÑA ─────────────────────────────
 @router.get("/cambiar-password", response_class=HTMLResponse)
 def cambiar_password_get(request: Request):
     if not request.session.get("usuario"):
@@ -156,7 +165,6 @@ def cambiar_password_post(
     email = request.session["usuario"]
     tipo = request.session.get("tipo_usuario")
     error = None
-
     if password_nueva != password_repite:
         error = "Las contraseñas nuevas no coinciden."
     elif len(password_nueva) < 6:
@@ -168,7 +176,6 @@ def cambiar_password_post(
             user = db.query(Persona).filter(Persona.email == email).first()
         else:
             return RedirectResponse(url="/auth/login", status_code=303)
-
         if user and bcrypt.checkpw(password_actual.encode("utf-8")[:72], user.hashed_password.encode("utf-8")):
             nuevo_hash = bcrypt.hashpw(password_nueva.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
             user.hashed_password = nuevo_hash
@@ -176,5 +183,106 @@ def cambiar_password_post(
             return RedirectResponse(url="/perfil" if tipo=="persona" else "/panel", status_code=303)
         else:
             error = "La contraseña actual es incorrecta."
-
     return templates.TemplateResponse("cambiar_password.html", {"request": request, "error": error})
+
+# ─── RECUPERACIÓN DE CONTRASEÑA (vía teléfono) ─────────
+@router.get("/recuperar", response_class=HTMLResponse)
+def recuperar_get(request: Request):
+    return templates.TemplateResponse("recuperar_email.html", {"request": request})
+
+@router.post("/recuperar")
+def recuperar_post(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(Asociacion).filter(Asociacion.email == email).first()
+    tipo = "asociacion"
+    if not user:
+        user = db.query(Persona).filter(Persona.email == email).first()
+        tipo = "persona"
+    if not user:
+        return templates.TemplateResponse("recuperar_email.html", {"request": request, "error": "El email no está registrado."})
+
+    telefono = user.telefono or ""
+    pista = telefono[-3:] if len(telefono) >= 3 else telefono
+
+    request.session["rec_email"] = email
+    request.session["rec_tipo"] = tipo
+    return templates.TemplateResponse("recuperar_telefono.html", {"request": request, "pista": pista})
+
+@router.get("/recuperar-telefono", response_class=HTMLResponse)
+def recuperar_telefono_get(request: Request, db: Session = Depends(get_db)):
+    email = request.session.get("rec_email")
+    if not email:
+        return RedirectResponse(url="/auth/recuperar", status_code=303)
+    user = None
+    tipo = request.session.get("rec_tipo")
+    if tipo == "asociacion":
+        user = db.query(Asociacion).filter(Asociacion.email == email).first()
+    else:
+        user = db.query(Persona).filter(Persona.email == email).first()
+    if not user:
+        return RedirectResponse(url="/auth/recuperar", status_code=303)
+    telefono = user.telefono or ""
+    pista = telefono[-3:] if len(telefono) >= 3 else telefono
+    return templates.TemplateResponse("recuperar_telefono.html", {"request": request, "pista": pista})
+
+@router.post("/recuperar-telefono")
+def recuperar_telefono_post(
+    request: Request,
+    telefono: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    email = request.session.get("rec_email")
+    tipo = request.session.get("rec_tipo")
+    if not email:
+        return RedirectResponse(url="/auth/recuperar", status_code=303)
+    user = None
+    if tipo == "asociacion":
+        user = db.query(Asociacion).filter(Asociacion.email == email).first()
+    else:
+        user = db.query(Persona).filter(Persona.email == email).first()
+    if not user or not user.telefono:
+        return templates.TemplateResponse("recuperar_telefono.html", {"request": request, "error": "No se puede verificar el teléfono."})
+
+    telefono_limpio = telefono.strip().replace(" ", "").replace("-", "")
+    telefono_registrado = user.telefono.strip().replace(" ", "").replace("-", "")
+
+    if telefono_limpio != telefono_registrado:
+        telefono = user.telefono or ""
+        pista = telefono[-3:] if len(telefono) >= 3 else telefono
+        return templates.TemplateResponse("recuperar_telefono.html", {"request": request, "pista": pista, "error": "El número de teléfono no coincide con el registrado."})
+
+    return RedirectResponse(url="/auth/recuperar-nueva", status_code=303)
+
+@router.get("/recuperar-nueva", response_class=HTMLResponse)
+def recuperar_nueva_get(request: Request):
+    if not request.session.get("rec_email"):
+        return RedirectResponse(url="/auth/recuperar", status_code=303)
+    return templates.TemplateResponse("recuperar_nueva.html", {"request": request})
+
+@router.post("/recuperar-nueva")
+def recuperar_nueva_post(
+    request: Request,
+    password_nueva: str = Form(...),
+    password_repite: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    email = request.session.get("rec_email")
+    tipo = request.session.get("rec_tipo")
+    if not email:
+        return RedirectResponse(url="/auth/recuperar", status_code=303)
+    if password_nueva != password_repite:
+        return templates.TemplateResponse("recuperar_nueva.html", {"request": request, "error": "Las contraseñas no coinciden."})
+    if len(password_nueva) < 6:
+        return templates.TemplateResponse("recuperar_nueva.html", {"request": request, "error": "Mínimo 6 caracteres."})
+    user = None
+    if tipo == "asociacion":
+        user = db.query(Asociacion).filter(Asociacion.email == email).first()
+    else:
+        user = db.query(Persona).filter(Persona.email == email).first()
+    if not user:
+        return RedirectResponse(url="/auth/recuperar", status_code=303)
+    nuevo_hash = bcrypt.hashpw(password_nueva.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
+    user.hashed_password = nuevo_hash
+    db.commit()
+    request.session.pop("rec_email", None)
+    request.session.pop("rec_tipo", None)
+    return templates.TemplateResponse("login.html", {"request": request, "mensaje": "Contraseña actualizada. Inicia sesión con tu nueva contraseña."})
