@@ -116,8 +116,10 @@ def delete_cloudinary_asset(url: str, resource_type: str = "image"):
 def on_startup():
     # Crear tablas que no existan
     Base.metadata.create_all(bind=engine)
-    # Migración segura de nuevas columnas en configuracion
+
+    # Migración segura de nuevas columnas en configuracion, asociaciones y personas
     with engine.connect() as conn:
+        # Configuracion
         existing = set()
         rows = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'"))
         for row in rows:
@@ -128,4 +130,25 @@ def on_startup():
                 col_type = col.type.compile(dialect=engine.dialect)
                 sql = f'ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS {col.name} {col_type}'
                 conn.execute(text(sql))
+
+        # Asociaciones (pregunta_secreta, respuesta_secreta_hash)
+        existing_asoc = set()
+        rows_asoc = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='asociaciones'"))
+        for row in rows_asoc:
+            existing_asoc.add(row[0])
+        for col_name in ["pregunta_secreta", "respuesta_secreta_hash"]:
+            if col_name not in existing_asoc:
+                sql = f'ALTER TABLE asociaciones ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
+                conn.execute(text(sql))
+
+        # Personas (pregunta_secreta, respuesta_secreta_hash)
+        existing_pers = set()
+        rows_pers = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='personas'"))
+        for row in rows_pers:
+            existing_pers.add(row[0])
+        for col_name in ["pregunta_secreta", "respuesta_secreta_hash"]:
+            if col_name not in existing_pers:
+                sql = f'ALTER TABLE personas ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
+                conn.execute(text(sql))
+
         conn.commit()
