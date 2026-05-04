@@ -21,13 +21,7 @@ def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
     if not file or not file.filename:
         return ""
     try:
-        kwargs = dict(
-            folder=folder,
-            filename=file.filename,
-            use_filename=True,
-            unique_filename=True,
-            access_mode="public"
-        )
+        kwargs = dict(folder=folder, filename=file.filename, use_filename=True, unique_filename=True, access_mode="public")
         if raw:
             kwargs["resource_type"] = "raw"
         result = cloudinary.uploader.upload(file.file, **kwargs)
@@ -43,11 +37,9 @@ def login_get(request: Request):
 @router.post("/login")
 def login_post(request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     try:
-        # Buscar en asociaciones
         asoc = db.query(Asociacion).filter(Asociacion.email == email).first()
         if asoc:
-            password_bytes = password.encode("utf-8")[:72]
-            if bcrypt.checkpw(password_bytes, asoc.hashed_password.encode("utf-8")):
+            if bcrypt.checkpw(password.encode("utf-8")[:72], asoc.hashed_password.encode("utf-8")):
                 request.session["usuario"] = asoc.email
                 request.session["tipo_usuario"] = "asociacion"
                 request.session["nombre_usuario"] = asoc.nombre
@@ -60,18 +52,14 @@ def login_post(request: Request, email: str = Form(...), password: str = Form(..
                     request.session["es_admin"] = True
                     return RedirectResponse(url="/admin", status_code=303)
                 return RedirectResponse(url="/panel", status_code=303)
-
-        # Buscar en personas
         persona = db.query(Persona).filter(Persona.email == email).first()
         if persona:
-            password_bytes = password.encode("utf-8")[:72]
-            if bcrypt.checkpw(password_bytes, persona.hashed_password.encode("utf-8")):
+            if bcrypt.checkpw(password.encode("utf-8")[:72], persona.hashed_password.encode("utf-8")):
                 request.session["usuario"] = persona.email
                 request.session["tipo_usuario"] = "persona"
                 request.session["nombre_usuario"] = persona.nombre
                 request.session["last_activity"] = time.time()
                 return RedirectResponse(url="/perfil", status_code=303)
-
         return templates.TemplateResponse("login.html", {"request": request, "error": "Credenciales incorrectas"})
     except Exception as e:
         logger.exception("Error en login_post")
@@ -82,14 +70,11 @@ def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/", status_code=303)
 
-# ─── REGISTRO DE ASOCIACIÓN ──────────────────────────
+# ─── REGISTRO DE ASOCIACIÓN (sin cambios) ──────────
 @router.get("/registro", response_class=HTMLResponse)
 def registro_asociacion_get(request: Request):
     if request.session.get("usuario"):
-        if request.session.get("tipo_usuario") == "asociacion":
-            return RedirectResponse(url="/panel", status_code=303)
-        elif request.session.get("tipo_usuario") == "persona":
-            return RedirectResponse(url="/perfil", status_code=303)
+        return RedirectResponse(url="/panel" if request.session.get("tipo_usuario")=="asociacion" else "/perfil", status_code=303)
     return templates.TemplateResponse("registro.html", {"request": request})
 
 @router.post("/registro")
@@ -109,11 +94,9 @@ def registro_asociacion_post(
 ):
     if db.query(Asociacion).filter(Asociacion.email == email).first() or db.query(Persona).filter(Persona.email == email).first():
         return templates.TemplateResponse("registro.html", {"request": request, "error": "Este email ya está registrado."})
-
     logo_url = upload_file_cloudinary(logo, "logos")
     camara_url = upload_file_cloudinary(camara_comercio, "documentos", raw=True)
     rut_url = upload_file_cloudinary(rut, "documentos", raw=True)
-
     hashed = bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
     nueva = Asociacion(
         email=email, hashed_password=hashed, nombre=nombre_asociacion,
@@ -126,14 +109,11 @@ def registro_asociacion_post(
     logger.info("Asociación registrada: %s (%s)", nombre_asociacion, email)
     return RedirectResponse(url="/auth/login", status_code=303)
 
-# ─── REGISTRO DE PERSONA ──────────────────────────────
+# ─── REGISTRO DE PERSONA (sin cambios) ──────────────
 @router.get("/registro-persona", response_class=HTMLResponse)
 def registro_persona_get(request: Request):
     if request.session.get("usuario"):
-        if request.session.get("tipo_usuario") == "persona":
-            return RedirectResponse(url="/perfil", status_code=303)
-        elif request.session.get("tipo_usuario") == "asociacion":
-            return RedirectResponse(url="/panel", status_code=303)
+        return RedirectResponse(url="/perfil" if request.session.get("tipo_usuario")=="persona" else "/panel", status_code=303)
     return templates.TemplateResponse("registro_persona.html", {"request": request})
 
 @router.post("/registro-persona")
@@ -148,17 +128,53 @@ def registro_persona_post(
 ):
     if db.query(Asociacion).filter(Asociacion.email == email).first() or db.query(Persona).filter(Persona.email == email).first():
         return templates.TemplateResponse("registro_persona.html", {"request": request, "error": "Este email ya está registrado."})
-
-    hoja_url = ""
-    if hoja_vida and hoja_vida.filename:
-        hoja_url = upload_file_cloudinary(hoja_vida, "hojas_vida", raw=True)
-
+    hoja_url = upload_file_cloudinary(hoja_vida, "hojas_vida", raw=True)
     hashed = bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
-    nueva_persona = Persona(
-        email=email, hashed_password=hashed, nombre=nombre,
-        telefono=telefono or "", hoja_vida_url=hoja_url
-    )
-    db.add(nueva_persona)
+    nueva = Persona(email=email, hashed_password=hashed, nombre=nombre, telefono=telefono or "", hoja_vida_url=hoja_url)
+    db.add(nueva)
     db.commit()
     logger.info("Persona registrada: %s (%s)", nombre, email)
     return RedirectResponse(url="/auth/login", status_code=303)
+
+# ─── CAMBIO DE CONTRASEÑA (UNIFICADO) ─────────────────
+@router.get("/cambiar-password", response_class=HTMLResponse)
+def cambiar_password_get(request: Request):
+    if not request.session.get("usuario"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+    return templates.TemplateResponse("cambiar_password.html", {"request": request})
+
+@router.post("/cambiar-password")
+def cambiar_password_post(
+    request: Request,
+    password_actual: str = Form(...),
+    password_nueva: str = Form(...),
+    password_repite: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    if not request.session.get("usuario"):
+        return RedirectResponse(url="/auth/login", status_code=303)
+    email = request.session["usuario"]
+    tipo = request.session.get("tipo_usuario")
+    error = None
+
+    if password_nueva != password_repite:
+        error = "Las contraseñas nuevas no coinciden."
+    elif len(password_nueva) < 6:
+        error = "La nueva contraseña debe tener al menos 6 caracteres."
+    else:
+        if tipo == "asociacion":
+            user = db.query(Asociacion).filter(Asociacion.email == email).first()
+        elif tipo == "persona":
+            user = db.query(Persona).filter(Persona.email == email).first()
+        else:
+            return RedirectResponse(url="/auth/login", status_code=303)
+
+        if user and bcrypt.checkpw(password_actual.encode("utf-8")[:72], user.hashed_password.encode("utf-8")):
+            nuevo_hash = bcrypt.hashpw(password_nueva.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
+            user.hashed_password = nuevo_hash
+            db.commit()
+            return RedirectResponse(url="/perfil" if tipo=="persona" else "/panel", status_code=303)
+        else:
+            error = "La contraseña actual es incorrecta."
+
+    return templates.TemplateResponse("cambiar_password.html", {"request": request, "error": error})

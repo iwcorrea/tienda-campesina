@@ -1,62 +1,26 @@
 {% extends "base.html" %}
-
 {% block title %}Editar Perfil{% endblock %}
-
 {% block content %}
-<h2>Editar perfil de la asociación</h2>
-
-<form action="/panel/editar-perfil" method="post" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label class="form-label">Nombre de la asociación</label>
-        <input type="text" name="nombre_asociacion" class="form-control" value="{{ perfil.nombre }}" required>
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">✏️ Editar perfil de la asociación</h2>
+    <p class="text-end"><a href="/auth/cambiar-password" class="btn btn-outline-warning btn-sm">🔐 Cambiar contraseña</a></p>
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form action="/panel/editar-perfil" method="post" enctype="multipart/form-data">
+                <div class="mb-3"><label class="form-label">Nombre</label><input type="text" name="nombre_asociacion" class="form-control" value="{{ perfil.nombre }}" required></div>
+                <div class="mb-3"><label class="form-label">Descripción</label><textarea name="descripcion" class="form-control" rows="3">{{ perfil.descripcion }}</textarea></div>
+                <div class="mb-3"><label class="form-label">Dirección</label><input type="text" name="direccion" class="form-control" value="{{ perfil.direccion }}"></div>
+                <div class="mb-3"><label class="form-label">Teléfono</label><input type="text" name="telefono" class="form-control" value="{{ perfil.telefono }}"></div>
+                <div class="mb-3 form-check"><input type="checkbox" name="show_whatsapp" value="1" class="form-check-input" id="showWhatsapp" {% if perfil.show_whatsapp == '1' %}checked{% endif %}><label class="form-check-label" for="showWhatsapp">Recibir consultas por WhatsApp</label></div>
+                <div class="mb-3"><label>Logo actual</label><br>{% if perfil.logo_url %}<img src="{{ perfil.logo_url }}" class="mb-2 rounded" style="max-width:120px"><br>{% endif %}<label>Cambiar logo</label><input type="file" name="logo" class="form-control" accept="image/*"></div>
+                <hr>
+                <h5>Documentos legales</h5>
+                <div class="mb-3"><label>Cámara de Comercio (PDF)</label>{% if perfil.camara_comercio_url %}<p><a href="{{ perfil.camara_comercio_url }}" target="_blank">Ver actual</a></p><label>Reemplazar</label>{% endif %}<input type="file" name="camara_comercio" class="form-control" accept=".pdf"></div>
+                <div class="mb-3"><label>RUT (PDF)</label>{% if perfil.rut_url %}<p><a href="{{ perfil.rut_url }}" target="_blank">Ver actual</a></p><label>Reemplazar</label>{% endif %}<input type="file" name="rut" class="form-control" accept=".pdf"></div>
+                <button type="submit" class="btn btn-success">Guardar cambios</button>
+                <a href="/panel" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
     </div>
-    <div class="mb-3">
-        <label class="form-label">Descripción</label>
-        <textarea name="descripcion" class="form-control" rows="3">{{ perfil.descripcion }}</textarea>
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Dirección / Municipio</label>
-        <input type="text" name="direccion" class="form-control" value="{{ perfil.direccion }}">
-    </div>
-    <div class="mb-3">
-        <label class="form-label">Teléfono</label>
-        <input type="text" name="telefono" class="form-control" value="{{ perfil.telefono }}">
-    </div>
-    <div class="mb-3 form-check">
-        <input type="checkbox" name="show_whatsapp" value="1" class="form-check-input" id="showWhatsapp" {% if perfil.show_whatsapp == '1' %}checked{% endif %}>
-        <label class="form-check-label" for="showWhatsapp">Recibir consultas por WhatsApp</label>
-    </div>
-
-    <h5 class="mt-4">Logo</h5>
-    <div class="mb-3">
-        {% if perfil.logo_url %}
-        <img src="{{ perfil.logo_url }}" class="mb-2 rounded" style="max-width: 120px;"><br>
-        <label>Cambiar logo (opcional)</label>
-        {% else %}
-        <label>Subir logo (opcional)</label>
-        {% endif %}
-        <input type="file" name="logo" class="form-control" accept="image/*">
-    </div>
-
-    <h5 class="mt-4">Documentos legales</h5>
-    <div class="mb-3">
-        <label class="form-label">Cámara de Comercio (PDF)</label>
-        {% if perfil.camara_comercio_url %}
-        <p><a href="{{ perfil.camara_comercio_url }}" target="_blank">Ver documento actual</a></p>
-        <label class="form-label">Reemplazar archivo (opcional)</label>
-        {% endif %}
-        <input type="file" name="camara_comercio" class="form-control" accept=".pdf">
-    </div>
-    <div class="mb-3">
-        <label class="form-label">RUT actualizado (PDF)</label>
-        {% if perfil.rut_url %}
-        <p><a href="{{ perfil.rut_url }}" target="_blank">Ver documento actual</a></p>
-        <label class="form-label">Reemplazar archivo (opcional)</label>
-        {% endif %}
-        <input type="file" name="rut" class="form-control" accept=".pdf">
-    </div>
-
-    <button type="submit" class="btn btn-success">Guardar cambios</button>
-    <a href="/panel" class="btn btn-secondary">Cancelar</a>
-</form>
+</div>
 {% endblock %}
