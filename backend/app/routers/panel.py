@@ -164,7 +164,7 @@ def eliminar_producto(request: Request, producto_id: str, db: Session = Depends(
         db.commit()
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── TRANSPORTADORES (GESTIÓN PROPIA) ─────────────────
+# ─── TRANSPORTADORES PROPIOS ──────────────────────
 @router.get("/panel/transportadores", response_class=HTMLResponse)
 def panel_transportadores(request: Request, db: Session = Depends(get_db)):
     if request.session.get("tipo_usuario") != "asociacion":
@@ -179,15 +179,49 @@ def panel_transportadores(request: Request, db: Session = Depends(get_db)):
     })
 
 @router.post("/panel/transportadores/crear")
-def crear_transportador(...): # igual que antes, sin cambios
-    # ... (mantener igual)
-    pass
+def crear_transportador(
+    request: Request,
+    nombre: str = Form(...),
+    medio: str = Form("camioneta"),
+    tarifa_base: int = Form(5000),
+    costo_km: int = Form(1500),
+    telefono: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    if request.session.get("tipo_usuario") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
+    email = request.session["usuario"]
+    nuevo = Transportador(
+        asociacion_email=email,
+        nombre=nombre,
+        medio=medio,
+        tarifa_base=tarifa_base,
+        costo_km=costo_km,
+        telefono=telefono
+    )
+    db.add(nuevo)
+    db.commit()
+    return RedirectResponse(url="/panel/transportadores", status_code=303)
 
 @router.post("/panel/transportadores/eliminar/{transportador_id}")
-def eliminar_transportador(...): # igual que antes
-    pass
+def eliminar_transportador(
+    request: Request,
+    transportador_id: str,
+    db: Session = Depends(get_db)
+):
+    if request.session.get("tipo_usuario") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
+    email = request.session["usuario"]
+    t = db.query(Transportador).filter(
+        Transportador.id == transportador_id,
+        Transportador.asociacion_email == email
+    ).first()
+    if t:
+        db.delete(t)
+        db.commit()
+    return RedirectResponse(url="/panel/transportadores", status_code=303)
 
-# ─── API PARA CALCULAR ENVÍO (ahora incluye transportistas) ─
+# ─── API PARA CALCULAR ENVÍO (CON TRANSPORTISTAS) ─
 @router.get("/api/calcular-envio/{asociacion_email}")
 def calcular_envio(
     asociacion_email: str,

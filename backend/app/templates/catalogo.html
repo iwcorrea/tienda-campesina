@@ -178,33 +178,7 @@
     </div>
 </div>
 
-<!-- Modal para consultar sobre un producto -->
-<div class="modal fade" id="modalConsultar" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="formConsultar">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">💬 Consultar sobre el producto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="consultarDestinatario" value="">
-                    <input type="hidden" id="consultarProductoId" value="">
-                    <p id="consultarProductoNombre" class="fw-bold"></p>
-                    <div class="mb-3">
-                        <label class="form-label">Tu mensaje</label>
-                        <textarea id="consultarTexto" class="form-control" rows="4" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Enviar consulta</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de cálculo de envío -->
+<!-- Modal de cálculo de envío (MEJORADO) -->
 <div class="modal fade" id="modalEnvio" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -273,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Modal de envío
+// Modal de envío (MEJORADO)
 let asociacionActual = "";
 document.addEventListener('DOMContentLoaded', function() {
     var modalEnvio = document.getElementById('modalEnvio');
@@ -291,15 +265,51 @@ document.addEventListener('DOMContentLoaded', function() {
         let peso = parseFloat(document.getElementById('peso').value) || 0;
         let resp = await fetch(`/api/calcular-envio/${asociacionActual}?distancia=${distancia}&peso=${peso}`);
         let datos = await resp.json();
-        let html = '<ul class="list-group">';
-        if (datos.length === 0) {
-            html += '<li class="list-group-item text-muted">No hay transportadores disponibles para esta asociación.</li>';
+
+        // Separar propios y colaborativos
+        let propios = datos.filter(t => t.tipo === 'propio');
+        let colaborativos = datos.filter(t => t.tipo === 'colaborativo');
+
+        let html = '';
+
+        // Sección propios
+        html += '<h6 class="fw-bold mt-3">🚛 Transportadores de la asociación</h6>';
+        if (propios.length === 0) {
+            html += '<p class="text-muted small">No hay transportadores propios disponibles.</p>';
         } else {
-            datos.forEach(t => {
-                html += `<li class="list-group-item"><strong>${t.nombre}</strong> (${t.medio}) – <span class="text-success fw-bold">$${t.costo_estimado}</span><br><small>${t.telefono || 'Sin teléfono'}</small></li>`;
+            html += '<ul class="list-group">';
+            propios.forEach(t => {
+                html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${t.nombre}</strong> (${t.medio})<br>
+                        <span class="text-success fw-bold">$${t.costo_estimado}</span>
+                        ${t.telefono ? `<br><small>📞 ${t.telefono}</small>` : ''}
+                    </div>
+                    ${t.telefono ? `<a href="https://wa.me/57${t.telefono.replace(/\D/g,'')}" target="_blank" class="btn btn-sm btn-outline-success">💬 WhatsApp</a>` : ''}
+                </li>`;
             });
+            html += '</ul>';
         }
-        html += '</ul>';
+
+        // Sección colaborativos
+        html += '<h6 class="fw-bold mt-3">🤝 Transportistas colaborativos</h6>';
+        if (colaborativos.length === 0) {
+            html += '<p class="text-muted small">No hay transportistas colaborativos disponibles.</p>';
+        } else {
+            html += '<ul class="list-group">';
+            colaborativos.forEach(t => {
+                html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${t.nombre}</strong> (${t.medio})<br>
+                        <span class="text-success fw-bold">$${t.costo_estimado}</span>
+                        ${t.telefono ? `<br><small>📞 ${t.telefono}</small>` : ''}
+                    </div>
+                    ${t.telefono ? `<a href="https://wa.me/57${t.telefono.replace(/\D/g,'')}" target="_blank" class="btn btn-sm btn-outline-success">💬 WhatsApp</a>` : ''}
+                </li>`;
+            });
+            html += '</ul>';
+        }
+
         document.getElementById('resultadoEnvio').innerHTML = html;
     });
 });
