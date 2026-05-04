@@ -11,12 +11,15 @@ import datetime
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY          # ¡Importante!
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib import colors
+import urllib.request
+import logging
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger("herramientas")
 
 def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
     if not file or not file.filename:
@@ -30,7 +33,6 @@ def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
     except Exception:
         return ""
 
-# ─── FORMULARIO DEL CONTRATO ─────────────────────────
 @router.get("/herramientas/contrato", response_class=HTMLResponse)
 def contrato_get(request: Request, db: Session = Depends(get_db)):
     if request.session.get("tipo_usuario") != "asociacion":
@@ -42,7 +44,6 @@ def contrato_get(request: Request, db: Session = Depends(get_db)):
         "asociacion": asociacion
     })
 
-# ─── GENERAR PDF DEL CONTRATO ────────────────────────
 @router.post("/herramientas/contrato/generar")
 def generar_contrato_pdf(
     request: Request,
@@ -51,7 +52,7 @@ def generar_contrato_pdf(
     comprador_nombre: str = Form(...),
     comprador_documento: str = Form(...),
     producto: str = Form(...),
-    cantidad: float = Form(...),       # solo números
+    cantidad: float = Form(...),
     precio_unitario: float = Form(...),
     fecha_entrega: str = Form(...),
     condiciones_adicionales: str = Form(""),
@@ -90,14 +91,15 @@ def generar_contrato_pdf(
 
     if logo_url:
         try:
-            import requests
-            response = requests.get(logo_url)
-            img = Image(io.BytesIO(response.content), width=80, height=80)
+            # Descargar el logo usando urllib (incluido en Python)
+            with urllib.request.urlopen(logo_url) as response:
+                img_data = response.read()
+            img = Image(io.BytesIO(img_data), width=80, height=80)
             img.hAlign = 'CENTER'
             elements.append(img)
             elements.append(Spacer(1, 12))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"No se pudo cargar el logo desde {logo_url}: {e}")
 
     elements.append(Paragraph("CONTRATO DE COMPRAVENTA DE PRODUCTO AGRÍCOLA", style_title))
     elements.append(Spacer(1, 6))
