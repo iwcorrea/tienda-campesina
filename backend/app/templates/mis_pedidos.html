@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Mis Pedidos{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">📦 Mis pedidos</h2>
+    {% if pedidos %}
+    <div class="row g-4">
+        {% for pedido in pedidos %}
+        <div class="col-md-6">
+            <div class="card modern-card">
+                <div class="card-body">
+                    <h5 class="card-title">Pedido #{{ pedido.id[:8] }}</h5>
+                    <p><strong>Estado:</strong> <span class="badge bg-{{ 'success' if pedido.estado == 'confirmado' else 'warning' }}">{{ pedido.estado|capitalize }}</span></p>
+                    <p><strong>Fecha:</strong> {{ pedido.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</p>
+                    <p><strong>Productos:</strong> {{ pedido.items|length }}</p>
+                    <a href="/mis-pedidos/{{ pedido.id }}" class="btn btn-sm btn-outline-success">Ver detalle</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">Aún no has realizado ningún pedido. <a href="/catalogo">Ir al catálogo</a></p>
+    {% endif %}
+</div>
+{% endblock %}

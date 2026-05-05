@@ -196,16 +196,42 @@ class TransportistaFavorito(Base):
     asociacion = relationship("Asociacion", back_populates="transportistas_favoritos")
     transportista = relationship("Transportista", back_populates="favoritos")
 
-class Demanda(Base):
-    __tablename__ = "demandas"
+# ─── NUEVOS MODELOS PARA GESTIÓN DE PEDIDOS ─────────────────
+class Pedido(Base):
+    __tablename__ = "pedidos"
 
     id = Column(String, primary_key=True, default=generate_uuid)
-    titulo = Column(String, nullable=False)
-    descripcion = Column(Text, default="")
-    cantidad = Column(String, default="")        # puede ser "500 kg" o solo "500"
-    unidad = Column(String, default="")          # kg, bultos, etc.
-    precio_referencia = Column(Integer, default=0)  # precio unitario sugerido
-    email_creador = Column(String, nullable=False)  # email de quien publica
-    tipo_creador = Column(String, default="persona") # "asociacion" o "persona"
-    fecha_publicacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    activo = Column(String, default="1")         # "1" o ""   
+    comprador_email = Column(String, nullable=False)
+    estado = Column(String, default="pendiente")  # pendiente, confirmado, cancelado
+    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    items = relationship("ItemPedido", back_populates="pedido", cascade="all, delete-orphan")
+
+class ItemPedido(Base):
+    __tablename__ = "items_pedido"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    pedido_id = Column(String, ForeignKey("pedidos.id"), nullable=False)
+    producto_id = Column(String, ForeignKey("productos.id"), nullable=False)
+    cantidad = Column(Integer, default=1)
+    precio_unitario_inicial = Column(Integer, default=0)
+
+    pedido = relationship("Pedido", back_populates="items")
+    producto = relationship("Producto")
+    respuestas = relationship("RespuestaCotizacion", back_populates="item_pedido", cascade="all, delete-orphan")
+
+class RespuestaCotizacion(Base):
+    __tablename__ = "respuestas_cotizaciones"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    item_pedido_id = Column(String, ForeignKey("items_pedido.id"), nullable=False)
+    asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
+    aceptado = Column(String, default="pendiente")  # pendiente, aceptado, rechazado, contraoferta
+    precio_contraoferta = Column(Integer, default=0)
+    cantidad_contraoferta = Column(Integer, default=0)
+    fecha_entrega_contraoferta = Column(String, default="")
+    mensaje = Column(Text, default="")
+    fecha_respuesta = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    item_pedido = relationship("ItemPedido", back_populates="respuestas")
+    asociacion = relationship("Asociacion")

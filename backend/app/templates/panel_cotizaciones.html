@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Cotizaciones Recibidas{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">📦 Cotizaciones recibidas</h2>
+    {% if items %}
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Producto</th><th>Pedido</th><th>Cant.</th><th>Precio suger.</th><th>Comprador</th><th>Acción</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ item.producto.nombre }}</td>
+                            <td>#{{ item.pedido.id[:8] }}</td>
+                            <td>{{ item.cantidad }}</td>
+                            <td>${{ item.precio_unitario_inicial }}</td>
+                            <td>{{ item.pedido.comprador_email }}</td>
+                            <td><a href="/panel/cotizacion/responder/{{ item.id }}" class="btn btn-sm btn-outline-success">Responder</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No tienes solicitudes de cotización pendientes.</p>
+    {% endif %}
+</div>
+{% endblock %}

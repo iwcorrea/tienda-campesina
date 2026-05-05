@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Mi Pedido Actual{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">🛒 Mi pedido actual</h2>
+    {% if items %}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Producto</th><th>Asociación</th><th>Precio unit.</th><th>Cantidad</th><th>Subtotal</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ item.nombre }}</td>
+                            <td>{{ item.asociacion_nombre or item.asociacion_email }}</td>
+                            <td>${{ item.precio }}</td>
+                            <td>{{ item.cantidad }}</td>
+                            <td>${{ item.precio * item.cantidad }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <form method="post" action="/pedido/enviar-cotizacion" class="text-end">
+        <button type="submit" class="btn btn-success btn-lg">📤 Solicitar cotización</button>
+    </form>
+    {% else %}
+    <p class="text-muted">No tienes productos en tu pedido actual. Navega el <a href="/catalogo">catálogo</a> para agregar productos.</p>
+    {% endif %}
+</div>
+{% endblock %}
