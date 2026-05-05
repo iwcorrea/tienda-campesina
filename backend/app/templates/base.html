@@ -102,8 +102,8 @@
                 {% endif %}
                 🌱 {{ config.titulo_sitio or 'Tienda Campesina' }}
             </a>
-            <!-- El botón de hamburguesa siempre visible en móviles -->
-            <button class="btn btn-sm btn-outline-light d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+            <!-- Botón de hamburguesa siempre visible en móviles -->
+            <button class="btn btn-sm btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
                 ☰
             </button>
             <div class="d-none d-lg-flex align-items-center ms-auto">
@@ -145,62 +145,61 @@
     </div>
     {% endif %}
 
-    <div class="d-flex">
-        <nav class="sidebar offcanvas-lg offcanvas-start bg-white shadow-sm" id="sidebar">
-            <div class="offcanvas-header d-lg-none">
-                <h5 class="offcanvas-title">Menú</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-            </div>
-            <div class="offcanvas-body p-3">
-                <ul class="nav flex-column">
-                    {% if request.session.get("usuario") %}
-                        {% if request.session.get("tipo_usuario") == "asociacion" %}
-                            <li class="nav-item"><a class="nav-link" href="/dashboard"><span class="me-2">📊</span> Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/panel"><span class="me-2">🗂️</span> Panel de productos</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><span class="me-2">📋</span> Vacantes</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><span class="me-2">📦</span> Cotizaciones</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><span class="me-2">🚚</span> Transportistas favoritos</a></li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="collapse" data-bs-target="#herramientasSubmenu">🛠️ Herramientas</a>
-                                <div class="collapse" id="herramientasSubmenu">
-                                    <ul class="nav flex-column ms-3">
-                                        <li class="nav-item"><a class="nav-link py-1" href="/calculadora">🧮 Calculadora</a></li>
-                                        <li class="nav-item"><a class="nav-link py-1" href="/herramientas/contrato">📄 Contrato</a></li>
-                                    </ul>
-                                </div>
-                            </li>
-                            <li class="nav-item"><a class="nav-link" href="/mensajes"><span class="me-2">📨</span> Mensajes</a></li>
-                            {% if request.session.get("es_admin") %}
-                            <li class="nav-item"><a class="nav-link" href="/admin"><span class="me-2">🔧</span> Admin</a></li>
-                            {% endif %}
-                            <li class="nav-item mt-3"><a class="nav-link" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
-                        {% elif request.session.get("tipo_usuario") == "persona" %}
-                            <li class="nav-item"><a class="nav-link" href="/perfil"><span class="me-2">👤</span> Mi perfil</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><span class="me-2">📦</span> Mis pedidos</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/mensajes"><span class="me-2">📨</span> Mensajes</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/perfil#aplicaciones"><span class="me-2">📋</span> Postulaciones</a></li>
-                            <li class="nav-item mt-3"><a class="nav-link" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
-                        {% elif request.session.get("tipo_usuario") == "transportista" %}
-                            <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><span class="me-2">🚚</span> Perfil</a></li>
-                            <li class="nav-item mt-3"><a class="nav-link" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
+    <!-- Menú lateral (offcanvas) -->
+    <div class="offcanvas offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="sidebarLabel">Menú</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-3">
+            <ul class="nav flex-column">
+                {% if request.session.get("usuario") %}
+                    {% if request.session.get("tipo_usuario") == "asociacion" %}
+                        <li class="nav-item"><a class="nav-link" href="/dashboard"><span class="me-2">📊</span> Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel"><span class="me-2">🗂️</span> Panel de productos</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><span class="me-2">📋</span> Vacantes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><span class="me-2">📦</span> Cotizaciones</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><span class="me-2">🚚</span> Transportistas favoritos</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="collapse" data-bs-target="#herramientasSubmenu">🛠️ Herramientas</a>
+                            <div class="collapse" id="herramientasSubmenu">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item"><a class="nav-link py-1" href="/calculadora">🧮 Calculadora</a></li>
+                                    <li class="nav-item"><a class="nav-link py-1" href="/herramientas/contrato">📄 Contrato</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-item"><a class="nav-link" href="/mensajes"><span class="me-2">📨</span> Mensajes</a></li>
+                        {% if request.session.get("es_admin") %}
+                        <li class="nav-item"><a class="nav-link" href="/admin"><span class="me-2">🔧</span> Admin</a></li>
                         {% endif %}
-                    {% else %}
-                        <!-- Visitante sin sesión -->
-                        <li class="nav-item"><a class="nav-link" href="/auth/login"><span class="me-2">🔐</span> Iniciar sesión</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><span class="me-2">✨</span> Registrarme</a></li>
+                        <li class="nav-item mt-3"><a class="nav-link" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
+                    {% elif request.session.get("tipo_usuario") == "persona" %}
+                        <li class="nav-item"><a class="nav-link" href="/perfil"><span class="me-2">👤</span> Mi perfil</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><span class="me-2">📦</span> Mis pedidos</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/mensajes"><span class="me-2">📨</span> Mensajes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/perfil#aplicaciones"><span class="me-2">📋</span> Postulaciones</a></li>
+                        <li class="nav-item mt-3"><a class="nav-link" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
+                    {% elif request.session.get("tipo_usuario") == "transportista" %}
+                        <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><span class="me-2">🚚</span> Perfil</a></li>
+                        <li class="nav-item mt-3"><a class="nav-link" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
                     {% endif %}
-                    <!-- Enlaces públicos siempre visibles -->
-                    <li class="nav-item mt-3"><a class="nav-link" href="/catalogo"><span class="me-2">📦</span> Catálogo</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><span class="me-2">💼</span> Bolsa de Empleo</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/ayuda"><span class="me-2">❓</span> Ayuda</a></li>
-                </ul>
-            </div>
-        </nav>
+                {% else %}
+                    <!-- Visitante sin sesión -->
+                    <li class="nav-item"><a class="nav-link" href="/auth/login"><span class="me-2">🔐</span> Iniciar sesión</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><span class="me-2">✨</span> Registrarme</a></li>
+                {% endif %}
+                <!-- Enlaces públicos siempre visibles -->
+                <li class="nav-item mt-3"><a class="nav-link" href="/catalogo"><span class="me-2">📦</span> Catálogo</a></li>
+                <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><span class="me-2">💼</span> Bolsa de Empleo</a></li>
+                <li class="nav-item"><a class="nav-link" href="/ayuda"><span class="me-2">❓</span> Ayuda</a></li>
+            </ul>
+        </div>
+    </div>
 
+    <div class="d-flex">
+        <!-- Contenido principal -->
         <main class="content p-4 flex-grow-1">
-            {% if request.session.get("usuario") and not request.state.show_sidebar %}
-            <!-- Esto solo se mostraría si por alguna razón el usuario tiene sesión pero se ocultó el sidebar, pero con la lógica actual no ocurre -->
-            {% endif %}
             {% block content %}{% endblock %}
         </main>
     </div>
