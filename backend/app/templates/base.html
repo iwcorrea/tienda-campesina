@@ -102,6 +102,7 @@
                 {% endif %}
                 🌱 {{ config.titulo_sitio or 'Tienda Campesina' }}
             </a>
+            <!-- Botón de hamburguesa solo en móviles -->
             <button class="btn btn-sm btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
                 ☰
             </button>
@@ -143,8 +144,9 @@
     </div>
     {% endif %}
 
-    <div class="offcanvas offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
-        <div class="offcanvas-header">
+    <!-- Menú lateral: offcanvas en móvil, sidebar fijo en escritorio -->
+    <nav class="sidebar offcanvas-lg offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
+        <div class="offcanvas-header d-lg-none">
             <h5 class="offcanvas-title" id="sidebarLabel">Menú</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
@@ -195,13 +197,15 @@
                     <li class="nav-item"><a class="nav-link" href="/auth/login"><span class="me-2">🔐</span> Iniciar sesión</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><span class="me-2">✨</span> Registrarme</a></li>
                 {% endif %}
+                <!-- Enlaces públicos siempre visibles -->
                 <li class="nav-item mt-3"><a class="nav-link" href="/catalogo"><span class="me-2">📦</span> Catálogo</a></li>
                 <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><span class="me-2">💼</span> Bolsa de Empleo</a></li>
                 <li class="nav-item"><a class="nav-link" href="/ayuda"><span class="me-2">❓</span> Ayuda</a></li>
             </ul>
         </div>
-    </div>
+    </nav>
 
+    <!-- Contenedor principal -->
     <div class="d-flex">
         <main class="content p-4 flex-grow-1">
             {% block content %}{% endblock %}
