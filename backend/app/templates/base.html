@@ -103,7 +103,7 @@
             </a>
             {% if request.state.show_sidebar %}
             <button class="btn btn-sm btn-outline-light d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
-                <span class="navbar-toggler-icon"></span>
+                ☰
             </button>
             {% endif %}
             <div class="d-none d-lg-flex align-items-center ms-auto">
@@ -117,11 +117,33 @@
                     </ul>
                 </div>
                 {% else %}
-                <a class="nav-link text-white" href="/auth/login">Iniciar sesión</a>
+                <a class="btn btn-outline-light me-2" href="/auth/login">Iniciar sesión</a>
+                <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalRegistro">Registrarme</button>
                 {% endif %}
             </div>
         </div>
     </nav>
+
+    <!-- Modal de registro (para no logueados) -->
+    {% if not request.session.get("usuario") %}
+    <div class="modal fade" id="modalRegistro" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">✨ Elige tu tipo de registro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-grid gap-2">
+                        <a href="/auth/registro" class="btn btn-outline-success btn-lg">🏢 Asociación</a>
+                        <a href="/auth/registro-persona" class="btn btn-outline-success btn-lg">🧑 Persona</a>
+                        <a href="/auth/registro-transportista" class="btn btn-outline-success btn-lg">🚚 Transportista</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="d-flex">
         {% if request.state.show_sidebar %}
@@ -160,7 +182,7 @@
                     {% elif request.session.get("tipo_usuario") == "transportista" %}
                         <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><span class="me-2">🚚</span> Perfil</a></li>
                     {% endif %}
-                    <!-- Enlaces públicos disponibles para todos -->
+                    <!-- Enlaces públicos -->
                     <li class="nav-item mt-3"><a class="nav-link" href="/catalogo"><span class="me-2">📦</span> Catálogo</a></li>
                     <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><span class="me-2">💼</span> Bolsa de Empleo</a></li>
                     <li class="nav-item"><a class="nav-link" href="/ayuda"><span class="me-2">❓</span> Ayuda</a></li>
@@ -171,7 +193,6 @@
 
         <main class="content p-4 flex-grow-1">
             {% if request.session.get("usuario") and not request.state.show_sidebar %}
-            <!-- Si está logueado pero no mostramos sidebar (ej. en login?), no sucede, pero por si acaso -->
             <div class="alert alert-success rounded-3">
                 👋 Conectado como <strong>{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</strong>
             </div>

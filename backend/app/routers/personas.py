@@ -4,8 +4,9 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from app.database import get_db
-from app.models import Persona, Aplicacion, Mensaje, Pedido, Valoracion
+from app.models import Persona, Aplicacion, Mensaje, Pedido, Valoracion, RespuestaCotizacion, ItemPedido
 import cloudinary.uploader
+import datetime
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -19,7 +20,6 @@ def perfil_persona(request: Request, db: Session = Depends(get_db)):
     if not persona:
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    # Aplicaciones
     aplicaciones = db.query(Aplicacion).filter(Aplicacion.persona_email == email).all()
     apps_info = []
     for a in aplicaciones:
@@ -30,23 +30,15 @@ def perfil_persona(request: Request, db: Session = Depends(get_db)):
             "fecha": a.fecha_aplicacion.strftime("%d/%m/%Y") if a.fecha_aplicacion else ""
         })
 
-    # Mensajes sin leer
     mensajes_pendientes = db.query(func.count(Mensaje.id)).filter(
         Mensaje.destinatario_email == email,
         Mensaje.leido == "0"
     ).scalar()
-
-    # Pedidos realizados
     pedidos_count = db.query(func.count(Pedido.id)).filter(Pedido.comprador_email == email).scalar()
-
-    # Valoraciones emitidas
     valoraciones_count = db.query(func.count(Valoracion.id)).filter(Valoracion.email_usuario == email).scalar()
 
-    # Actividad reciente
+    # Actividades
     actividades = []
-
-    # Respuestas a mis pedidos
-    # Buscar respuestas a items de pedidos del usuario
     respuestas = db.query(RespuestaCotizacion).join(ItemPedido).join(Pedido).filter(
         Pedido.comprador_email == email
     ).order_by(desc(RespuestaCotizacion.fecha_respuesta)).limit(3).all()
@@ -58,7 +50,6 @@ def perfil_persona(request: Request, db: Session = Depends(get_db)):
             "url": f"/mis-pedidos/{r.item_pedido.pedido_id}"
         })
 
-    # Mensajes recibidos
     mensajes_recibidos = db.query(Mensaje).filter(Mensaje.destinatario_email == email).order_by(desc(Mensaje.fecha_envio)).limit(3).all()
     for m in mensajes_recibidos:
         actividades.append({
@@ -68,7 +59,7 @@ def perfil_persona(request: Request, db: Session = Depends(get_db)):
             "url": f"/mensajes/{m.id}"
         })
 
-    actividades.sort(key=lambda x: x["fecha"] or None, reverse=True)
+    actividades.sort(key=lambda x: x["fecha"] or datetime.datetime.min, reverse=True)
     actividades = actividades[:5]
 
     return templates.TemplateResponse("perfil_persona.html", {

@@ -15,7 +15,7 @@
                 {% if request.session.get("tipo_usuario") == "asociacion" %}
                     <a href="/panel" class="btn btn-outline-success btn-lg">Ir al panel</a>
                 {% elif not request.session.get("usuario") %}
-                    <a href="/auth/registro" class="btn btn-outline-success btn-lg">Registrar asociación</a>
+                    <button class="btn btn-outline-success btn-lg" data-bs-toggle="modal" data-bs-target="#modalRegistro">Registrarme</button>
                 {% endif %}
             </div>
         </div>
@@ -32,9 +32,43 @@
     </div>
 </section>
 
+<!-- Noticias (estáticas por ahora) -->
+<section class="mt-5 pt-4">
+    <h3 class="fw-bold mb-4">📰 Noticias rurales</h3>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card modern-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">🌽 Precios del maíz suben en la región</h5>
+                    <p class="card-text text-muted">Según reportes de Corabastos, el precio del maíz amarillo tuvo un incremento del 5% esta semana. Productores locales esperan mantener la oferta.</p>
+                    <small class="text-muted">05/05/2026</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card modern-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">🤝 Nueva alianza por la agricultura sostenible</h5>
+                    <p class="card-text text-muted">Varias asociaciones campesinas firmaron un acuerdo para promover prácticas agroecológicas y acceder a mercados internacionales.</p>
+                    <small class="text-muted">03/05/2026</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card modern-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">📱 Tienda Campesina llega a 500 productores</h5>
+                    <p class="card-text text-muted">Nuestra plataforma ya conecta a más de 500 productores rurales con compradores en todo el país. ¡Gracias por ser parte!</p>
+                    <small class="text-muted">01/05/2026</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 {% if request.session.get("usuario") %}
 <section class="mt-5 pt-4">
-    <h3 class="mb-4 fw-bold">Acciones rápidas</h3>
+    <h3 class="fw-bold mb-4">Acciones rápidas</h3>
     <div class="row g-3">
         <div class="col-md-4">
             <a href="/panel" class="text-decoration-none">
