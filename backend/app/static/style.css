@@ -1,34 +1,70 @@
+/* ===== ESTILOS GENERALES ===== */
 body {
   font-family: 'Nunito', system-ui, sans-serif;
   background-color: var(--color-fondo);
   color: var(--color-texto);
+  margin: 0;
 }
 
-.sidebar {
-  width: 260px;
+/* ===== BARRA SUPERIOR ===== */
+.navbar {
+  background-color: var(--color-primario) !important;
+  border-bottom: 3px solid var(--color-secundario);
+}
+
+/* ===== SIDEBAR MEJORADA ===== */
+.sidebar-custom {
+  width: 280px;
   min-height: calc(100vh - 56px);
-  border-right: 1px solid rgba(0,0,0,0.05);
+  border-right: 1px solid rgba(0,0,0,0.08);
+  padding-top: 1rem;
 }
-.sidebar .nav-link {
-  color: var(--color-texto);
-  padding: 0.8rem 1rem;
+
+.sidebar-custom .nav-link {
+  color: #333;
+  padding: 0.6rem 1rem;
   border-radius: 6px;
-  transition: background 0.2s;
+  margin-bottom: 0.2rem;
+  transition: all 0.2s ease;
+  font-weight: 500;
 }
-.sidebar .nav-link:hover {
-  background: rgba(var(--color-primario), 0.1);
+.sidebar-custom .nav-link:hover {
+  background-color: rgba(var(--color-primario), 0.08);
+  color: var(--color-primario) !important;
+  transform: translateX(4px);
+}
+.sidebar-custom .nav-link.active {
+  background-color: var(--color-primario);
+  color: white !important;
+  font-weight: 600;
+}
+
+.sidebar-section-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   color: var(--color-primario);
-}
-.sidebar .nav-link.active {
-  background: var(--color-primario);
-  color: white;
+  font-weight: 700;
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
+  display: block;
+  opacity: 0.8;
 }
 
+/* Tarjeta de perfil en la sidebar */
+.sidebar-profile {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ===== CONTENIDO PRINCIPAL ===== */
 .content {
-  width: 100%;
-  max-width: 100%;
+  background-color: var(--color-fondo);
+  min-height: calc(100vh - 112px); /* navbar + footer */
 }
 
+/* ===== TARJETAS ESTADÍSTICAS (Dashboard) ===== */
 .stat-card {
   display: flex;
   align-items: center;
@@ -38,16 +74,11 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   transition: transform 0.2s ease;
 }
-.stat-card:hover {
-  transform: translateY(-3px);
-}
+.stat-card:hover { transform: translateY(-3px); }
 .stat-card__icon {
-  width: 60px;
-  height: 60px;
+  width: 60px; height: 60px;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   font-size: 1.8rem;
   margin-right: 1rem;
 }
@@ -55,35 +86,76 @@ body {
 .stat-card--info .stat-card__icon { background: rgba(23,162,184,0.1); }
 .stat-card--warning .stat-card__icon { background: rgba(255,193,7,0.1); }
 .stat-card--secondary .stat-card__icon { background: rgba(108,117,125,0.1); }
-.stat-card--success .stat-card__icon { background: rgba(25,135,84,0.1); }
 .stat-card__info h3 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.2rem; color: #2d2d2d; }
 .stat-card__label { margin-bottom: 0; color: #6c757d; font-weight: 500; }
 
-.card {
+/* ===== TARJETAS MODERNAS (catálogo, etc.) ===== */
+.modern-card {
   border: none;
   border-radius: 12px;
-  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: white;
+}
+.modern-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.1);
+}
+.modern-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
+/* ===== BOTONES GLOBALES ===== */
 .btn {
   border-radius: 8px;
   font-weight: 600;
   padding: 0.5rem 1.2rem;
 }
+.btn-success {
+  background-color: var(--color-primario);
+  border-color: var(--color-primario);
+}
+.btn-outline-success {
+  border-color: var(--color-primario);
+  color: var(--color-primario);
+}
+.btn-outline-success:hover {
+  background-color: var(--color-primario);
+  color: white;
+}
 
+/* ===== PIE DE PÁGINA ===== */
+footer {
+  background-color: var(--color-primario);
+  color: white;
+  padding: 1.5rem 0;
+  margin-top: auto;
+}
+
+/* ===== RESPONSIVE: Móvil ===== */
 @media (max-width: 991.98px) {
-  .sidebar {
-      position: fixed;
-      top: 56px;
-      left: 0;
-      z-index: 1040;
-      height: 100%;
-      overflow-y: auto;
-      transform: translateX(-100%);
-      transition: transform 0.3s;
+  .sidebar-custom {
+      width: 100%;
+      max-width: 300px;
   }
-  .sidebar.show {
-      transform: translateX(0);
+  .content {
+      margin-left: 0;
+      width: 100%;
+  }
+}
+
+@media (min-width: 992px) {
+  .sidebar-custom {
+      position: sticky;
+      top: 56px;
+      height: calc(100vh - 56px);
+      overflow-y: auto;
+  }
+  .content {
+      margin-left: 0;
+      width: calc(100% - 280px);
   }
 }
