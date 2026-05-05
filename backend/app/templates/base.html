@@ -102,7 +102,6 @@
                 {% endif %}
                 🌱 {{ config.titulo_sitio or 'Tienda Campesina' }}
             </a>
-            <!-- Botón de hamburguesa siempre visible en móviles -->
             <button class="btn btn-sm btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
                 ☰
             </button>
@@ -124,7 +123,6 @@
         </div>
     </nav>
 
-    <!-- Modal de registro universal (visible para no logueados) -->
     {% if not request.session.get("usuario") %}
     <div class="modal fade" id="modalRegistro" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -145,7 +143,6 @@
     </div>
     {% endif %}
 
-    <!-- Menú lateral (offcanvas) -->
     <div class="offcanvas offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="sidebarLabel">Menú</h5>
@@ -171,7 +168,17 @@
                         </li>
                         <li class="nav-item"><a class="nav-link" href="/mensajes"><span class="me-2">📨</span> Mensajes</a></li>
                         {% if request.session.get("es_admin") %}
-                        <li class="nav-item"><a class="nav-link" href="/admin"><span class="me-2">🔧</span> Admin</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="collapse" data-bs-target="#adminSubmenu">🔧 Admin</a>
+                            <div class="collapse" id="adminSubmenu">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item"><a class="nav-link py-1" href="/admin">📊 Dashboard Admin</a></li>
+                                    <li class="nav-item"><a class="nav-link py-1" href="/admin/asociaciones">🏢 Asociaciones</a></li>
+                                    <li class="nav-item"><a class="nav-link py-1" href="/admin/archivos">📁 Archivos</a></li>
+                                    <li class="nav-item"><a class="nav-link py-1" href="/admin/configuracion">🎨 Configuración</a></li>
+                                </ul>
+                            </div>
+                        </li>
                         {% endif %}
                         <li class="nav-item mt-3"><a class="nav-link" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
                     {% elif request.session.get("tipo_usuario") == "persona" %}
@@ -185,11 +192,9 @@
                         <li class="nav-item mt-3"><a class="nav-link" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
                     {% endif %}
                 {% else %}
-                    <!-- Visitante sin sesión -->
                     <li class="nav-item"><a class="nav-link" href="/auth/login"><span class="me-2">🔐</span> Iniciar sesión</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><span class="me-2">✨</span> Registrarme</a></li>
                 {% endif %}
-                <!-- Enlaces públicos siempre visibles -->
                 <li class="nav-item mt-3"><a class="nav-link" href="/catalogo"><span class="me-2">📦</span> Catálogo</a></li>
                 <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><span class="me-2">💼</span> Bolsa de Empleo</a></li>
                 <li class="nav-item"><a class="nav-link" href="/ayuda"><span class="me-2">❓</span> Ayuda</a></li>
@@ -198,7 +203,6 @@
     </div>
 
     <div class="d-flex">
-        <!-- Contenido principal -->
         <main class="content p-4 flex-grow-1">
             {% block content %}{% endblock %}
         </main>
