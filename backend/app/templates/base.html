@@ -8,12 +8,12 @@
     <meta name="description" content="{% block meta_description %}{{ config.descripcion_meta or 'Plataforma para asociaciones campesinas.' }}{% endblock %}">
     <link rel="canonical" href="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}" />
 
+    <!-- Metadatos Open Graph y Twitter -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}">
     <meta property="og:title" content="{{ self.title() }}">
     <meta property="og:description" content="{{ self.meta_description() }}">
     <meta property="og:image" content="{% block og_image %}{{ config.imagen_og_url or 'https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png' }}{% endblock %}">
-
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}">
     <meta property="twitter:title" content="{{ self.title() }}">
@@ -34,6 +34,7 @@
     </script>
     {% endif %}
 
+    <!-- Favicons -->
     {% if config.favicon_32_url %}
     <link rel="icon" type="image/png" sizes="32x32" href="{{ config.favicon_32_url }}">
     {% else %}
@@ -101,7 +102,7 @@
                 {% endif %}
                 🌱 {{ config.titulo_sitio or 'Tienda Campesina' }}
             </a>
-            <!-- MOSTRAR SIEMPRE EL BOTÓN HAMBURGUESA EN MÓVIL -->
+            <!-- El botón de hamburguesa siempre visible en móviles -->
             <button class="btn btn-sm btn-outline-light d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
                 ☰
             </button>
@@ -123,7 +124,7 @@
         </div>
     </nav>
 
-    <!-- Modal de registro (para no logueados) -->
+    <!-- Modal de registro universal (visible para no logueados) -->
     {% if not request.session.get("usuario") %}
     <div class="modal fade" id="modalRegistro" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -145,7 +146,6 @@
     {% endif %}
 
     <div class="d-flex">
-        <!-- Sidebar: SIEMPRE se monta, pero el contenido varía según sesión -->
         <nav class="sidebar offcanvas-lg offcanvas-start bg-white shadow-sm" id="sidebar">
             <div class="offcanvas-header d-lg-none">
                 <h5 class="offcanvas-title">Menú</h5>
@@ -185,11 +185,10 @@
                             <li class="nav-item mt-3"><a class="nav-link" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
                         {% endif %}
                     {% else %}
-                        <!-- USUARIO NO LOGUEADO: mostramos accesos públicos + login/registro -->
+                        <!-- Visitante sin sesión -->
                         <li class="nav-item"><a class="nav-link" href="/auth/login"><span class="me-2">🔐</span> Iniciar sesión</a></li>
                         <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><span class="me-2">✨</span> Registrarme</a></li>
                     {% endif %}
-
                     <!-- Enlaces públicos siempre visibles -->
                     <li class="nav-item mt-3"><a class="nav-link" href="/catalogo"><span class="me-2">📦</span> Catálogo</a></li>
                     <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><span class="me-2">💼</span> Bolsa de Empleo</a></li>
@@ -200,11 +199,8 @@
 
         <main class="content p-4 flex-grow-1">
             {% if request.session.get("usuario") and not request.state.show_sidebar %}
-            <div class="alert alert-success rounded-3">
-                👋 Conectado como <strong>{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</strong>
-            </div>
+            <!-- Esto solo se mostraría si por alguna razón el usuario tiene sesión pero se ocultó el sidebar, pero con la lógica actual no ocurre -->
             {% endif %}
-
             {% block content %}{% endblock %}
         </main>
     </div>
