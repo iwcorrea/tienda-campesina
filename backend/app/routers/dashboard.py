@@ -3,9 +3,9 @@ from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from app.database import get_db
-from app.models import Asociacion, Producto, Valoracion, Mensaje, Vacante
+from app.models import Asociacion, Producto, Valoracion, Mensaje, Vacante, ItemPedido, RespuestaCotizacion, TransportistaFavorito
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -13,86 +13,86 @@ logger = logging.getLogger("dashboard")
 
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
-    if "usuario" not in request.session:
+    if "usuario" not in request.session or request.session.get("tipo_usuario") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
+
     email = request.session["usuario"]
     asociacion = db.query(Asociacion).filter(Asociacion.email == email).first()
     if not asociacion:
         return RedirectResponse(url="/auth/login", status_code=303)
 
     mis_productos = asociacion.productos
-    total = len(mis_productos)
-    productos_por_tipo = {"producto": 0, "servicio": 0}
-    for p in mis_productos:
-        prod_tipo = p.tipo or "producto"
-        productos_por_tipo[prod_tipo] = productos_por_tipo.get(prod_tipo, 0) + 1
-
-    ultimos = []
-    for p in reversed(mis_productos[-5:]):
-        ultimos.append({
-            "nombre": p.nombre,
-            "precio": p.precio,
-            "imagen": p.imagen_url,
-            "tipo": p.tipo,
-            "tipo_precio": p.tipo_precio
-        })
-
+    total_productos = len(mis_productos)
     # Valoraciones
-    total_valoraciones = 0
-    suma_estrellas = 0
-    distribucion_estrellas = [0, 0, 0, 0, 0]
-    ultimas_valoraciones = []
-    try:
-        all_vals = db.query(Valoracion).filter(Valoracion.producto_id.in_([p.id for p in mis_productos])).all()
-        total_valoraciones = len(all_vals)
-        for v in all_vals:
-            est = v.estrellas
-            suma_estrellas += est
-            if 1 <= est <= 5:
-                distribucion_estrellas[est - 1] += 1
-        all_vals.sort(key=lambda x: x.fecha, reverse=True)
-        for v in all_vals[:5]:
-            prod = db.query(Producto).filter(Producto.id == v.producto_id).first()
-            ultimas_valoraciones.append({
-                "producto_nombre": prod.nombre if prod else "Producto",
-                "estrellas": v.estrellas,
-                "comentario": v.comentario or ""
-            })
-    except Exception:
-        pass
-
-    promedio_estrellas = round(suma_estrellas / total_valoraciones, 1) if total_valoraciones > 0 else 0
-
-    # Mensajes
-    total_mensajes = db.query(func.count(Mensaje.id)).filter(
-        Mensaje.destinatario_email == email
-    ).scalar()
-    no_leidos = db.query(func.count(Mensaje.id)).filter(
+    total_valoraciones = db.query(func.count(Valoracion.id)).filter(Valoracion.producto_id.in_([p.id for p in mis_productos])).scalar()
+    # Mensajes sin leer
+    mensajes_pendientes = db.query(func.count(Mensaje.id)).filter(
         Mensaje.destinatario_email == email,
         Mensaje.leido == "0"
     ).scalar()
-    ultimos_mensajes = db.query(Mensaje).filter(
-        Mensaje.destinatario_email == email
-    ).order_by(Mensaje.fecha_envio.desc()).limit(3).all()
-
+    # Cotizaciones pendientes (items de mis productos sin respuesta aceptada/rechazada)
+    cotizaciones_pendientes = db.query(func.count(ItemPedido.id)).join(Producto).filter(
+        Producto.asociacion_email == email
+    ).filter(~ItemPedido.respuestas.any(RespuestaCotizacion.aceptado.in_(["aceptado", "rechazado"]))).scalar()
     # Vacantes activas
-    total_vacantes = db.query(func.count(Vacante.id)).filter(
+    vacantes_activas = db.query(func.count(Vacante.id)).filter(
         Vacante.asociacion_email == email,
         Vacante.fecha_limite >= func.now()
     ).scalar()
+    # Transportistas favoritos
+    favoritos_count = db.query(func.count(TransportistaFavorito.id)).filter(
+        TransportistaFavorito.asociacion_email == email
+    ).scalar()
+
+    # Actividades recientes (últimos 5 eventos combinados)
+    actividades = []
+
+    # Mensajes recibidos recientes
+    mensajes_recibidos = db.query(Mensaje).filter(Mensaje.destinatario_email == email).order_by(desc(Mensaje.fecha_envio)).limit(3).all()
+    for m in mensajes_recibidos:
+        actividades.append({
+            "icono": "📨",
+            "texto": f"Mensaje de {m.remitente.nombre or m.remitente_email}: {m.texto[:60]}{'...' if len(m.texto)>60 else ''}",
+            "fecha": m.fecha_envio,
+            "url": f"/mensajes/{m.id}"
+        })
+
+    # Respuestas a mis cotizaciones (actuando como comprador? no, las cotizaciones son pedidos de otros. Pero podemos mostrar respuestas que he recibido en mis productos)
+    # Mejor mostrar cuando alguien responde a una cotización de mis productos.
+    respuestas = db.query(RespuestaCotizacion).join(ItemPedido).join(Producto).filter(
+        Producto.asociacion_email == email
+    ).order_by(desc(RespuestaCotizacion.fecha_respuesta)).limit(3).all()
+    for r in respuestas:
+        estado = r.aceptado.capitalize()
+        actividades.append({
+            "icono": "📦",
+            "texto": f"Respuesta a cotización de {r.item_pedido.producto.nombre} ({estado})",
+            "fecha": r.fecha_respuesta,
+            "url": "/panel/cotizaciones"
+        })
+
+    # Últimas valoraciones recibidas
+    vals = db.query(Valoracion).filter(Valoracion.producto_id.in_([p.id for p in mis_productos])).order_by(desc(Valoracion.fecha)).limit(3).all()
+    for v in vals:
+        actividades.append({
+            "icono": "⭐",
+            "texto": f"Valoración de {v.producto.nombre} ({v.estrellas} estrellas)",
+            "fecha": v.fecha,
+            "url": "/dashboard#valoraciones"
+        })
+
+    # Ordenar todas las actividades por fecha descendente y tomar las 5 primeras
+    actividades.sort(key=lambda x: x["fecha"], reverse=True)
+    actividades = actividades[:5]
 
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
         "usuario": asociacion.nombre,
-        "total_productos": total,
-        "ultimos_productos": ultimos,
-        "productos_por_tipo": productos_por_tipo,
+        "total_productos": total_productos,
         "total_valoraciones": total_valoraciones,
-        "promedio_estrellas": promedio_estrellas,
-        "distribucion_estrellas": distribucion_estrellas,
-        "ultimas_valoraciones": ultimas_valoraciones,
-        "total_mensajes": total_mensajes,
-        "no_leidos": no_leidos,
-        "ultimos_mensajes": ultimos_mensajes,
-        "total_vacantes": total_vacantes
+        "mensajes_pendientes": mensajes_pendientes,
+        "cotizaciones_pendientes": cotizaciones_pendientes,
+        "vacantes_activas": vacantes_activas,
+        "favoritos_count": favoritos_count,
+        "actividades": actividades
     })

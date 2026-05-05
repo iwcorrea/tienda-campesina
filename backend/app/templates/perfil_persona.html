@@ -1,42 +1,80 @@
 {% extends "base.html" %}
 {% block title %}Mi Perfil{% endblock %}
 {% block content %}
-<div class="modern-section">
-    <h2 class="fw-bold mb-4">👤 Mi Perfil</h2>
-    <p class="text-end"><a href="/auth/cambiar-password" class="btn btn-outline-warning btn-sm">🔐 Cambiar contraseña</a></p>
+<div class="container-fluid">
+    <!-- Resumen -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card stat-card--primary">
+                <div class="stat-card__icon"><span>📨</span></div>
+                <div class="stat-card__info">
+                    <h3>{{ mensajes_pendientes }}</h3>
+                    <p>Mensajes sin leer</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card stat-card--info">
+                <div class="stat-card__icon"><span>📦</span></div>
+                <div class="stat-card__info">
+                    <h3>{{ pedidos_count }}</h3>
+                    <p>Pedidos realizados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card stat-card--warning">
+                <div class="stat-card__icon"><span>⭐</span></div>
+                <div class="stat-card__info">
+                    <h3>{{ valoraciones_count }}</h3>
+                    <p>Valoraciones dadas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Datos del perfil -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
+            <h5 class="fw-bold mb-3">👤 Datos personales</h5>
             <p><strong>Nombre:</strong> {{ persona.nombre }}</p>
             <p><strong>Email:</strong> {{ persona.email }}</p>
             <p><strong>Teléfono:</strong> {{ persona.telefono or 'No registrado' }}</p>
             {% if persona.hoja_vida_url %}<p><a href="{{ persona.hoja_vida_url }}" target="_blank" class="btn btn-sm btn-outline-primary">📄 Ver hoja de vida</a></p>{% endif %}
+            <button class="btn btn-outline-success btn-sm" data-bs-toggle="collapse" data-bs-target="#formActualizar">Editar datos</button>
+            <div class="collapse mt-3" id="formActualizar">
+                <form action="/perfil/actualizar" method="post" enctype="multipart/form-data">
+                    <input type="text" name="nombre" class="form-control mb-2" value="{{ persona.nombre }}" required>
+                    <input type="text" name="telefono" class="form-control mb-2" value="{{ persona.telefono }}">
+                    <label>Nueva hoja de vida (PDF)</label>
+                    <input type="file" name="hoja_vida" class="form-control mb-2" accept=".pdf">
+                    <button type="submit" class="btn btn-success">Guardar cambios</button>
+                </form>
+            </div>
         </div>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3">Actualizar datos</h5>
-            <form action="/perfil/actualizar" method="post" enctype="multipart/form-data">
-                <input type="text" name="nombre" class="form-control mb-2" value="{{ persona.nombre }}" required>
-                <input type="text" name="telefono" class="form-control mb-2" value="{{ persona.telefono }}">
-                <label>Nueva hoja de vida (PDF)</label>
-                <input type="file" name="hoja_vida" class="form-control mb-2" accept=".pdf">
-                <button type="submit" class="btn btn-success">Guardar cambios</button>
-            </form>
-        </div>
-    </div>
-
+    <!-- Actividad reciente -->
     <div class="card shadow-sm border-0">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3">Mis postulaciones</h5>
-            {% if aplicaciones %}
+        <div class="card-header bg-white border-bottom-0">
+            <h5 class="mb-0 fw-semibold">📰 Actividad reciente</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if actividades %}
             <ul class="list-group list-group-flush">
-                {% for a in aplicaciones %}
-                <li class="list-group-item">{{ a.cargo }} – {{ a.asociacion }} ({{ a.fecha }})</li>
+                {% for act in actividades %}
+                <li class="list-group-item d-flex align-items-center">
+                    <span class="me-3 fs-5">{{ act.icono }}</span>
+                    <div class="flex-grow-1">
+                        <p class="mb-0">{{ act.texto }}</p>
+                        <small class="text-muted">{{ act.fecha.strftime('%d/%m/%Y %H:%M') if act.fecha else '' }}</small>
+                    </div>
+                    {% if act.url %}<a href="{{ act.url }}" class="btn btn-sm btn-outline-success">Ver</a>{% endif %}
+                </li>
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="text-muted">Aún no te has postulado a ninguna vacante.</p>
+            <p class="text-muted p-3 mb-0">No hay actividad reciente.</p>
             {% endif %}
         </div>
     </div>

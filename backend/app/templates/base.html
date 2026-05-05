@@ -91,8 +91,8 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-success sticky-top shadow-sm">
-        <div class="container">
+    <nav class="navbar navbar-dark bg-success sticky-top shadow-sm">
+        <div class="container-fluid">
             <a class="navbar-brand fw-bold fs-4" href="/">
                 {% if config.logo_url %}
                 <img src="{{ config.logo_url }}" alt="Logo" class="navbar-logo me-2" width="36" height="36">
@@ -101,87 +101,87 @@
                 {% endif %}
                 🌱 {{ config.titulo_sitio or 'Tienda Campesina' }}
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            {% if request.state.show_sidebar %}
+            <button class="btn btn-sm btn-outline-light d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-lg-center">
-                    {% if config.menu_mostrar_catalogo != '' %}
-                    <li class="nav-item"><a class="nav-link px-3" href="/catalogo">📦 Catálogo</a></li>
-                    {% endif %}
-                    {% if config.menu_mostrar_bolsa != '' %}
-                    <li class="nav-item"><a class="nav-link px-3" href="/bolsa-empleo">💼 Bolsa de Empleo</a></li>
-                    {% endif %}
-                    {% if config.menu_enlace_extra and config.menu_url_extra %}
-                    <li class="nav-item"><a class="nav-link px-3" href="{{ config.menu_url_extra }}">{{ config.menu_enlace_extra }}</a></li>
-                    {% endif %}
-                    <!-- ENLACE AL CENTRO DE AYUDA (PÚBLICO) -->
-                    <li class="nav-item"><a class="nav-link px-3" href="/ayuda">❓ Ayuda</a></li>
-
-                    {% if request.session.get("tipo_usuario") == "asociacion" %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle px-3" href="#" role="button" data-bs-toggle="dropdown">🛠️ Herramientas</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="/calculadora">🧮 Calculadora de Precio Justo</a></li>
-                                <li><a class="dropdown-item" href="/herramientas/contrato">📄 Generar Contrato</a></li>
-                            </ul>
-                        </li>
-                        {% if request.session.get("es_admin") %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-warning fw-bold px-3" href="#" role="button" data-bs-toggle="dropdown">🔧 Admin</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="/admin">📊 Dashboard</a></li>
-                                <li><a class="dropdown-item" href="/admin/asociaciones">🏢 Asociaciones</a></li>
-                                <li><a class="dropdown-item" href="/admin/archivos">📁 Archivos</a></li>
-                                <li><a class="dropdown-item" href="/admin/configuracion">🎨 Configuración</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                        <li class="nav-item"><a class="nav-link px-3" href="/panel">🗂️ Panel</a></li>
-                        <li class="nav-item"><a class="nav-link px-3" href="/panel/vacantes">📋 Vacantes</a></li>
-                        <li class="nav-item"><a class="nav-link px-3" href="/panel/cotizaciones">📦 Cotizaciones</a></li>
-                        <li class="nav-item"><a class="nav-link px-3" href="/mensajes">📨 Mensajes</a></li>
-                        <li class="nav-item"><a class="nav-link px-3 text-warning" href="/auth/logout">🚪 Cerrar sesión</a></li>
-                    {% elif request.session.get("tipo_usuario") == "persona" %}
-                        <li class="nav-item"><a class="nav-link px-3" href="/perfil">👤 Perfil</a></li>
-                        <li class="nav-item"><a class="nav-link px-3" href="/mensajes">📨 Mensajes</a></li>
-                        <li class="nav-item"><a class="nav-link px-3" href="/mis-pedidos">📦 Mis pedidos</a></li>
-                        <li class="nav-item"><a class="nav-link px-3 text-warning" href="/auth/logout">🚪 Cerrar sesión</a></li>
-                    {% elif request.session.get("tipo_usuario") == "transportista" %}
-                        <li class="nav-item"><a class="nav-link px-3" href="/perfil-transportista">🚚 Perfil</a></li>
-                        <li class="nav-item"><a class="nav-link px-3 text-warning" href="/auth/logout">🚪 Cerrar sesión</a></li>
-                    {% else %}
-                        <li class="nav-item"><a class="nav-link px-3" href="/auth/login">🔐 Iniciar sesión</a></li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle px-3" href="#" role="button" data-bs-toggle="dropdown">✨ Registro</a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="/auth/registro">🏢 Registrar asociación</a></li>
-                                <li><a class="dropdown-item" href="/auth/registro-persona">🧑 Registrar persona</a></li>
-                                <li><a class="dropdown-item" href="/auth/registro-transportista">🚚 Registrar transportista</a></li>
-                            </ul>
-                        </li>
-                    {% endif %}
-                </ul>
+            {% endif %}
+            <div class="d-none d-lg-flex align-items-center ms-auto">
+                {% if request.session.get("usuario") %}
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+                        👤 {{ request.session.get("nombre_usuario", request.session["usuario"]) }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/auth/logout">🚪 Cerrar sesión</a></li>
+                    </ul>
+                </div>
+                {% else %}
+                <a class="nav-link text-white" href="/auth/login">Iniciar sesión</a>
+                {% endif %}
             </div>
         </div>
     </nav>
 
-    <main class="container py-4">
-        {% if request.session.get("usuario") %}
-        <div class="alert alert-success d-flex justify-content-between align-items-center rounded-3">
-            <span>
-                {% if request.session.get("logo_url") %}
-                <img src="{{ request.session.logo_url }}" class="logo-mini me-2 rounded-circle" width="28" height="28">
-                {% endif %}
-                👋 Conectado como <strong>{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</strong>
-            </span>
-        </div>
+    <div class="d-flex">
+        {% if request.state.show_sidebar %}
+        <!-- Sidebar -->
+        <nav class="sidebar offcanvas-lg offcanvas-start bg-white shadow-sm" id="sidebar">
+            <div class="offcanvas-header d-lg-none">
+                <h5 class="offcanvas-title">Menú</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-3">
+                <ul class="nav flex-column">
+                    {% if request.session.get("tipo_usuario") == "asociacion" %}
+                        <li class="nav-item"><a class="nav-link" href="/dashboard"><span class="me-2">📊</span> Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel"><span class="me-2">🗂️</span> Panel de productos</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><span class="me-2">📋</span> Vacantes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><span class="me-2">📦</span> Cotizaciones</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><span class="me-2">🚚</span> Transportistas favoritos</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="collapse" data-bs-target="#herramientasSubmenu">🛠️ Herramientas</a>
+                            <div class="collapse" id="herramientasSubmenu">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item"><a class="nav-link py-1" href="/calculadora">🧮 Calculadora</a></li>
+                                    <li class="nav-item"><a class="nav-link py-1" href="/herramientas/contrato">📄 Contrato</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-item"><a class="nav-link" href="/mensajes"><span class="me-2">📨</span> Mensajes</a></li>
+                        {% if request.session.get("es_admin") %}
+                        <li class="nav-item"><a class="nav-link" href="/admin"><span class="me-2">🔧</span> Admin</a></li>
+                        {% endif %}
+                    {% elif request.session.get("tipo_usuario") == "persona" %}
+                        <li class="nav-item"><a class="nav-link" href="/perfil"><span class="me-2">👤</span> Mi perfil</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><span class="me-2">📦</span> Mis pedidos</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/mensajes"><span class="me-2">📨</span> Mensajes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/perfil#aplicaciones"><span class="me-2">📋</span> Postulaciones</a></li>
+                    {% elif request.session.get("tipo_usuario") == "transportista" %}
+                        <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><span class="me-2">🚚</span> Perfil</a></li>
+                    {% endif %}
+                    <!-- Enlaces públicos disponibles para todos -->
+                    <li class="nav-item mt-3"><a class="nav-link" href="/catalogo"><span class="me-2">📦</span> Catálogo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><span class="me-2">💼</span> Bolsa de Empleo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/ayuda"><span class="me-2">❓</span> Ayuda</a></li>
+                </ul>
+            </div>
+        </nav>
         {% endif %}
 
-        {% block content %}{% endblock %}
-    </main>
+        <main class="content p-4 flex-grow-1">
+            {% if request.session.get("usuario") and not request.state.show_sidebar %}
+            <!-- Si está logueado pero no mostramos sidebar (ej. en login?), no sucede, pero por si acaso -->
+            <div class="alert alert-success rounded-3">
+                👋 Conectado como <strong>{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</strong>
+            </div>
+            {% endif %}
 
-    <footer class="py-4 bg-success text-white text-center">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <footer class="py-4 bg-success text-white text-center mt-auto">
         <div class="container">
             <p class="mb-1 fw-semibold">{{ config.footer_texto or 'Tienda Campesina' }}</p>
             <small>{{ config.footer_subtexto or 'Apoyando la Reforma Agraria en Colombia 🇨🇴' }}</small>

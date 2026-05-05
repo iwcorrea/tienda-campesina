@@ -18,7 +18,7 @@ from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, va
 from app.routers import personas, empleos, herramientas, mensajes
 from app.routers import transportistas
 from app.routers import pedidos
-from app.routers import ayuda             # NUEVO
+from app.routers import ayuda
 
 logging.basicConfig(level=logging.INFO)
 
@@ -53,6 +53,16 @@ async def timeout_y_configuracion(request: Request, call_next):
                 request.session.clear()
                 return RedirectResponse(url="/auth/login", status_code=303)
             request.session["last_activity"] = now
+
+    # Mostrar sidebar en páginas donde el usuario está logueado (excepto login/registro)
+    request.state.show_sidebar = (
+        request.session.get("usuario") is not None
+        and not request.url.path.startswith("/auth/login")
+        and not request.url.path.startswith("/auth/registro")
+        and not request.url.path.startswith("/auth/registro-persona")
+        and not request.url.path.startswith("/auth/registro-transportista")
+        and not request.url.path.startswith("/auth/recuperar")
+    )
 
     response = await call_next(request)
     return response
@@ -94,7 +104,7 @@ app.include_router(herramientas.router)
 app.include_router(mensajes.router)
 app.include_router(transportistas.router)
 app.include_router(pedidos.router)
-app.include_router(ayuda.router)          # NUEVO
+app.include_router(ayuda.router)
 
 # Utilidad para eliminar assets de Cloudinary
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):
