@@ -17,7 +17,8 @@ from sqlalchemy import text
 from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
 from app.routers import personas, empleos, herramientas, mensajes
 from app.routers import transportistas
-from app.routers import pedidos            # NUEVO
+from app.routers import pedidos
+from app.routers import ayuda             # NUEVO
 
 logging.basicConfig(level=logging.INFO)
 
@@ -92,7 +93,8 @@ app.include_router(empleos.router)
 app.include_router(herramientas.router)
 app.include_router(mensajes.router)
 app.include_router(transportistas.router)
-app.include_router(pedidos.router)         # NUEVO
+app.include_router(pedidos.router)
+app.include_router(ayuda.router)          # NUEVO
 
 # Utilidad para eliminar assets de Cloudinary
 def delete_cloudinary_asset(url: str, resource_type: str = "image"):

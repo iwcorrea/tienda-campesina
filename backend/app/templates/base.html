@@ -115,6 +115,8 @@
                     {% if config.menu_enlace_extra and config.menu_url_extra %}
                     <li class="nav-item"><a class="nav-link px-3" href="{{ config.menu_url_extra }}">{{ config.menu_enlace_extra }}</a></li>
                     {% endif %}
+                    <!-- ENLACE AL CENTRO DE AYUDA (PÚBLICO) -->
+                    <li class="nav-item"><a class="nav-link px-3" href="/ayuda">❓ Ayuda</a></li>
 
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
                         <li class="nav-item dropdown">

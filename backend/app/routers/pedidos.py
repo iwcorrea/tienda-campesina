@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Producto, Pedido, ItemPedido, RespuestaCotizacion
+from app.models import Producto, Pedido, ItemPedido, RespuestaCotizacion, Mensaje
 import datetime
 
 router = APIRouter()
@@ -23,7 +23,6 @@ def agregar_item(
         return RedirectResponse(url="/catalogo", status_code=303)
 
     carrito = request.session.get("carrito", [])
-    # Verificar si ya existe el producto
     for item in carrito:
         if item["producto_id"] == producto_id:
             item["cantidad"] += cantidad
@@ -59,7 +58,11 @@ def enviar_cotizacion(request: Request, db: Session = Depends(get_db)):
     email = request.session["usuario"]
     pedido = Pedido(comprador_email=email)
     db.add(pedido)
-    db.flush()  # para tener pedido.id
+    db.flush()
+
+    # Para evitar enviar múltiples mensajes a la misma asociación, agrupamos
+    asociaciones_notificadas = set()
+
     for item in carrito:
         nuevo_item = ItemPedido(
             pedido_id=pedido.id,
@@ -68,7 +71,20 @@ def enviar_cotizacion(request: Request, db: Session = Depends(get_db)):
             precio_unitario_inicial=item["precio"]
         )
         db.add(nuevo_item)
-    # Limpiar carrito
+
+        # Notificar a la asociación dueña del producto (solo una vez)
+        asoc_email = item["asociacion_email"]
+        if asoc_email and asoc_email not in asociaciones_notificadas:
+            msg = Mensaje(
+                id=str(uuid.uuid4()),
+                remitente_email=email,
+                destinatario_email=asoc_email,
+                texto=f"Has recibido una nueva solicitud de cotización (Pedido #{pedido.id[:8]}). Revisa tu panel de cotizaciones.",
+                leido="0"
+            )
+            db.add(msg)
+            asociaciones_notificadas.add(asoc_email)
+
     request.session["carrito"] = []
     db.commit()
     return RedirectResponse(url="/mis-pedidos", status_code=303)
@@ -105,7 +121,6 @@ def panel_cotizaciones(request: Request, db: Session = Depends(get_db)):
     if request.session.get("tipo_usuario") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
     email = request.session["usuario"]
-    # Buscar respuestas pendientes para productos de esta asociación
     items_con_respuesta = db.query(ItemPedido).join(Producto).filter(
         Producto.asociacion_email == email
     ).all()
@@ -155,5 +170,19 @@ def responder_cotizacion(
         mensaje=mensaje
     )
     db.add(respuesta)
+    db.flush()
+
+    # Notificar al comprador sobre la respuesta
+    comprador_email = item.pedido.comprador_email
+    if comprador_email:
+        notificacion = Mensaje(
+            id=str(uuid.uuid4()),
+            remitente_email=email,
+            destinatario_email=comprador_email,
+            texto=f"Tu cotización para '{item.producto.nombre}' ha recibido una respuesta ({aceptado}). Revisa el detalle del pedido #{item.pedido.id[:8]}.",
+            leido="0"
+        )
+        db.add(notificacion)
+
     db.commit()
     return RedirectResponse(url="/panel/cotizaciones", status_code=303)
