@@ -15,6 +15,7 @@
                 {% if request.session.get("tipo_usuario") == "asociacion" %}
                     <a href="/panel" class="btn btn-outline-success btn-lg">Ir al panel</a>
                 {% elif not request.session.get("usuario") %}
+                    <!-- ABRE EL MODAL DE REGISTRO UNIVERSAL -->
                     <button class="btn btn-outline-success btn-lg" data-bs-toggle="modal" data-bs-target="#modalRegistro">Registrarme</button>
                 {% endif %}
             </div>
