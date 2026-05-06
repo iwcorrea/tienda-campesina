@@ -21,7 +21,7 @@
                     </div>
                     <p>
                         <strong>📍 {{ v.ubicacion or 'No especificada' }}</strong><br>
-                        <strong>💰 {{ v.salario > 0 else 'A convenir' }}</strong>
+                        <strong>💰 {% if v.salario > 0 %}${{ "{:,.0f}".format(v.salario) }}{% else %}A convenir{% endif %}</strong>
                     </p>
                     <small class="text-muted">Publicado por {{ v.asociacion.nombre }} – Límite: {{ v.fecha_limite.strftime('%d/%m/%Y') }}</small>
                     <div class="mt-3"><a href="/bolsa-empleo/{{ v.id }}" class="btn btn-sm btn-outline-success">Ver y aplicar</a></div>
