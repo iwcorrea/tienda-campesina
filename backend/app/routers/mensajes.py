@@ -1,10 +1,11 @@
+import uuid
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.database import get_db
 from app.models import Mensaje
-import uuid
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -17,11 +18,7 @@ def bandeja_entrada(request: Request, db: Session = Depends(get_db)):
     mensajes = db.query(Mensaje).filter(
         Mensaje.destinatario_email == email
     ).order_by(Mensaje.fecha_envio.desc()).all()
-    return templates.TemplateResponse("mensajes.html", {
-        "request": request,
-        "mensajes": mensajes,
-        "tipo_bandeja": "entrada"
-    })
+    return templates.TemplateResponse("mensajes.html", {"request": request, "mensajes": mensajes, "tipo_bandeja": "entrada"})
 
 @router.get("/mensajes/enviados", response_class=HTMLResponse)
 def bandeja_salida(request: Request, db: Session = Depends(get_db)):
@@ -31,11 +28,7 @@ def bandeja_salida(request: Request, db: Session = Depends(get_db)):
     mensajes = db.query(Mensaje).filter(
         Mensaje.remitente_email == email
     ).order_by(Mensaje.fecha_envio.desc()).all()
-    return templates.TemplateResponse("mensajes.html", {
-        "request": request,
-        "mensajes": mensajes,
-        "tipo_bandeja": "salida"
-    })
+    return templates.TemplateResponse("mensajes.html", {"request": request, "mensajes": mensajes, "tipo_bandeja": "salida"})
 
 @router.get("/mensajes/{mensaje_id}", response_class=HTMLResponse)
 def ver_mensaje(request: Request, mensaje_id: str, db: Session = Depends(get_db)):
@@ -48,22 +41,13 @@ def ver_mensaje(request: Request, mensaje_id: str, db: Session = Depends(get_db)
     ).first()
     if not mensaje:
         return RedirectResponse(url="/mensajes", status_code=303)
-
     if mensaje.destinatario_email == email and mensaje.leido == "0":
         mensaje.leido = "1"
         db.commit()
-
     hilo = [mensaje]
-    respuestas = db.query(Mensaje).filter(
-        Mensaje.mensaje_padre_id == mensaje.id
-    ).order_by(Mensaje.fecha_envio.asc()).all()
+    respuestas = db.query(Mensaje).filter(Mensaje.mensaje_padre_id == mensaje.id).order_by(Mensaje.fecha_envio.asc()).all()
     hilo.extend(respuestas)
-
-    return templates.TemplateResponse("mensaje_detalle.html", {
-        "request": request,
-        "mensaje": mensaje,
-        "hilo": hilo
-    })
+    return templates.TemplateResponse("mensaje_detalle.html", {"request": request, "mensaje": mensaje, "hilo": hilo})
 
 @router.post("/mensajes/responder/{mensaje_id}")
 def responder_mensaje(
@@ -78,7 +62,6 @@ def responder_mensaje(
     original = db.query(Mensaje).filter(Mensaje.id == mensaje_id).first()
     if not original:
         return RedirectResponse(url="/mensajes", status_code=303)
-
     destinatario = original.remitente_email if original.remitente_email != email else original.destinatario_email
     nueva = Mensaje(
         id=str(uuid.uuid4()),
@@ -115,3 +98,15 @@ def enviar_mensaje(
     db.add(nuevo)
     db.commit()
     return RedirectResponse(url="/catalogo", status_code=303)
+
+# ─── API PARA CONTAR NO LEÍDOS ──────────────────────
+@router.get("/api/mensajes/no-leidos")
+def no_leidos(request: Request, db: Session = Depends(get_db)):
+    if not request.session.get("usuario"):
+        return {"count": 0}
+    email = request.session["usuario"]
+    count = db.query(func.count(Mensaje.id)).filter(
+        Mensaje.destinatario_email == email,
+        Mensaje.leido == "0"
+    ).scalar()
+    return {"count": count}

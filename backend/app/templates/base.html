@@ -8,7 +8,6 @@
     <meta name="description" content="{% block meta_description %}{{ config.descripcion_meta or 'Plataforma para asociaciones campesinas.' }}{% endblock %}">
     <link rel="canonical" href="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}" />
 
-    <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}">
     <meta property="og:title" content="{{ self.title() }}">
@@ -25,15 +24,9 @@
     {% endif %}
     {% if config.google_analytics_id %}
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ config.google_analytics_id }}"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', '{{ config.google_analytics_id }}');
-    </script>
+    <script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', '{{ config.google_analytics_id }}');</script>
     {% endif %}
 
-    <!-- Favicons -->
     {% if config.favicon_32_url %}
     <link rel="icon" type="image/png" sizes="32x32" href="{{ config.favicon_32_url }}">
     {% else %}
@@ -48,7 +41,6 @@
     <link rel="manifest" href="/static/site.webmanifest">
     <meta name="theme-color" content="{{ config.color_primario or '#2d6a4f' }}">
 
-    <!-- Bootstrap CSS + Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     {% if config.fuente_url %}
@@ -73,10 +65,18 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <!-- ===== BARRA SUPERIOR FUNCIONAL ===== -->
+    <!-- Toast para notificaciones (usado por el catálogo) -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toastMessage"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
     <nav class="navbar navbar-expand-lg topbar py-2">
         <div class="container-fluid">
-            <!-- Marca sin icono -->
             <a class="navbar-brand d-flex align-items-center" href="/">
                 {% if config.logo_url %}
                 <img src="{{ config.logo_url }}" alt="Logo" class="brand-logo me-2" width="36" height="36">
@@ -86,7 +86,6 @@
                 <span class="brand-text">{{ config.titulo_sitio or 'Tienda Campesina' }}</span>
             </a>
 
-            <!-- Buscador compacto (escritorio) -->
             <form action="/catalogo" method="get" class="d-none d-lg-flex mx-auto" style="max-width: 400px; width: 100%;">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
@@ -95,10 +94,8 @@
                 </div>
             </form>
 
-            <!-- Botón hamburguesa (móvil) -->
             <button class="btn btn-sm btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">☰</button>
 
-            <!-- Acciones de usuario (escritorio) -->
             <div class="d-none d-lg-flex align-items-center ms-auto">
                 {% if request.session.get("usuario") %}
                 <span class="text-white me-3">👋 {{ request.session.get("nombre_usuario", request.session["usuario"]) }}</span>
@@ -111,7 +108,6 @@
         </div>
     </nav>
 
-    <!-- Modal de registro universal -->
     {% if not request.session.get("usuario") %}
     <div class="modal fade" id="modalRegistro" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -132,7 +128,6 @@
     </div>
     {% endif %}
 
-    <!-- Sidebar: fijo en escritorio, offcanvas en móvil -->
     <div class="d-flex">
         <nav class="sidebar-custom offcanvas-lg offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar">
             <div class="offcanvas-header d-lg-none">
@@ -151,7 +146,7 @@
                             <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><i class="bi bi-briefcase me-2"></i> Vacantes</a></li>
                             <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><i class="bi bi-box-seam me-2"></i> Cotizaciones</a></li>
                             <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><i class="bi bi-truck me-2"></i> Transportistas</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes <span id="unread-badge" class="badge bg-danger rounded-pill ms-1" style="display:none;">0</span></a></li>
                             <li class="nav-item"><span class="section-title mt-2">Herramientas</span></li>
                             <li class="nav-item"><a class="nav-link" href="/calculadora"><i class="bi bi-calculator me-2"></i> Calculadora</a></li>
                             <li class="nav-item"><a class="nav-link" href="/herramientas/contrato"><i class="bi bi-file-earmark-text me-2"></i> Contrato</a></li>
@@ -166,7 +161,7 @@
                         {% elif request.session.get("tipo_usuario") == "persona" %}
                             <li class="nav-item"><a class="nav-link" href="/perfil"><i class="bi bi-person me-2"></i> Mi perfil</a></li>
                             <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes <span id="unread-badge" class="badge bg-danger rounded-pill ms-1" style="display:none;">0</span></a></li>
                         {% elif request.session.get("tipo_usuario") == "transportista" %}
                             <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
                         {% endif %}
@@ -192,7 +187,6 @@
         </main>
     </div>
 
-    <!-- Footer orgánico -->
     <footer class="organic-footer text-center py-4">
         <div class="container">
             <p class="mb-1 fw-semibold">{{ config.footer_texto or 'Tienda Campesina' }}</p>
@@ -210,6 +204,26 @@
                 document.querySelector('.offcanvas-backdrop')?.remove();
             }
         });
+
+        {% if request.session.get("usuario") %}
+        async function updateUnreadBadge() {
+            try {
+                let resp = await fetch('/api/mensajes/no-leidos');
+                let data = await resp.json();
+                let badge = document.getElementById('unread-badge');
+                if (badge) {
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            } catch(e) {}
+        }
+        updateUnreadBadge();
+        setInterval(updateUnreadBadge, 30000);
+        {% endif %}
     </script>
 </body>
 </html>

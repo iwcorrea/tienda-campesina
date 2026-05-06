@@ -110,13 +110,8 @@
                 <button class="btn btn-sm btn-outline-info mt-1" data-bs-toggle="modal" data-bs-target="#modalEnvio" data-asociacion="{{ producto.asociacion }}" data-nombre="{{ producto.nombre }}">🚚 Calcular envío</button>
                 {% endif %}
 
-                <!-- NUEVO BOTÓN AGREGAR A PEDIDO -->
                 {% if request.session.get("usuario") %}
-                <form method="post" action="/pedido/agregar-item" class="d-inline">
-                    <input type="hidden" name="producto_id" value="{{ producto.id }}">
-                    <input type="hidden" name="cantidad" value="1">
-                    <button type="submit" class="btn btn-sm btn-outline-success mt-1">➕ Agregar a pedido</button>
-                </form>
+                <button class="btn btn-sm btn-outline-success mt-1" onclick="agregarAlPedido('{{ producto.id }}', '{{ producto.nombre }}')">➕ Agregar a pedido</button>
                 {% endif %}
 
                 <div class="asociacion-badge mt-2">
@@ -153,84 +148,58 @@
 </nav>
 {% endif %}
 
-<!-- Modal para valorar -->
+<!-- Modal valorar -->
 <div class="modal fade" id="modalValorar" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form id="formValorar" method="post">
-                <div class="modal-header">
-                    <h5 class="modal-title">Valorar producto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+                <div class="modal-header"><h5 class="modal-title">Valorar producto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <input type="hidden" name="producto_id" id="productoId">
                     <p id="nombreProducto" class="fw-bold"></p>
-                    <div class="mb-3">
-                        <label class="form-label">Puntuación</label>
+                    <div class="mb-3"><label class="form-label">Puntuación</label>
                         <div class="star-rating">
-                            {% for i in range(1, 6) %}
-                            <input type="radio" name="estrellas" value="{{ i }}" id="star{{ i }}" {% if i == 5 %}checked{% endif %}>
+                            {% for i in range(1,6) %}
+                            <input type="radio" name="estrellas" value="{{ i }}" id="star{{ i }}" {% if i==5 %}checked{% endif %}>
                             <label for="star{{ i }}">⭐</label>
                             {% endfor %}
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Comentario (opcional)</label>
-                        <textarea name="comentario" class="form-control" rows="2"></textarea>
-                    </div>
+                    <div class="mb-3"><label class="form-label">Comentario (opcional)</label><textarea name="comentario" class="form-control" rows="2"></textarea></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Enviar valoración</button>
-                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-success">Enviar valoración</button></div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal para consultar sobre un producto -->
+<!-- Modal consultar -->
 <div class="modal fade" id="modalConsultar" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <form id="formConsultar">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">💬 Consultar sobre el producto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+                <div class="modal-header bg-success text-white"><h5 class="modal-title">💬 Consultar sobre el producto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <input type="hidden" id="consultarDestinatario" value="">
                     <input type="hidden" id="consultarProductoId" value="">
                     <p id="consultarProductoNombre" class="fw-bold"></p>
-                    <div class="mb-3">
-                        <label class="form-label">Tu mensaje</label>
-                        <textarea id="consultarTexto" class="form-control" rows="4" required></textarea>
-                    </div>
+                    <div class="mb-3"><label class="form-label">Tu mensaje</label><textarea id="consultarTexto" class="form-control" rows="4" required></textarea></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Enviar consulta</button>
-                </div>
+                <div class="modal-footer"><button type="submit" class="btn btn-success">Enviar consulta</button></div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal de cálculo de envío (MEJORADO) -->
+<!-- Modal envío -->
 <div class="modal fade" id="modalEnvio" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">🚚 Calcular envío</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
+            <div class="modal-header bg-success text-white"><h5 class="modal-title">🚚 Calcular envío</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <p id="envioProducto" class="fw-bold"></p>
-                <div class="mb-3">
-                    <label class="form-label">Distancia (km)</label>
-                    <input type="number" id="distancia" class="form-control" placeholder="Ej: 15">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Peso estimado (kg)</label>
-                    <input type="number" id="peso" class="form-control" placeholder="Ej: 5">
-                </div>
+                <div class="mb-3"><label class="form-label">Distancia (km)</label><input type="number" id="distancia" class="form-control" placeholder="Ej: 15"></div>
+                <div class="mb-3"><label class="form-label">Peso estimado (kg)</label><input type="number" id="peso" class="form-control" placeholder="Ej: 5"></div>
                 <button class="btn btn-success btn-sm" id="btnCalcular">Calcular</button>
                 <div id="resultadoEnvio" class="mt-3"></div>
             </div>
@@ -239,54 +208,59 @@
 </div>
 
 <script>
-// Modal de valoración
-document.addEventListener('DOMContentLoaded', function() {
-    var modal = document.getElementById('modalValorar');
-    modal.addEventListener('show.bs.modal', function(event) {
-        var button = event.relatedTarget;
-        var id = button.getAttribute('data-id');
-        var nombre = button.getAttribute('data-nombre');
-        document.getElementById('productoId').value = id;
-        document.getElementById('nombreProducto').textContent = nombre;
-        document.getElementById('formValorar').action = '/valorar/' + id;
-    });
-});
+// Agregar al pedido (AJAX + toast)
+async function agregarAlPedido(productoId, productoNombre) {
+    try {
+        let formData = new FormData();
+        formData.append('producto_id', productoId);
+        formData.append('cantidad', 1);
+        let resp = await fetch('/pedido/agregar-item', { method: 'POST', body: formData });
+        if (resp.ok) {
+            let toastEl = document.getElementById('liveToast');
+            let toastMsg = document.getElementById('toastMessage');
+            toastMsg.textContent = `"${productoNombre}" agregado al pedido`;
+            let toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+    } catch(e) { console.error(e); }
+}
 
-// Modal de consulta
+// Modal valoración
 document.addEventListener('DOMContentLoaded', function() {
-    var modalConsultar = document.getElementById('modalConsultar');
-    modalConsultar.addEventListener('show.bs.modal', function(event) {
+    var modalVal = document.getElementById('modalValorar');
+    modalVal.addEventListener('show.bs.modal', function(event) {
+        var button = event.relatedTarget;
+        document.getElementById('productoId').value = button.getAttribute('data-id');
+        document.getElementById('nombreProducto').textContent = button.getAttribute('data-nombre');
+        document.getElementById('formValorar').action = '/valorar/' + button.getAttribute('data-id');
+    });
+
+    // Modal consulta
+    var modalCons = document.getElementById('modalConsultar');
+    modalCons.addEventListener('show.bs.modal', function(event) {
         var button = event.relatedTarget;
         document.getElementById('consultarDestinatario').value = button.getAttribute('data-destinatario');
         document.getElementById('consultarProductoId').value = button.getAttribute('data-producto-id');
         document.getElementById('consultarProductoNombre').textContent = button.getAttribute('data-producto-nombre');
         document.getElementById('consultarTexto').value = '';
     });
-
     document.getElementById('formConsultar').addEventListener('submit', async function(e) {
         e.preventDefault();
-        let destinatario = document.getElementById('consultarDestinatario').value;
-        let productoId = document.getElementById('consultarProductoId').value;
-        let texto = document.getElementById('consultarTexto').value;
         let formData = new FormData();
-        formData.append('destinatario_email', destinatario);
-        formData.append('producto_id', productoId);
-        formData.append('texto', texto);
+        formData.append('destinatario_email', document.getElementById('consultarDestinatario').value);
+        formData.append('producto_id', document.getElementById('consultarProductoId').value);
+        formData.append('texto', document.getElementById('consultarTexto').value);
         let resp = await fetch('/mensajes/enviar', { method: 'POST', body: formData });
         if (resp.ok) {
-            bootstrap.Modal.getInstance(modalConsultar).hide();
-            alert('Mensaje enviado correctamente');
-        } else {
-            alert('Error al enviar el mensaje');
+            bootstrap.Modal.getInstance(modalCons).hide();
+            alert('Mensaje enviado');
         }
     });
-});
 
-// Modal de envío
-let asociacionActual = "";
-document.addEventListener('DOMContentLoaded', function() {
-    var modalEnvio = document.getElementById('modalEnvio');
-    modalEnvio.addEventListener('show.bs.modal', function(event) {
+    // Modal envío
+    var modalEnv = document.getElementById('modalEnvio');
+    let asociacionActual = "";
+    modalEnv.addEventListener('show.bs.modal', function(event) {
         var button = event.relatedTarget;
         asociacionActual = button.getAttribute('data-asociacion');
         document.getElementById('envioProducto').textContent = button.getAttribute('data-nombre');
@@ -294,30 +268,15 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('distancia').value = '';
         document.getElementById('peso').value = '';
     });
-
     document.getElementById('btnCalcular').addEventListener('click', async function() {
         let distancia = parseFloat(document.getElementById('distancia').value) || 0;
         let peso = parseFloat(document.getElementById('peso').value) || 0;
         let resp = await fetch(`/api/calcular-envio/${asociacionActual}?distancia=${distancia}&peso=${peso}`);
         let datos = await resp.json();
-
-        let html = '';
-        if (datos.length === 0) {
-            html += '<p class="text-muted">No hay transportistas disponibles en este momento.</p>';
-        } else {
-            html += '<ul class="list-group">';
-            datos.forEach(t => {
-                html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>${t.nombre}</strong> (${t.medio})<br>
-                        <span class="text-success fw-bold">$${t.costo_estimado}</span>
-                        ${t.telefono ? `<br><small>📞 ${t.telefono}</small>` : ''}
-                    </div>
-                    ${t.telefono ? `<a href="https://wa.me/57${t.telefono.replace(/\D/g,'')}" target="_blank" class="btn btn-sm btn-outline-success">💬 WhatsApp</a>` : ''}
-                </li>`;
-            });
-            html += '</ul>';
-        }
+        let html = '<ul class="list-group">';
+        if (datos.length === 0) html += '<li class="list-group-item text-muted">Sin transportistas.</li>';
+        else datos.forEach(t => html += `<li class="list-group-item"><strong>${t.nombre}</strong> (${t.medio}) – $${t.costo_estimado}</li>`);
+        html += '</ul>';
         document.getElementById('resultadoEnvio').innerHTML = html;
     });
 });

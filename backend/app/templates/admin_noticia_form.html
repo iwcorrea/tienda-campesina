@@ -16,6 +16,12 @@
                     <textarea name="contenido" class="form-control" rows="6" required>{{ noticia.contenido if noticia else '' }}</textarea>
                 </div>
                 <div class="mb-3">
+                    <label class="form-label">Fecha de publicación</label>
+                    <input type="date" name="fecha_publicacion" class="form-control"
+                           value="{{ noticia.fecha_publicacion.strftime('%Y-%m-%d') if noticia and noticia.fecha_publicacion else '' }}">
+                    <small class="text-muted">Si se deja vacío se usará la fecha actual.</small>
+                </div>
+                <div class="mb-3">
                     <label class="form-label">Imagen</label>
                     {% if noticia and noticia.imagen_url %}
                     <img src="{{ noticia.imagen_url }}" class="mb-2 rounded" style="max-width:200px"><br>
