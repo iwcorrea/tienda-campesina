@@ -196,13 +196,12 @@ class TransportistaFavorito(Base):
     asociacion = relationship("Asociacion", back_populates="transportistas_favoritos")
     transportista = relationship("Transportista", back_populates="favoritos")
 
-# ─── NUEVOS MODELOS PARA GESTIÓN DE PEDIDOS ─────────────────
 class Pedido(Base):
     __tablename__ = "pedidos"
 
     id = Column(String, primary_key=True, default=generate_uuid)
     comprador_email = Column(String, nullable=False)
-    estado = Column(String, default="pendiente")  # pendiente, confirmado, cancelado
+    estado = Column(String, default="pendiente")
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     items = relationship("ItemPedido", back_populates="pedido", cascade="all, delete-orphan")
@@ -226,7 +225,7 @@ class RespuestaCotizacion(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     item_pedido_id = Column(String, ForeignKey("items_pedido.id"), nullable=False)
     asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
-    aceptado = Column(String, default="pendiente")  # pendiente, aceptado, rechazado, contraoferta
+    aceptado = Column(String, default="pendiente")
     precio_contraoferta = Column(Integer, default=0)
     cantidad_contraoferta = Column(Integer, default=0)
     fecha_entrega_contraoferta = Column(String, default="")
@@ -235,3 +234,12 @@ class RespuestaCotizacion(Base):
 
     item_pedido = relationship("ItemPedido", back_populates="respuestas")
     asociacion = relationship("Asociacion")
+
+class Noticia(Base):
+    __tablename__ = "noticias"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    titulo = Column(String, nullable=False)
+    contenido = Column(Text, default="")
+    imagen_url = Column(Text, default="")
+    fecha_publicacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

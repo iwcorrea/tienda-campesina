@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Administrar Noticias{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">📰 Noticias</h2>
+    <a href="/admin/noticias/nueva" class="btn btn-success">Nueva noticia</a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr><th>Título</th><th>Fecha</th><th>Acciones</th></tr>
+                </thead>
+                <tbody>
+                    {% for n in noticias %}
+                    <tr>
+                        <td>{{ n.titulo }}</td>
+                        <td>{{ n.fecha_publicacion.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <a href="/admin/noticias/editar/{{ n.id }}" class="btn btn-sm btn-outline-primary">Editar</a>
+                            <form action="/admin/noticias/eliminar/{{ n.id }}" method="post" style="display:inline">
+                                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar noticia?')">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center text-muted">No hay noticias.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

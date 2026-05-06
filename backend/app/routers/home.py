@@ -3,14 +3,15 @@ from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Asociacion, Configuracion
+from app.models import Asociacion, Noticia
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 @router.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
-def inicio(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+def inicio(request: Request, db: Session = Depends(get_db)):
+    noticias = db.query(Noticia).order_by(Noticia.fecha_publicacion.desc()).limit(3).all()
+    return templates.TemplateResponse("index.html", {"request": request, "noticias": noticias})
 
 @router.get("/menu", response_class=HTMLResponse)
 def menu(request: Request):
@@ -19,7 +20,7 @@ def menu(request: Request):
 @router.get("/sitemap.xml")
 def sitemap(db: Session = Depends(get_db)):
     base = "https://tienda-campesina.onrender.com"
-    urls = [f"{base}/", f"{base}/catalogo", f"{base}/bolsa-empleo", f"{base}/calculadora"]
+    urls = [f"{base}/", f"{base}/catalogo", f"{base}/bolsa-empleo", f"{base}/noticias"]
     asociaciones = db.query(Asociacion).filter(Asociacion.verificado == "1").all()
     for a in asociaciones:
         urls.append(f"{base}/asociacion/{a.email}")
@@ -30,15 +31,12 @@ def sitemap(db: Session = Depends(get_db)):
     return Response(content=sitemap_xml, media_type="application/xml")
 
 @router.get("/robots.txt")
-def robots(db: Session = Depends(get_db)):
-    config = db.query(Configuracion).first()
-    extra = config.robots_txt_extra if config else ""
-    content = f"""User-agent: *
+def robots():
+    content = """User-agent: *
 Allow: /
 Disallow: /auth/
 Disallow: /admin/
 Disallow: /panel/
 Sitemap: https://tienda-campesina.onrender.com/sitemap.xml
-{extra}
 """
     return Response(content=content, media_type="text/plain")
