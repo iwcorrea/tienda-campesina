@@ -28,15 +28,11 @@
        letter-spacing: -0.5px;
        color: white;
    }
+   /* LOGO SIN FONDO BLANCO */
    .topbar .brand-logo {
+       background-color: #2d6a4f;   /* mismo tono de la barra */
        border-radius: 8px;
-       background: white;
        padding: 2px;
-   }
-   .brand-icon {
-       font-size: 1.8rem;
-       color: #b68b5b;
-       vertical-align: middle;
    }
    
    /* Search bar in topbar */

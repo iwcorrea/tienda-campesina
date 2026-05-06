@@ -76,17 +76,12 @@
     <!-- ===== BARRA SUPERIOR FUNCIONAL ===== -->
     <nav class="navbar navbar-expand-lg topbar py-2">
         <div class="container-fluid">
-            <!-- Marca con icono personalizado o fallback -->
+            <!-- Marca sin icono -->
             <a class="navbar-brand d-flex align-items-center" href="/">
                 {% if config.logo_url %}
                 <img src="{{ config.logo_url }}" alt="Logo" class="brand-logo me-2" width="36" height="36">
                 {% elif request.session.get("logo_url") %}
                 <img src="{{ request.session.logo_url }}" alt="Logo" class="brand-logo me-2" width="36" height="36">
-                {% endif %}
-                {% if config.brand_icon_url %}
-                <img src="{{ config.brand_icon_url }}" alt="Brand" class="brand-icon me-2" width="28" height="28" style="object-fit: contain;">
-                {% else %}
-                <i class="bi bi-tree-fill brand-icon me-2"></i>
                 {% endif %}
                 <span class="brand-text">{{ config.titulo_sitio or 'Tienda Campesina' }}</span>
             </a>
