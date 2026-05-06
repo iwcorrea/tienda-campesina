@@ -121,6 +121,7 @@ class Configuracion(Base):
     fuente_url = Column(String, default="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap")
 
     logo_url = Column(Text, default="")
+    brand_icon_url = Column(Text, default="")          # ← NUEVO CAMPO
     favicon_32_url = Column(Text, default="")
     favicon_16_url = Column(Text, default="")
 

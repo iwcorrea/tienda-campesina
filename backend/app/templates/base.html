@@ -76,15 +76,19 @@
     <!-- ===== BARRA SUPERIOR FUNCIONAL ===== -->
     <nav class="navbar navbar-expand-lg topbar py-2">
         <div class="container-fluid">
-            <!-- Marca con ícono de hoja -->
+            <!-- Marca con icono personalizado o fallback -->
             <a class="navbar-brand d-flex align-items-center" href="/">
                 {% if config.logo_url %}
                 <img src="{{ config.logo_url }}" alt="Logo" class="brand-logo me-2" width="36" height="36">
                 {% elif request.session.get("logo_url") %}
                 <img src="{{ request.session.logo_url }}" alt="Logo" class="brand-logo me-2" width="36" height="36">
                 {% endif %}
+                {% if config.brand_icon_url %}
+                <img src="{{ config.brand_icon_url }}" alt="Brand" class="brand-icon me-2" width="28" height="28" style="object-fit: contain;">
+                {% else %}
                 <i class="bi bi-tree-fill brand-icon me-2"></i>
-                <span class="brand-text">Tienda Campesina</span>
+                {% endif %}
+                <span class="brand-text">{{ config.titulo_sitio or 'Tienda Campesina' }}</span>
             </a>
 
             <!-- Buscador compacto (escritorio) -->
@@ -168,13 +172,10 @@
                             <li class="nav-item"><a class="nav-link" href="/perfil"><i class="bi bi-person me-2"></i> Mi perfil</a></li>
                             <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
                             <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
-                            <li class="nav-item"><span class="section-title mt-2">Postulaciones</span></li>
-                            <li class="nav-item"><a class="nav-link" href="/perfil#aplicaciones"><i class="bi bi-file-earmark-text me-2"></i> Mis postulaciones</a></li>
                         {% elif request.session.get("tipo_usuario") == "transportista" %}
                             <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
                         {% endif %}
                     {% else %}
-                        <!-- Solo visible en móvil (en escritorio ya están en la barra superior) -->
                         <li class="nav-item d-lg-none"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
                         <li class="nav-item d-lg-none"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><i class="bi bi-person-plus me-2"></i> Registrarme</a></li>
                     {% endif %}
