@@ -49,7 +49,9 @@
     <link rel="manifest" href="/static/site.webmanifest">
     <meta name="theme-color" content="{{ config.color_primario or '#2d6a4f' }}">
 
+    <!-- Bootstrap CSS + Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     {% if config.fuente_url %}
     <link href="{{ config.fuente_url }}" rel="stylesheet">
     {% endif %}
@@ -67,46 +69,27 @@
             --fuente-nombre: '{{ config.fuente_nombre or 'Nunito' }}', system-ui, sans-serif;
             --fuente-tamano: {{ config.fuente_tamano_base or '16px' }};
         }
-        body {
-            background-color: var(--color-fondo);
-            color: var(--color-texto);
-            font-family: var(--fuente-nombre);
-            font-size: var(--fuente-tamano);
-        }
-        .bg-success, .btn-success, .navbar.bg-success {
-            background-color: var(--color-primario) !important;
-            border-color: var(--color-primario) !important;
-        }
-        .btn-success { background-color: var(--color-primario) !important; }
-        .btn-outline-success { border-color: var(--color-primario) !important; color: var(--color-primario) !important; }
-        .btn-outline-success:hover { background-color: var(--color-primario) !important; color: white !important; }
-        .text-success { color: var(--color-primario) !important; }
-        .card-header.bg-success { background-color: var(--color-primario) !important; }
-        footer { border-top: 3px solid var(--color-primario); }
-        a { color: var(--color-enlaces); }
-        .card { background-color: var(--color-fondo-tarjetas); }
-        .btn:hover { background-color: var(--color-hover) !important; border-color: var(--color-hover) !important; }
-        {{ config.css_personalizado or '' }}
     </style>
 
     {% block head %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-success sticky-top shadow-sm">
+    <!-- BARRA SUPERIOR ORGÁNICA -->
+    <nav class="navbar navbar-expand-lg topbar">
         <div class="container-fluid">
-            <a class="navbar-brand fw-bold fs-4" href="/">
+            <a class="navbar-brand" href="/">
                 {% if config.logo_url %}
-                <img src="{{ config.logo_url }}" alt="Logo" class="navbar-logo me-2" width="36" height="36">
+                <img src="{{ config.logo_url }}" alt="Logo" class="brand-logo me-2" width="36" height="36">
                 {% elif request.session.get("logo_url") %}
-                <img src="{{ request.session.logo_url }}" alt="Logo" class="navbar-logo me-2" width="36" height="36">
+                <img src="{{ request.session.logo_url }}" alt="Logo" class="brand-logo me-2" width="36" height="36">
                 {% endif %}
-                🌱 {{ config.titulo_sitio or 'Tienda Campesina' }}
+                <span class="brand-text">Tienda Campesina</span>
             </a>
             <button class="btn btn-sm btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">☰</button>
             <div class="d-none d-lg-flex align-items-center ms-auto">
                 {% if request.session.get("usuario") %}
                 <span class="text-white me-3">👋 {{ request.session.get("nombre_usuario", request.session["usuario"]) }}</span>
-                <a href="/auth/logout" class="btn btn-outline-light btn-sm">Cerrar sesión</a>
+                <a href="/auth/logout" class="btn btn-sm btn-outline-light">Cerrar sesión</a>
                 {% else %}
                 <a class="btn btn-outline-light me-2" href="/auth/login">Iniciar sesión</a>
                 <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#modalRegistro">Registrarme</button>
@@ -119,7 +102,7 @@
     <div class="modal fade" id="modalRegistro" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-success text-white">
+                <div class="modal-header bg-tierra text-white">
                     <h5 class="modal-title">✨ Elige tu tipo de registro</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -135,51 +118,29 @@
     </div>
     {% endif %}
 
-    <div class="d-flex">
-        <!-- SIDEBAR ULTRA PRO -->
-        <nav class="sidebar-custom offcanvas-lg offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar">
-            <div class="offcanvas-header d-lg-none">
-                <h5 class="offcanvas-title">Menú</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close" onclick="document.getElementById('sidebar').classList.remove('show'); this.setAttribute('aria-expanded','false');"></button>
-            </div>
-            <div class="offcanvas-body p-3">
+    <!-- MENÚ MÓVIL (OFFCANVAS) -->
+    <div class="offcanvas offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title">Menú</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-3">
+            <ul class="nav flex-column bento-nav">
                 {% if request.session.get("usuario") %}
-                <!-- Tarjeta de perfil re-diseñada -->
-                <div class="sidebar-profile text-center mb-4">
-                    <div class="mb-2">
-                        {% if request.session.get("logo_url") %}
-                        <img src="{{ request.session.logo_url }}" class="rounded-circle shadow-lg"
-                             width="75" height="75" style="object-fit: cover; border: 3px solid var(--color-primario);">
-                        {% else %}
-                        <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center shadow-lg"
-                             style="width: 75px; height: 75px; border: 3px solid var(--color-secundario);">
-                            <span class="text-white fs-4">👤</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <h6 class="fw-bold mb-0 text-truncate mx-auto" style="max-width: 200px;">{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</h6>
-                    <small class="text-muted text-capitalize">{{ request.session.get("tipo_usuario", "usuario") }}</small>
-                </div>
-                {% endif %}
-
-                <ul class="nav flex-column">
+                    <li class="nav-item"><span class="section-title">Principal</span></li>
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
-                        <li class="nav-item"><span class="sidebar-section-title">📌 Principal</span></li>
                         <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/panel"><i class="bi bi-grid me-2"></i> Panel de productos</a></li>
-
-                        <li class="nav-item mt-3"><span class="sidebar-section-title">📋 Gestión</span></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel"><i class="bi bi-grid me-2"></i> Panel productos</a></li>
+                        <li class="nav-item"><span class="section-title mt-2">Gestión</span></li>
                         <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><i class="bi bi-briefcase me-2"></i> Vacantes</a></li>
                         <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><i class="bi bi-box-seam me-2"></i> Cotizaciones</a></li>
                         <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><i class="bi bi-truck me-2"></i> Transportistas</a></li>
                         <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
-
-                        <li class="nav-item mt-3"><span class="sidebar-section-title">🛠️ Herramientas</span></li>
+                        <li class="nav-item"><span class="section-title mt-2">Herramientas</span></li>
                         <li class="nav-item"><a class="nav-link" href="/calculadora"><i class="bi bi-calculator me-2"></i> Calculadora</a></li>
                         <li class="nav-item"><a class="nav-link" href="/herramientas/contrato"><i class="bi bi-file-earmark-text me-2"></i> Contrato</a></li>
-
                         {% if request.session.get("es_admin") %}
-                        <li class="nav-item mt-3"><span class="sidebar-section-title">🔧 Administración</span></li>
+                        <li class="nav-item"><span class="section-title mt-2">Admin</span></li>
                         <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-pie-chart me-2"></i> Dashboard Admin</a></li>
                         <li class="nav-item"><a class="nav-link" href="/admin/asociaciones"><i class="bi bi-building me-2"></i> Asociaciones</a></li>
                         <li class="nav-item"><a class="nav-link" href="/admin/archivos"><i class="bi bi-archive me-2"></i> Archivos</a></li>
@@ -187,37 +148,38 @@
                         <li class="nav-item"><a class="nav-link" href="/admin/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
                         {% endif %}
                     {% elif request.session.get("tipo_usuario") == "persona" %}
-                        <li class="nav-item"><span class="sidebar-section-title">👤 Persona</span></li>
                         <li class="nav-item"><a class="nav-link" href="/perfil"><i class="bi bi-person me-2"></i> Mi perfil</a></li>
                         <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
                         <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
+                        <li class="nav-item"><span class="section-title mt-2">Postulaciones</span></li>
+                        <li class="nav-item"><a class="nav-link" href="/perfil#aplicaciones"><i class="bi bi-file-earmark-text me-2"></i> Mis postulaciones</a></li>
                     {% elif request.session.get("tipo_usuario") == "transportista" %}
-                        <li class="nav-item"><span class="sidebar-section-title">🚚 Transportista</span></li>
                         <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
-                    {% else %}
-                        <li class="nav-item"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><i class="bi bi-person-plus me-2"></i> Registrarme</a></li>
                     {% endif %}
+                {% else %}
+                    <li class="nav-item"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><i class="bi bi-person-plus me-2"></i> Registrarme</a></li>
+                {% endif %}
 
-                    <li class="nav-item mt-3"><span class="sidebar-section-title">🌐 Público</span></li>
-                    <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-shop me-2"></i> Catálogo</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><i class="bi bi-briefcase-fill me-2"></i> Bolsa de Empleo</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/ayuda"><i class="bi bi-question-circle me-2"></i> Ayuda</a></li>
-
-                    {% if request.session.get("usuario") %}
-                    <li class="nav-item mt-3"><a class="nav-link text-danger" href="/auth/logout"><i class="bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
-                    {% endif %}
-                </ul>
-            </div>
-        </nav>
-
-        <main class="content p-4 flex-grow-1">
-            {% block content %}{% endblock %}
-        </main>
+                <li class="nav-item"><span class="section-title mt-3">Público</span></li>
+                <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-shop me-2"></i> Catálogo</a></li>
+                <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><i class="bi bi-briefcase-fill me-2"></i> Bolsa de Empleo</a></li>
+                <li class="nav-item"><a class="nav-link" href="/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
+                <li class="nav-item"><a class="nav-link" href="/ayuda"><i class="bi bi-question-circle me-2"></i> Ayuda</a></li>
+                {% if request.session.get("usuario") %}
+                <li class="nav-item mt-3"><a class="nav-link text-danger" href="/auth/logout"><i class="bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
+                {% endif %}
+            </ul>
+        </div>
     </div>
 
-    <footer class="py-4 bg-success text-white text-center mt-auto">
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="container-fluid px-3 py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- FOOTER ORGÁNICO -->
+    <footer class="organic-footer text-center py-4">
         <div class="container">
             <p class="mb-1 fw-semibold">{{ config.footer_texto or 'Tienda Campesina' }}</p>
             <small>{{ config.footer_subtexto or 'Apoyando la Reforma Agraria en Colombia 🇨🇴' }}</small>

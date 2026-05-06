@@ -1,101 +1,113 @@
-/* ===== ESTILOS GENERALES ===== */
+/* ============================================================
+   TIENDA CAMPESINA – BENTO GRIDS + MINIMALISMO CÁLIDO ORGÁNICO
+   ============================================================ */
+
+/* ----- TIPOGRAFÍA ----- */
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap');
+
 body {
-  font-family: 'Nunito', system-ui, sans-serif;
-  background-color: var(--color-fondo);
-  color: var(--color-texto);
-  margin: 0;
+    font-family: 'Nunito', system-ui, sans-serif;
+    background-color: #fdfaf3;  /* papel reciclado claro */
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence baseFrequency='0.8' numOctaves='4' result='noise'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.98   0 0 0 0 0.94   0 0 0 0 0.88   0 0 0 0.04 0' in='noise' result='coloredNoise'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E");
+    color: #3e3a35;
+    margin: 0;
 }
 
-/* ===== BARRA SUPERIOR ===== */
-.navbar {
-  background-color: var(--color-primario) !important;
-  border-bottom: 3px solid var(--color-secundario);
+h1, h2, h3, h4, h5, h6, .brand-text {
+    font-family: 'Lora', Georgia, serif;
+    font-weight: 600;
+    color: #2d6a4f;
 }
 
-/* ===== SIDEBAR ULTRA PRO ===== */
-.sidebar-custom {
-  width: 280px;
-  min-height: calc(100vh - 56px);
-  border-right: 1px solid rgba(0,0,0,0.05);
-  padding-top: 1rem;
-  background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,1));
+/* ----- BARRA SUPERIOR ----- */
+.topbar {
+    background-color: #2d6a4f;
+    border-bottom: 3px solid #b68b5b;
+}
+.topbar .brand-text {
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+    color: white;
+}
+.topbar .brand-logo {
+    border-radius: 8px;
+    background: white;
+    padding: 2px;
 }
 
-.sidebar-custom .nav-link {
-  color: #333;
-  padding: 0.65rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 0.2rem;
-  transition: all 0.2s ease;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  text-decoration: none;
+/* ----- NUEVO SISTEMA DE TARJETAS BENTO ----- */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
 }
-.sidebar-custom .nav-link i {
-  font-size: 1.2rem;
-  width: 24px;
-  text-align: center;
+.bento-card {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
 }
-.sidebar-custom .nav-link:hover {
-  background-color: rgba(45,106,79,0.08);
-  color: var(--color-primario) !important;
-  transform: translateX(4px);
+.bento-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.08);
 }
-.sidebar-custom .nav-link.active {
-  background-color: var(--color-primario);
-  color: white !important;
-  font-weight: 600;
+.bento-card .card-icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.8rem;
 }
-
-.sidebar-section-title {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--color-primario);
-  font-weight: 700;
-  margin-left: 1rem;
-  margin-bottom: 0.5rem;
-  display: block;
-  opacity: 0.8;
+.bento-card .card-title {
+    font-family: 'Lora', serif;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: #2d6a4f;
 }
 
-/* Tarjeta de perfil */
-.sidebar-profile {
-  border-bottom: 1px solid #eee;
-  padding-bottom: 1rem;
-  margin-bottom: 1rem;
+/* Variaciones de color para las tarjetas */
+.bento-card.accent-green { border-top: 4px solid #2d6a4f; }
+.bento-card.accent-terracota { border-top: 4px solid #b68b5b; }
+.bento-card.accent-gold { border-top: 4px solid #d4a373; }
+
+/* ----- SECCIONES PÚBLICAS (catálogo, noticias, etc.) ----- */
+.modern-card {
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background: white;
 }
-.sidebar-profile img {
-  transition: transform 0.3s ease;
+.modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.08);
 }
-.sidebar-profile img:hover {
-  transform: scale(1.05);
+.modern-section {
+    background: white;
+    border-radius: 18px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
 }
 
-/* ===== CONTENIDO PRINCIPAL ===== */
-.content {
-  background-color: var(--color-fondo);
-  min-height: calc(100vh - 112px);
-}
-
-/* ===== TARJETAS ESTADÍSTICAS (Dashboard) ===== */
+/* ----- TARJETAS ESTADÍSTICAS (Dashboard) ----- */
 .stat-card {
-  display: flex;
-  align-items: center;
-  padding: 1.5rem;
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    border-radius: 18px;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transition: transform 0.2s ease;
 }
 .stat-card:hover { transform: translateY(-3px); }
 .stat-card__icon {
-  width: 60px; height: 60px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.8rem;
-  margin-right: 1rem;
+    width: 60px; height: 60px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+    margin-right: 1rem;
 }
 .stat-card--primary .stat-card__icon { background: rgba(45,106,79,0.1); }
 .stat-card--info .stat-card__icon { background: rgba(23,162,184,0.1); }
@@ -104,73 +116,66 @@ body {
 .stat-card__info h3 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.2rem; color: #2d2d2d; }
 .stat-card__label { margin-bottom: 0; color: #6c757d; font-weight: 500; }
 
-/* ===== TARJETAS MODERNAS (catálogo, etc.) ===== */
-.modern-card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background: white;
-}
-.modern-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 18px rgba(0,0,0,0.1);
-}
-.modern-section {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-/* ===== BOTONES GLOBALES ===== */
+/* ----- BOTONES ----- */
 .btn {
-  border-radius: 8px;
-  font-weight: 600;
-  padding: 0.5rem 1.2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 0.5rem 1.2rem;
 }
 .btn-success {
-  background-color: var(--color-primario);
-  border-color: var(--color-primario);
+    background-color: #2d6a4f;
+    border-color: #2d6a4f;
 }
 .btn-outline-success {
-  border-color: var(--color-primario);
-  color: var(--color-primario);
+    border-color: #2d6a4f;
+    color: #2d6a4f;
 }
 .btn-outline-success:hover {
-  background-color: var(--color-primario);
-  color: white;
+    background-color: #2d6a4f;
+    color: white;
 }
 
-/* ===== PIE DE PÁGINA ===== */
-footer {
-  background-color: var(--color-primario);
-  color: white;
-  padding: 1.5rem 0;
-  margin-top: auto;
+/* ----- FOOTER ORGÁNICO ----- */
+.organic-footer {
+    background: #2d6a4f url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='none'/%3E%3Cpath d='M0 30h60M30 0v60' stroke='%23ffffff15' stroke-width='0.5'/%3E%3C/svg%3E");
+    color: white;
+    border-top: 3px solid #b68b5b;
 }
 
-/* ===== RESPONSIVE: Móvil ===== */
+/* ----- MENÚ MÓVIL (OFFCANVAS) ----- */
+.bento-nav .section-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #b68b5b;
+    font-weight: 700;
+    margin-left: 1rem;
+    margin-bottom: 0.4rem;
+    display: block;
+}
+.bento-nav .nav-link {
+    border-radius: 8px;
+    margin-bottom: 0.2rem;
+    color: #3e3a35;
+}
+.bento-nav .nav-link:hover {
+    background: rgba(45,106,79,0.08);
+    color: #2d6a4f;
+}
+
+/* ----- RESPONSIVE ----- */
 @media (max-width: 991.98px) {
-  .sidebar-custom {
-      width: 100%;
-      max-width: 300px;
-  }
-  .content {
-      margin-left: 0;
-      width: 100%;
-  }
+    .bento-grid {
+        grid-template-columns: 1fr;
+    }
 }
-
 @media (min-width: 992px) {
-  .sidebar-custom {
-      position: sticky;
-      top: 56px;
-      height: calc(100vh - 56px);
-      overflow-y: auto;
-  }
-  .content {
-      margin-left: 0;
-      width: calc(100% - 280px);
-  }
+    .bento-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (min-width: 1200px) {
+    .bento-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
