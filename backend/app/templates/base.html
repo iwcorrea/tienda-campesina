@@ -141,7 +141,8 @@
         <nav class="sidebar-custom offcanvas-lg offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar">
             <div class="offcanvas-header d-lg-none">
                 <h5 class="offcanvas-title">Menú</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+                <!-- Botón de cierre con data-dismiss y también con onclick manual como respaldo -->
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close" onclick="document.getElementById('sidebar').classList.remove('show'); this.setAttribute('aria-expanded','false');"></button>
             </div>
             <div class="offcanvas-body p-3">
                 {% if request.session.get("usuario") %}
@@ -220,5 +221,18 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Refuerzo para cerrar el offcanvas en móvil al pulsar la X
+        document.querySelector('#sidebar .btn-close').addEventListener('click', function() {
+            var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('sidebar'));
+            if (offcanvas) {
+                offcanvas.hide();
+            } else {
+                // Fallback manual
+                document.getElementById('sidebar').classList.remove('show');
+                document.querySelector('.offcanvas-backdrop')?.remove();
+            }
+        });
+    </script>
 </body>
 </html>
