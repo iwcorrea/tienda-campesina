@@ -1,8 +1,8 @@
 /* ============================================================
-   TIENDA CAMPESINA – BENTO + ORGÁNICO + BARRA FUNCIONAL
+   TIENDA CAMPESINA – ESTILO FINAL (BENTO + ORGÁNICO)
    ============================================================ */
 
-   @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap');
+   @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Nunito:wght@400;600;700&display=swap');
 
    body {
        font-family: 'Nunito', system-ui, sans-serif;
@@ -28,14 +28,11 @@
        letter-spacing: -0.5px;
        color: white;
    }
-   /* LOGO SIN FONDO BLANCO */
-   .topbar .brand-logo {
-       background-color: #2d6a4f;   /* mismo tono de la barra */
+   .brand-logo {
+       background-color: #2d6a4f;
        border-radius: 8px;
        padding: 2px;
    }
-   
-   /* Search bar in topbar */
    .topbar .input-group-sm .form-control {
        border-radius: 0 8px 8px 0;
    }
@@ -65,7 +62,7 @@
        color: #2d6a4f !important;
        transform: translateX(4px);
    }
-   .section-title {
+   .sidebar-section-title {
        font-size: 0.7rem;
        text-transform: uppercase;
        letter-spacing: 1.5px;
@@ -81,67 +78,46 @@
        background: linear-gradient(to bottom, rgba(45,106,79,0.05), transparent);
        border-bottom: 1px solid rgba(0,0,0,0.05);
    }
-   .search-form .input-group-text {
-       background-color: white;
-       border-right: none;
-   }
-   .search-form input {
-       border-left: none;
-   }
-   .search-form input:focus {
-       box-shadow: none;
-       border-color: #ced4da;
-   }
+   .search-form .input-group-text { background: white; border-right: none; }
+   .search-form input { border-left: none; }
+   .search-form input:focus { box-shadow: none; border-color: #ced4da; }
    
    /* ----- ESTADÍSTICAS (BENTO) ----- */
-   .stats-section {
-       margin-top: -30px;
-       position: relative;
-       z-index: 2;
-   }
+   .stats-section { margin-top: -30px; position: relative; z-index: 2; }
    
-   /* ----- TARJETAS GENERALES ----- */
-   .modern-card {
-       border: 1px solid rgba(0,0,0,0.05);
-       border-radius: 18px;
-       box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+   /* ----- TARJETAS MODERNAS ----- */
+   .modern-card, .stat-card {
+       background: white;
+       border: 1px solid rgba(0,0,0,0.04);
+       border-radius: 20px;
        transition: transform 0.2s ease, box-shadow 0.2s ease;
-       background: white;
    }
-   .modern-card:hover {
-       transform: translateY(-4px);
-       box-shadow: 0 12px 20px rgba(0,0,0,0.08);
+   .modern-card {
+       padding: 1.5rem;
+       box-shadow: 0 2px 8px rgba(0,0,0,0.03);
    }
-   .modern-section {
-       background: white;
-       border-radius: 18px;
-       padding: 2rem;
-       box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-   }
-   
-   /* ----- TARJETAS ESTADÍSTICAS ----- */
    .stat-card {
        display: flex;
        align-items: center;
-       padding: 1.5rem;
-       border-radius: 18px;
-       background: white;
-       box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-       transition: transform 0.2s ease;
+       padding: 1.2rem 1.5rem;
+       box-shadow: 0 2px 8px rgba(0,0,0,0.03);
    }
-   .stat-card:hover { transform: translateY(-3px); }
+   .modern-card:hover, .stat-card:hover {
+       transform: translateY(-3px);
+       box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+   }
    .stat-card__icon {
-       width: 60px; height: 60px;
+       width: 52px; height: 52px;
        border-radius: 14px;
+       background: rgba(45,106,79,0.08);
        display: flex; align-items: center; justify-content: center;
-       font-size: 1.8rem;
+       font-size: 1.5rem;
        margin-right: 1rem;
    }
    .stat-card--primary .stat-card__icon { background: rgba(45,106,79,0.1); }
    .stat-card--info .stat-card__icon { background: rgba(23,162,184,0.1); }
    .stat-card--warning .stat-card__icon { background: rgba(255,193,7,0.1); }
-   .stat-card--secondary .stat-card__icon { background: rgba(108,117,125,0.1); }
-   .stat-card__info h3 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.2rem; color: #2d2d2d; }
+   .stat-card__info h3 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.1rem; color: #2d2d2d; }
    .stat-card__label { margin-bottom: 0; color: #6c757d; font-weight: 500; }
    
    /* ----- BOTONES ----- */
@@ -150,18 +126,9 @@
        font-weight: 600;
        padding: 0.5rem 1.2rem;
    }
-   .btn-success {
-       background-color: #2d6a4f;
-       border-color: #2d6a4f;
-   }
-   .btn-outline-success {
-       border-color: #2d6a4f;
-       color: #2d6a4f;
-   }
-   .btn-outline-success:hover {
-       background-color: #2d6a4f;
-       color: white;
-   }
+   .btn-success { background-color: #2d6a4f; border-color: #2d6a4f; }
+   .btn-outline-success { border-color: #2d6a4f; color: #2d6a4f; }
+   .btn-outline-success:hover { background-color: #2d6a4f; color: white; }
    
    /* ----- FOOTER ORGÁNICO ----- */
    .organic-footer {
@@ -172,20 +139,9 @@
    
    /* ----- RESPONSIVE ----- */
    @media (max-width: 991.98px) {
-       .sidebar-custom {
-           width: 100%;
-           max-width: 300px;
-       }
+       .sidebar-custom { width: 100%; max-width: 300px; }
    }
-   
    @media (min-width: 992px) {
-       .sidebar-custom {
-           position: sticky;
-           top: 56px;
-           height: calc(100vh - 56px);
-           overflow-y: auto;
-       }
-       .content {
-           width: calc(100% - 260px);
-       }
+       .sidebar-custom { position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; }
+       .content { width: calc(100% - 260px); }
    }

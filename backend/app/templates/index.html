@@ -4,7 +4,6 @@
 {% block meta_description %}{{ config.descripcion_inicio or config.descripcion_meta or 'Conecta con asociaciones campesinas, encuentra productos frescos y servicios rurales.' }}{% endblock %}
 
 {% block content %}
-<!-- ===== SECCIÓN HÉROES CON BÚSQUEDA UNIVERSAL ===== -->
 <section class="hero-section text-center">
     <div class="container py-5">
         <h1 class="display-4 fw-bold hero-title">
@@ -14,7 +13,6 @@
             {{ config.inicio_subtitulo or 'Conectamos productores, transportadores y compradores para fortalecer la economía rural.' }}
         </p>
 
-        <!-- BARRA DE BÚSQUEDA UNIVERSAL (ACCESO DIRECTO AL CATÁLOGO) -->
         <div class="row justify-content-center mt-4">
             <div class="col-md-8 col-lg-6">
                 <form action="/catalogo" method="get" class="search-form">
@@ -30,7 +28,6 @@
             </div>
         </div>
 
-        <!-- BOTONES DE ACCIÓN PRINCIPAL -->
         <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
             <a href="/catalogo" class="btn btn-success btn-lg">📦 Explorar catálogo</a>
             {% if not request.session.get("usuario") %}
@@ -44,12 +41,11 @@
     </div>
 </section>
 
-<!-- ===== ESTADÍSTICAS DE CONFIANZA (BENTO GRID) ===== -->
 <section class="container stats-section">
     <div class="row g-4 justify-content-center">
         <div class="col-md-4">
             <div class="stat-card stat-card--primary">
-                <div class="stat-card__icon"><i class="bi bi-people-fill fs-2"></i></div>
+                <div class="stat-card__icon"><i class="bi bi-people-fill"></i></div>
                 <div class="stat-card__info">
                     <h3>{{ total_asociaciones }}</h3>
                     <p>Asociaciones activas</p>
@@ -58,7 +54,7 @@
         </div>
         <div class="col-md-4">
             <div class="stat-card stat-card--info">
-                <div class="stat-card__icon"><i class="bi bi-box-seam fs-2"></i></div>
+                <div class="stat-card__icon"><i class="bi bi-box-seam"></i></div>
                 <div class="stat-card__info">
                     <h3>{{ total_productos }}</h3>
                     <p>Productos ofertados</p>
@@ -67,7 +63,7 @@
         </div>
         <div class="col-md-4">
             <div class="stat-card stat-card--warning">
-                <div class="stat-card__icon"><i class="bi bi-briefcase-fill fs-2"></i></div>
+                <div class="stat-card__icon"><i class="bi bi-briefcase-fill"></i></div>
                 <div class="stat-card__info">
                     <h3>{{ total_vacantes }}</h3>
                     <p>Vacantes rurales activas</p>
@@ -77,7 +73,6 @@
     </div>
 </section>
 
-<!-- ===== NOTICIAS (DISEÑO OPTIMIZADO) ===== -->
 {% if noticias %}
 <section class="container mt-5">
     <h3 class="fw-bold mb-4 text-center">📰 Noticias rurales</h3>
@@ -103,7 +98,6 @@
 </section>
 {% endif %}
 
-<!-- ===== ACCIONES RÁPIDAS (SOLO USUARIOS LOGUEADOS) ===== -->
 {% if request.session.get("usuario") %}
 <section class="container mt-5">
     <h3 class="fw-bold mb-4 text-center">Acciones rápidas</h3>

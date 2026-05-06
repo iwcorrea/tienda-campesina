@@ -65,17 +65,7 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <!-- Toast para notificaciones (usado por el catálogo) -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="liveToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body" id="toastMessage"></div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    </div>
-
-    <nav class="navbar navbar-expand-lg topbar py-2">
+    <nav class="navbar navbar-expand-lg topbar py-2 shadow-sm">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="/">
                 {% if config.logo_url %}
@@ -136,22 +126,25 @@
                         onclick="document.getElementById('sidebar').classList.remove('show'); this.setAttribute('aria-expanded','false');"></button>
             </div>
             <div class="offcanvas-body p-3">
-                <ul class="nav flex-column bento-nav">
+                <ul class="nav flex-column">
                     {% if request.session.get("usuario") %}
-                        <li class="nav-item"><span class="section-title">Principal</span></li>
+                        <li class="nav-item"><span class="sidebar-section-title">Principal</span></li>
                         {% if request.session.get("tipo_usuario") == "asociacion" %}
                             <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
                             <li class="nav-item"><a class="nav-link" href="/panel"><i class="bi bi-grid me-2"></i> Panel productos</a></li>
-                            <li class="nav-item"><span class="section-title mt-2">Gestión</span></li>
+                            <li class="nav-item"><hr class="dropdown-divider my-2"></li>
+                            <li class="nav-item"><span class="sidebar-section-title">Gestión</span></li>
                             <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><i class="bi bi-briefcase me-2"></i> Vacantes</a></li>
                             <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><i class="bi bi-box-seam me-2"></i> Cotizaciones</a></li>
                             <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><i class="bi bi-truck me-2"></i> Transportistas</a></li>
                             <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes <span id="unread-badge" class="badge bg-danger rounded-pill ms-1" style="display:none;">0</span></a></li>
-                            <li class="nav-item"><span class="section-title mt-2">Herramientas</span></li>
+                            <li class="nav-item"><hr class="dropdown-divider my-2"></li>
+                            <li class="nav-item"><span class="sidebar-section-title">Herramientas</span></li>
                             <li class="nav-item"><a class="nav-link" href="/calculadora"><i class="bi bi-calculator me-2"></i> Calculadora</a></li>
                             <li class="nav-item"><a class="nav-link" href="/herramientas/contrato"><i class="bi bi-file-earmark-text me-2"></i> Contrato</a></li>
                             {% if request.session.get("es_admin") %}
-                            <li class="nav-item"><span class="section-title mt-2">Admin</span></li>
+                            <li class="nav-item"><hr class="dropdown-divider my-2"></li>
+                            <li class="nav-item"><span class="sidebar-section-title">Admin</span></li>
                             <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-pie-chart me-2"></i> Dashboard Admin</a></li>
                             <li class="nav-item"><a class="nav-link" href="/admin/asociaciones"><i class="bi bi-building me-2"></i> Asociaciones</a></li>
                             <li class="nav-item"><a class="nav-link" href="/admin/archivos"><i class="bi bi-archive me-2"></i> Archivos</a></li>
@@ -162,6 +155,7 @@
                             <li class="nav-item"><a class="nav-link" href="/perfil"><i class="bi bi-person me-2"></i> Mi perfil</a></li>
                             <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
                             <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes <span id="unread-badge" class="badge bg-danger rounded-pill ms-1" style="display:none;">0</span></a></li>
+                            <li class="nav-item"><a class="nav-link" href="/perfil#aplicaciones"><i class="bi bi-file-earmark-text me-2"></i> Postulaciones</a></li>
                         {% elif request.session.get("tipo_usuario") == "transportista" %}
                             <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
                         {% endif %}
@@ -170,7 +164,8 @@
                         <li class="nav-item d-lg-none"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><i class="bi bi-person-plus me-2"></i> Registrarme</a></li>
                     {% endif %}
 
-                    <li class="nav-item"><span class="section-title mt-3">Público</span></li>
+                    <li class="nav-item"><hr class="dropdown-divider my-2"></li>
+                    <li class="nav-item"><span class="sidebar-section-title">Público</span></li>
                     <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-shop me-2"></i> Catálogo</a></li>
                     <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><i class="bi bi-briefcase-fill me-2"></i> Bolsa de Empleo</a></li>
                     <li class="nav-item"><a class="nav-link" href="/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
@@ -204,7 +199,6 @@
                 document.querySelector('.offcanvas-backdrop')?.remove();
             }
         });
-
         {% if request.session.get("usuario") %}
         async function updateUnreadBadge() {
             try {
