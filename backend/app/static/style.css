@@ -12,24 +12,33 @@ body {
   border-bottom: 3px solid var(--color-secundario);
 }
 
-/* ===== SIDEBAR MEJORADA ===== */
+/* ===== SIDEBAR ULTRA PRO ===== */
 .sidebar-custom {
   width: 280px;
   min-height: calc(100vh - 56px);
-  border-right: 1px solid rgba(0,0,0,0.08);
+  border-right: 1px solid rgba(0,0,0,0.05);
   padding-top: 1rem;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,1));
 }
 
 .sidebar-custom .nav-link {
   color: #333;
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
   margin-bottom: 0.2rem;
   transition: all 0.2s ease;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+.sidebar-custom .nav-link i {
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
 }
 .sidebar-custom .nav-link:hover {
-  background-color: rgba(var(--color-primario), 0.08);
+  background-color: rgba(45,106,79,0.08);
   color: var(--color-primario) !important;
   transform: translateX(4px);
 }
@@ -51,17 +60,23 @@ body {
   opacity: 0.8;
 }
 
-/* Tarjeta de perfil en la sidebar */
+/* Tarjeta de perfil */
 .sidebar-profile {
   border-bottom: 1px solid #eee;
   padding-bottom: 1rem;
   margin-bottom: 1rem;
 }
+.sidebar-profile img {
+  transition: transform 0.3s ease;
+}
+.sidebar-profile img:hover {
+  transform: scale(1.05);
+}
 
 /* ===== CONTENIDO PRINCIPAL ===== */
 .content {
   background-color: var(--color-fondo);
-  min-height: calc(100vh - 112px); /* navbar + footer */
+  min-height: calc(100vh - 112px);
 }
 
 /* ===== TARJETAS ESTADÍSTICAS (Dashboard) ===== */

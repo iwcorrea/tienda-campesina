@@ -8,12 +8,12 @@
     <meta name="description" content="{% block meta_description %}{{ config.descripcion_meta or 'Plataforma para asociaciones campesinas.' }}{% endblock %}">
     <link rel="canonical" href="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}" />
 
+    <!-- Metadatos Open Graph y Twitter -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}">
     <meta property="og:title" content="{{ self.title() }}">
     <meta property="og:description" content="{{ self.meta_description() }}">
     <meta property="og:image" content="{% block og_image %}{{ config.imagen_og_url or 'https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png' }}{% endblock %}">
-
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}">
     <meta property="twitter:title" content="{{ self.title() }}">
@@ -34,6 +34,7 @@
     </script>
     {% endif %}
 
+    <!-- Favicons -->
     {% if config.favicon_32_url %}
     <link rel="icon" type="image/png" sizes="32x32" href="{{ config.favicon_32_url }}">
     {% else %}
@@ -135,6 +136,7 @@
     {% endif %}
 
     <div class="d-flex">
+        <!-- SIDEBAR ULTRA PRO -->
         <nav class="sidebar-custom offcanvas-lg offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar">
             <div class="offcanvas-header d-lg-none">
                 <h5 class="offcanvas-title">Menú</h5>
@@ -142,69 +144,69 @@
             </div>
             <div class="offcanvas-body p-3">
                 {% if request.session.get("usuario") %}
-                <!-- Tarjeta de perfil mejorada -->
+                <!-- Tarjeta de perfil re-diseñada -->
                 <div class="sidebar-profile text-center mb-4">
                     <div class="mb-2">
                         {% if request.session.get("logo_url") %}
-                        <img src="{{ request.session.logo_url }}" class="rounded-circle border border-2 border-success"
-                             width="70" height="70" style="object-fit: cover;">
+                        <img src="{{ request.session.logo_url }}" class="rounded-circle shadow-lg"
+                             width="75" height="75" style="object-fit: cover; border: 3px solid var(--color-primario);">
                         {% else %}
-                        <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center border border-2 border-success"
-                             style="width: 70px; height: 70px;">
+                        <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center shadow-lg"
+                             style="width: 75px; height: 75px; border: 3px solid var(--color-secundario);">
                             <span class="text-white fs-4">👤</span>
                         </div>
                         {% endif %}
                     </div>
-                    <h6 class="mb-0 text-truncate mx-auto" style="max-width: 200px;">{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</h6>
-                    <small class="text-muted">{{ request.session.get("tipo_usuario", "usuario")|capitalize }}</small>
+                    <h6 class="fw-bold mb-0 text-truncate mx-auto" style="max-width: 200px;">{{ request.session.get("nombre_usuario", request.session["usuario"]) }}</h6>
+                    <small class="text-muted text-capitalize">{{ request.session.get("tipo_usuario", "usuario") }}</small>
                 </div>
                 {% endif %}
 
                 <ul class="nav flex-column">
                     {% if request.session.get("tipo_usuario") == "asociacion" %}
                         <li class="nav-item"><span class="sidebar-section-title">📌 Principal</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/dashboard"><span class="me-2">📊</span> Dashboard</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/panel"><span class="me-2">🗂️</span> Panel de productos</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel"><i class="bi bi-grid me-2"></i> Panel de productos</a></li>
 
                         <li class="nav-item mt-3"><span class="sidebar-section-title">📋 Gestión</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><span class="me-2">📋</span> Vacantes</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><span class="me-2">📦</span> Cotizaciones</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><span class="me-2">🚚</span> Transportistas</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/mensajes"><span class="me-2">📨</span> Mensajes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><i class="bi bi-briefcase me-2"></i> Vacantes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><i class="bi bi-box-seam me-2"></i> Cotizaciones</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><i class="bi bi-truck me-2"></i> Transportistas</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
 
                         <li class="nav-item mt-3"><span class="sidebar-section-title">🛠️ Herramientas</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/calculadora"><span class="me-2">🧮</span> Calculadora</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/herramientas/contrato"><span class="me-2">📄</span> Contrato</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/calculadora"><i class="bi bi-calculator me-2"></i> Calculadora</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/herramientas/contrato"><i class="bi bi-file-earmark-text me-2"></i> Contrato</a></li>
 
                         {% if request.session.get("es_admin") %}
                         <li class="nav-item mt-3"><span class="sidebar-section-title">🔧 Administración</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin"><span class="me-2">📊</span> Dashboard Admin</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/asociaciones"><span class="me-2">🏢</span> Asociaciones</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/archivos"><span class="me-2">📁</span> Archivos</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/configuracion"><span class="me-2">🎨</span> Configuración</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/noticias"><span class="me-2">📰</span> Noticias</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-pie-chart me-2"></i> Dashboard Admin</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/asociaciones"><i class="bi bi-building me-2"></i> Asociaciones</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/archivos"><i class="bi bi-archive me-2"></i> Archivos</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/configuracion"><i class="bi bi-palette me-2"></i> Configuración</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/admin/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
                         {% endif %}
                     {% elif request.session.get("tipo_usuario") == "persona" %}
                         <li class="nav-item"><span class="sidebar-section-title">👤 Persona</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/perfil"><span class="me-2">👤</span> Mi perfil</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><span class="me-2">📦</span> Mis pedidos</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/mensajes"><span class="me-2">📨</span> Mensajes</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/perfil"><i class="bi bi-person me-2"></i> Mi perfil</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
                     {% elif request.session.get("tipo_usuario") == "transportista" %}
                         <li class="nav-item"><span class="sidebar-section-title">🚚 Transportista</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><span class="me-2">🚚</span> Perfil</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="/auth/login"><span class="me-2">🔐</span> Iniciar sesión</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><span class="me-2">✨</span> Registrarme</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><i class="bi bi-person-plus me-2"></i> Registrarme</a></li>
                     {% endif %}
 
                     <li class="nav-item mt-3"><span class="sidebar-section-title">🌐 Público</span></li>
-                    <li class="nav-item"><a class="nav-link" href="/catalogo"><span class="me-2">📦</span> Catálogo</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><span class="me-2">💼</span> Bolsa de Empleo</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/noticias"><span class="me-2">📰</span> Noticias</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/ayuda"><span class="me-2">❓</span> Ayuda</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-shop me-2"></i> Catálogo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><i class="bi bi-briefcase-fill me-2"></i> Bolsa de Empleo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/ayuda"><i class="bi bi-question-circle me-2"></i> Ayuda</a></li>
 
                     {% if request.session.get("usuario") %}
-                    <li class="nav-item mt-3"><a class="nav-link text-danger" href="/auth/logout"><span class="me-2">🚪</span> Cerrar sesión</a></li>
+                    <li class="nav-item mt-3"><a class="nav-link text-danger" href="/auth/logout"><i class="bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
                     {% endif %}
                 </ul>
             </div>
