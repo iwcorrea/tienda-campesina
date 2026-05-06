@@ -8,12 +8,12 @@
 
 <form method="post" action="/admin/configuracion" enctype="multipart/form-data">
     <ul class="nav nav-tabs mb-3" id="configTabs" role="tablist">
-        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#seo">SEO</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#diseno">🎨 Colores</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tipografia">🔤 Tipografía</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#assets">🖼️ Recursos</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#contenidos">📝 Contenidos</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#avanzado">⚙️ CSS / Robots</button></li>
+        <li class="nav-item"><button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#seo">SEO</button></li>
+        <li class="nav-item"><button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#diseno">🎨 Colores</button></li>
+        <li class="nav-item"><button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#tipografia">🔤 Tipografía</button></li>
+        <li class="nav-item"><button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#assets">🖼️ Recursos</button></li>
+        <li class="nav-item"><button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#contenidos">📝 Contenidos</button></li>
+        <li class="nav-item"><button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#avanzado">⚙️ CSS / Robots</button></li>
     </ul>
 
     <div class="tab-content">
@@ -63,14 +63,13 @@
             </div></div>
         </div>
 
-        <!-- Recursos (imágenes de marca) -->
+        <!-- Recursos -->
         <div class="tab-pane fade" id="assets">
             <div class="card mb-4"><div class="card-body"><h5>Logo del sitio</h5>
                 {% if config.logo_url %}<img src="{{ config.logo_url }}" class="mb-2" style="max-height:60px"><br>{% endif %}
                 <input type="file" name="logo" class="form-control" accept="image/*">
             </div></div>
 
-            <!-- NUEVO: Icono de la marca (navbar) -->
             <div class="card mb-4"><div class="card-body"><h5>Icono de la marca (navbar)</h5>
                 {% if config.brand_icon_url %}<img src="{{ config.brand_icon_url }}" class="mb-2" style="max-height:30px"><br>{% endif %}
                 <input type="file" name="brand_icon" class="form-control" accept="image/*">
@@ -124,4 +123,26 @@
 
     <button type="submit" class="btn btn-success btn-lg mt-3">Guardar todos los cambios</button>
 </form>
+
+<script>
+    // Activar la pestaña guardada al cargar la página
+    document.addEventListener('DOMContentLoaded', function () {
+        var activeTab = localStorage.getItem('activeConfigTab');
+        if (activeTab) {
+            var tab = document.querySelector(`#configTabs button[data-bs-target="${activeTab}"]`);
+            if (tab) {
+                var bstab = new bootstrap.Tab(tab);
+                bstab.show();
+            }
+        }
+
+        // Escuchar cambios de pestaña y guardar el id del panel
+        var tabButtons = document.querySelectorAll('#configTabs button[data-bs-toggle="tab"]');
+        tabButtons.forEach(function (button) {
+            button.addEventListener('shown.bs.tab', function (event) {
+                localStorage.setItem('activeConfigTab', event.target.getAttribute('data-bs-target'));
+            });
+        });
+    });
+</script>
 {% endblock %}
