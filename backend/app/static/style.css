@@ -1,5 +1,5 @@
 /* ============================================================
-   TIENDA CAMPESINA – BENTO GRIDS + MINIMALISMO CÁLIDO ORGÁNICO
+   TIENDA CAMPESINA – HÉROE + BENTO + ORGÁNICO
    ============================================================ */
 
    @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap');
@@ -12,7 +12,7 @@
        margin: 0;
    }
    
-   h1, h2, h3, h4, h5, h6, .brand-text {
+   h1, h2, h3, h4, h5, h6, .brand-text, .hero-title {
        font-family: 'Lora', Georgia, serif;
        font-weight: 600;
        color: #2d6a4f;
@@ -34,7 +34,7 @@
        padding: 2px;
    }
    
-   /* ----- SIDEBAR (ESTILO ORGÁNICO) ----- */
+   /* ----- SIDEBAR ----- */
    .sidebar-custom {
        width: 260px;
        min-height: calc(100vh - 56px);
@@ -43,7 +43,6 @@
        backdrop-filter: blur(8px);
        padding-top: 1rem;
    }
-   
    .sidebar-custom .nav-link {
        color: #3e3a35;
        padding: 0.65rem 1rem;
@@ -57,7 +56,6 @@
        color: #2d6a4f !important;
        transform: translateX(4px);
    }
-   
    .section-title {
        font-size: 0.7rem;
        text-transform: uppercase;
@@ -69,30 +67,31 @@
        display: block;
    }
    
-   /* ----- NUEVO SISTEMA DE TARJETAS BENTO ----- */
-   .bento-grid {
-       display: grid;
-       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-       gap: 1.5rem;
-       padding: 1rem 0;
+   /* ----- HÉROE (PÁGINA DE INICIO) ----- */
+   .hero-section {
+       background: linear-gradient(to bottom, rgba(45,106,79,0.05), transparent);
+       border-bottom: 1px solid rgba(0,0,0,0.05);
    }
-   .bento-card {
-       background: #ffffff;
-       border: 1px solid rgba(0,0,0,0.05);
-       border-radius: 18px;
-       padding: 1.5rem;
-       box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-       transition: transform 0.2s ease, box-shadow 0.2s ease;
+   .search-form .input-group-text {
+       background-color: white;
+       border-right: none;
    }
-   .bento-card:hover {
-       transform: translateY(-4px);
-       box-shadow: 0 12px 20px rgba(0,0,0,0.08);
+   .search-form input {
+       border-left: none;
    }
-   .accent-green { border-top: 4px solid #2d6a4f; }
-   .accent-terracota { border-top: 4px solid #b68b5b; }
-   .accent-gold { border-top: 4px solid #d4a373; }
+   .search-form input:focus {
+       box-shadow: none;
+       border-color: #ced4da;
+   }
    
-   /* ----- TARJETAS PÚBLICAS ----- */
+   /* ----- ESTADÍSTICAS (BENTO) ----- */
+   .stats-section {
+       margin-top: -30px;
+       position: relative;
+       z-index: 2;
+   }
+   
+   /* ----- TARJETAS GENERALES ----- */
    .modern-card {
        border: 1px solid rgba(0,0,0,0.05);
        border-radius: 18px;
