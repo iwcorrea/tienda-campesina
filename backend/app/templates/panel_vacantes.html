@@ -7,7 +7,7 @@
 <div class="card mb-4">
     <div class="card-body">
         <h5>Nueva vacante</h5>
-        <form action="/panel/vacantes/crear" method="post">
+        <form action="/panel/vacantes/crear" method="post" enctype="multipart/form-data">
             <div class="mb-3">
                 <input type="text" name="cargo" class="form-control" placeholder="Cargo" required>
             </div>
@@ -20,10 +20,42 @@
                 </div>
                 <div class="col-md-4">
                     <input type="number" name="salario" class="form-control mb-2" placeholder="Salario (COP)">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="salario_convenir" value="1" id="salarioConvenir">
+                        <label class="form-check-label" for="salarioConvenir">A convenir</label>
+                    </div>
                 </div>
                 <div class="col-md-4">
                     <input type="date" name="fecha_limite" class="form-control mb-2" required>
                 </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Tipo de contrato</label>
+                    <select name="tipo_contrato" class="form-select mb-3">
+                        <option value="termino_fijo">Término fijo</option>
+                        <option value="indefinido">Término indefinido</option>
+                        <option value="prestacion">Prestación de servicios</option>
+                        <option value="obra_labor">Obra o labor</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Jornada</label>
+                    <select name="jornada" class="form-select mb-3">
+                        <option value="completa">Tiempo completo</option>
+                        <option value="medio_tiempo">Medio tiempo</option>
+                        <option value="por_horas">Por horas</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Requisitos</label>
+                <textarea name="requisitos" class="form-control" rows="2" placeholder="Experiencia, nivel educativo, etc."></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Términos de referencia (PDF opcional)</label>
+                <input type="file" name="terminos" class="form-control" accept=".pdf">
+                <small class="text-muted">Útil para contratos de prestación de servicios.</small>
             </div>
             <button type="submit" class="btn btn-success">Publicar vacante</button>
         </form>
@@ -31,12 +63,13 @@
 </div>
 
 <table class="table">
-    <thead><tr><th>Cargo</th><th>Ubicación</th><th>Límite</th><th>Postulantes</th><th>Acción</th></tr></thead>
+    <thead><tr><th>Cargo</th><th>Ubicación</th><th>Contrato</th><th>Límite</th><th>Postulantes</th><th>Acción</th></tr></thead>
     <tbody>
         {% for v in vacantes %}
         <tr>
             <td>{{ v.cargo }}</td>
             <td>{{ v.ubicacion or 'N/A' }}</td>
+            <td>{{ v.tipo_contrato|replace('_',' ')|capitalize }}</td>
             <td>{{ v.fecha_limite.strftime('%d/%m/%Y') }}</td>
             <td><a href="/panel/vacantes/{{ v.id }}/postulantes">Ver postulantes</a></td>
             <td>

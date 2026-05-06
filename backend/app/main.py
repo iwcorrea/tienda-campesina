@@ -117,4 +117,18 @@ def on_startup():
                 sql = f'ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS {col.name} {col_type}'
                 conn.execute(text(sql))
         # omití las demás migraciones para acortar, las tienes en versiones anteriores
+        # Migración para nuevas columnas en vacantes
+existing_vac = set()
+rows_vac = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='vacantes'"))
+for row in rows_vac:
+    existing_vac.add(row[0])
+for col_name, col_type in [
+    ("tipo_contrato", "TEXT DEFAULT 'termino_fijo'"),
+    ("jornada", "TEXT DEFAULT 'completa'"),
+    ("requisitos", "TEXT DEFAULT ''"),
+    ("terminos_url", "TEXT DEFAULT ''")
+]:
+    if col_name not in existing_vac:
+        sql = f'ALTER TABLE vacantes ADD COLUMN IF NOT EXISTS {col_name} {col_type}'
+        conn.execute(text(sql))
         conn.commit()

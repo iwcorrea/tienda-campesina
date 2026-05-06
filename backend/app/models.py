@@ -78,7 +78,11 @@ class Vacante(Base):
     cargo = Column(String, nullable=False)
     descripcion = Column(Text, default="")
     ubicacion = Column(String, default="")
-    salario = Column(Integer, default=0)
+    salario = Column(Integer, default=0)                     # 0 = a convenir
+    tipo_contrato = Column(String, default="termino_fijo")   # "termino_fijo", "indefinido", "prestacion", "obra_labor"
+    jornada = Column(String, default="completa")             # "completa", "medio_tiempo", "por_horas"
+    requisitos = Column(Text, default="")
+    terminos_url = Column(Text, default="")                  # URL PDF términos de referencia
     fecha_limite = Column(DateTime(timezone=True), nullable=False)
     fecha_publicacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
@@ -121,7 +125,7 @@ class Configuracion(Base):
     fuente_url = Column(String, default="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap")
 
     logo_url = Column(Text, default="")
-    brand_icon_url = Column(Text, default="")          # ← NUEVO CAMPO
+    brand_icon_url = Column(Text, default="")
     favicon_32_url = Column(Text, default="")
     favicon_16_url = Column(Text, default="")
 
