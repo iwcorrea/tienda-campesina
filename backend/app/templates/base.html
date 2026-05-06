@@ -85,6 +85,7 @@
                 {% endif %}
                 <span class="brand-text">Tienda Campesina</span>
             </a>
+            <!-- Botón hamburguesa solo en móvil -->
             <button class="btn btn-sm btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">☰</button>
             <div class="d-none d-lg-flex align-items-center ms-auto">
                 {% if request.session.get("usuario") %}
@@ -118,65 +119,67 @@
     </div>
     {% endif %}
 
-    <!-- MENÚ MÓVIL (OFFCANVAS) -->
-    <div class="offcanvas offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">Menú</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body p-3">
-            <ul class="nav flex-column bento-nav">
-                {% if request.session.get("usuario") %}
-                    <li class="nav-item"><span class="section-title">Principal</span></li>
-                    {% if request.session.get("tipo_usuario") == "asociacion" %}
-                        <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/panel"><i class="bi bi-grid me-2"></i> Panel productos</a></li>
-                        <li class="nav-item"><span class="section-title mt-2">Gestión</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><i class="bi bi-briefcase me-2"></i> Vacantes</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><i class="bi bi-box-seam me-2"></i> Cotizaciones</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><i class="bi bi-truck me-2"></i> Transportistas</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
-                        <li class="nav-item"><span class="section-title mt-2">Herramientas</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/calculadora"><i class="bi bi-calculator me-2"></i> Calculadora</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/herramientas/contrato"><i class="bi bi-file-earmark-text me-2"></i> Contrato</a></li>
-                        {% if request.session.get("es_admin") %}
-                        <li class="nav-item"><span class="section-title mt-2">Admin</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-pie-chart me-2"></i> Dashboard Admin</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/asociaciones"><i class="bi bi-building me-2"></i> Asociaciones</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/archivos"><i class="bi bi-archive me-2"></i> Archivos</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/configuracion"><i class="bi bi-palette me-2"></i> Configuración</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/admin/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
+    <div class="d-flex">
+        <!-- SIDEBAR (fijo en PC, offcanvas en móvil) -->
+        <nav class="sidebar-custom offcanvas-lg offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar">
+            <div class="offcanvas-header d-lg-none">
+                <h5 class="offcanvas-title">Menú</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close" onclick="document.getElementById('sidebar').classList.remove('show'); this.setAttribute('aria-expanded','false');"></button>
+            </div>
+            <div class="offcanvas-body p-3">
+                <ul class="nav flex-column bento-nav">
+                    {% if request.session.get("usuario") %}
+                        <li class="nav-item"><span class="section-title">Principal</span></li>
+                        {% if request.session.get("tipo_usuario") == "asociacion" %}
+                            <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/panel"><i class="bi bi-grid me-2"></i> Panel productos</a></li>
+                            <li class="nav-item"><span class="section-title mt-2">Gestión</span></li>
+                            <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><i class="bi bi-briefcase me-2"></i> Vacantes</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/panel/cotizaciones"><i class="bi bi-box-seam me-2"></i> Cotizaciones</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/panel/transportistas-favoritos"><i class="bi bi-truck me-2"></i> Transportistas</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
+                            <li class="nav-item"><span class="section-title mt-2">Herramientas</span></li>
+                            <li class="nav-item"><a class="nav-link" href="/calculadora"><i class="bi bi-calculator me-2"></i> Calculadora</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/herramientas/contrato"><i class="bi bi-file-earmark-text me-2"></i> Contrato</a></li>
+                            {% if request.session.get("es_admin") %}
+                            <li class="nav-item"><span class="section-title mt-2">Admin</span></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin"><i class="bi bi-pie-chart me-2"></i> Dashboard Admin</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/asociaciones"><i class="bi bi-building me-2"></i> Asociaciones</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/archivos"><i class="bi bi-archive me-2"></i> Archivos</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/configuracion"><i class="bi bi-palette me-2"></i> Configuración</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
+                            {% endif %}
+                        {% elif request.session.get("tipo_usuario") == "persona" %}
+                            <li class="nav-item"><a class="nav-link" href="/perfil"><i class="bi bi-person me-2"></i> Mi perfil</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
+                            <li class="nav-item"><span class="section-title mt-2">Postulaciones</span></li>
+                            <li class="nav-item"><a class="nav-link" href="/perfil#aplicaciones"><i class="bi bi-file-earmark-text me-2"></i> Mis postulaciones</a></li>
+                        {% elif request.session.get("tipo_usuario") == "transportista" %}
+                            <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
                         {% endif %}
-                    {% elif request.session.get("tipo_usuario") == "persona" %}
-                        <li class="nav-item"><a class="nav-link" href="/perfil"><i class="bi bi-person me-2"></i> Mi perfil</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/mis-pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes</a></li>
-                        <li class="nav-item"><span class="section-title mt-2">Postulaciones</span></li>
-                        <li class="nav-item"><a class="nav-link" href="/perfil#aplicaciones"><i class="bi bi-file-earmark-text me-2"></i> Mis postulaciones</a></li>
-                    {% elif request.session.get("tipo_usuario") == "transportista" %}
-                        <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><i class="bi bi-person-plus me-2"></i> Registrarme</a></li>
                     {% endif %}
-                {% else %}
-                    <li class="nav-item"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><i class="bi bi-person-plus me-2"></i> Registrarme</a></li>
-                {% endif %}
 
-                <li class="nav-item"><span class="section-title mt-3">Público</span></li>
-                <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-shop me-2"></i> Catálogo</a></li>
-                <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><i class="bi bi-briefcase-fill me-2"></i> Bolsa de Empleo</a></li>
-                <li class="nav-item"><a class="nav-link" href="/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
-                <li class="nav-item"><a class="nav-link" href="/ayuda"><i class="bi bi-question-circle me-2"></i> Ayuda</a></li>
-                {% if request.session.get("usuario") %}
-                <li class="nav-item mt-3"><a class="nav-link text-danger" href="/auth/logout"><i class="bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
-                {% endif %}
-            </ul>
-        </div>
+                    <li class="nav-item"><span class="section-title mt-3">Público</span></li>
+                    <li class="nav-item"><a class="nav-link" href="/catalogo"><i class="bi bi-shop me-2"></i> Catálogo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><i class="bi bi-briefcase-fill me-2"></i> Bolsa de Empleo</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/ayuda"><i class="bi bi-question-circle me-2"></i> Ayuda</a></li>
+                    {% if request.session.get("usuario") %}
+                    <li class="nav-item mt-3"><a class="nav-link text-danger" href="/auth/logout"><i class="bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="content p-4 flex-grow-1">
+            {% block content %}{% endblock %}
+        </main>
     </div>
-
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="container-fluid px-3 py-4">
-        {% block content %}{% endblock %}
-    </main>
 
     <!-- FOOTER ORGÁNICO -->
     <footer class="organic-footer text-center py-4">
@@ -188,6 +191,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Cerrar offcanvas correctamente en móvil
         document.querySelector('#sidebar .btn-close').addEventListener('click', function() {
             var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('sidebar'));
             if (offcanvas) offcanvas.hide();
