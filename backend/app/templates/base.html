@@ -8,7 +8,7 @@
     <meta name="description" content="{% block meta_description %}{{ config.descripcion_meta or 'Plataforma para asociaciones campesinas.' }}{% endblock %}">
     <link rel="canonical" href="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}" />
 
-    <!-- Metadatos Open Graph y Twitter -->
+    <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url.scheme }}://{{ request.url.hostname }}{{ request.url.path }}">
     <meta property="og:title" content="{{ self.title() }}">
@@ -23,7 +23,6 @@
     {% if config.google_verification %}
     <meta name="google-site-verification" content="{{ config.google_verification }}" />
     {% endif %}
-
     {% if config.google_analytics_id %}
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ config.google_analytics_id }}"></script>
     <script>
@@ -49,7 +48,7 @@
     <link rel="manifest" href="/static/site.webmanifest">
     <meta name="theme-color" content="{{ config.color_primario or '#2d6a4f' }}">
 
-    <!-- Bootstrap CSS + Bootstrap Icons -->
+    <!-- Bootstrap CSS + Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     {% if config.fuente_url %}
@@ -74,19 +73,33 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <!-- BARRA SUPERIOR ORGÁNICA -->
-    <nav class="navbar navbar-expand-lg topbar">
+    <!-- ===== BARRA SUPERIOR FUNCIONAL ===== -->
+    <nav class="navbar navbar-expand-lg topbar py-2">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">
+            <!-- Marca con ícono de hoja -->
+            <a class="navbar-brand d-flex align-items-center" href="/">
                 {% if config.logo_url %}
                 <img src="{{ config.logo_url }}" alt="Logo" class="brand-logo me-2" width="36" height="36">
                 {% elif request.session.get("logo_url") %}
                 <img src="{{ request.session.logo_url }}" alt="Logo" class="brand-logo me-2" width="36" height="36">
                 {% endif %}
+                <i class="bi bi-tree-fill brand-icon me-2"></i>
                 <span class="brand-text">Tienda Campesina</span>
             </a>
-            <!-- Botón hamburguesa solo en móvil -->
+
+            <!-- Buscador compacto (escritorio) -->
+            <form action="/catalogo" method="get" class="d-none d-lg-flex mx-auto" style="max-width: 400px; width: 100%;">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Buscar productos...">
+                    <button class="btn btn-success btn-sm" type="submit">Buscar</button>
+                </div>
+            </form>
+
+            <!-- Botón hamburguesa (móvil) -->
             <button class="btn btn-sm btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">☰</button>
+
+            <!-- Acciones de usuario (escritorio) -->
             <div class="d-none d-lg-flex align-items-center ms-auto">
                 {% if request.session.get("usuario") %}
                 <span class="text-white me-3">👋 {{ request.session.get("nombre_usuario", request.session["usuario"]) }}</span>
@@ -99,6 +112,7 @@
         </div>
     </nav>
 
+    <!-- Modal de registro universal -->
     {% if not request.session.get("usuario") %}
     <div class="modal fade" id="modalRegistro" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
@@ -119,12 +133,13 @@
     </div>
     {% endif %}
 
+    <!-- Sidebar: fijo en escritorio, offcanvas en móvil -->
     <div class="d-flex">
-        <!-- SIDEBAR (fijo en PC, offcanvas en móvil) -->
         <nav class="sidebar-custom offcanvas-lg offcanvas-start bg-white shadow-sm" tabindex="-1" id="sidebar">
             <div class="offcanvas-header d-lg-none">
                 <h5 class="offcanvas-title">Menú</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close" onclick="document.getElementById('sidebar').classList.remove('show'); this.setAttribute('aria-expanded','false');"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"
+                        onclick="document.getElementById('sidebar').classList.remove('show'); this.setAttribute('aria-expanded','false');"></button>
             </div>
             <div class="offcanvas-body p-3">
                 <ul class="nav flex-column bento-nav">
@@ -159,8 +174,9 @@
                             <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
                         {% endif %}
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><i class="bi bi-person-plus me-2"></i> Registrarme</a></li>
+                        <!-- Solo visible en móvil (en escritorio ya están en la barra superior) -->
+                        <li class="nav-item d-lg-none"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
+                        <li class="nav-item d-lg-none"><a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#modalRegistro"><i class="bi bi-person-plus me-2"></i> Registrarme</a></li>
                     {% endif %}
 
                     <li class="nav-item"><span class="section-title mt-3">Público</span></li>
@@ -175,13 +191,12 @@
             </div>
         </nav>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <main class="content p-4 flex-grow-1">
             {% block content %}{% endblock %}
         </main>
     </div>
 
-    <!-- FOOTER ORGÁNICO -->
+    <!-- Footer orgánico -->
     <footer class="organic-footer text-center py-4">
         <div class="container">
             <p class="mb-1 fw-semibold">{{ config.footer_texto or 'Tienda Campesina' }}</p>
@@ -191,7 +206,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Cerrar offcanvas correctamente en móvil
         document.querySelector('#sidebar .btn-close').addEventListener('click', function() {
             var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('sidebar'));
             if (offcanvas) offcanvas.hide();

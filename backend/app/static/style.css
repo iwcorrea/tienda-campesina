@@ -1,5 +1,5 @@
 /* ============================================================
-   TIENDA CAMPESINA – HÉROE + BENTO + ORGÁNICO
+   TIENDA CAMPESINA – BENTO + ORGÁNICO + BARRA FUNCIONAL
    ============================================================ */
 
    @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap');
@@ -32,6 +32,19 @@
        border-radius: 8px;
        background: white;
        padding: 2px;
+   }
+   .brand-icon {
+       font-size: 1.8rem;
+       color: #b68b5b;
+       vertical-align: middle;
+   }
+   
+   /* Search bar in topbar */
+   .topbar .input-group-sm .form-control {
+       border-radius: 0 8px 8px 0;
+   }
+   .topbar .input-group-sm .btn {
+       border-radius: 8px;
    }
    
    /* ----- SIDEBAR ----- */
@@ -67,7 +80,7 @@
        display: block;
    }
    
-   /* ----- HÉROE (PÁGINA DE INICIO) ----- */
+   /* ----- HÉROE (página de inicio) ----- */
    .hero-section {
        background: linear-gradient(to bottom, rgba(45,106,79,0.05), transparent);
        border-bottom: 1px solid rgba(0,0,0,0.05);
@@ -110,7 +123,7 @@
        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
    }
    
-   /* ----- TARJETAS ESTADÍSTICAS (Dashboard) ----- */
+   /* ----- TARJETAS ESTADÍSTICAS ----- */
    .stat-card {
        display: flex;
        align-items: center;
