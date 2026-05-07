@@ -7,12 +7,7 @@ from app.cloudinary_utils import delete_cloudinary_asset
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
-    """Retorna la asociación con sus productos cargados eager, o None si no existe."""
-    return (
-        db.query(Asociacion)
-        .filter(Asociacion.email == email)
-        .first()
-    )
+    return db.query(Asociacion).filter(Asociacion.email == email).first()
 
 
 def crear_producto(
@@ -113,7 +108,6 @@ def eliminar_producto(db: Session, email: str, producto_id: str) -> bool:
 
 
 # ─── TRANSPORTISTAS FAVORITOS ─────────────────────
-
 def listar_favoritos(db: Session, email: str):
     favoritos = db.query(TransportistaFavorito).filter(
         TransportistaFavorito.asociacion_email == email
@@ -151,12 +145,7 @@ def eliminar_favorito(db: Session, email: str, favorito_id: str) -> bool:
 
 
 # ─── COTIZACIONES ─────────────────────────────────
-
 def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
-    """
-    Devuelve los ItemPedido cuyos productos pertenecen a la asociación dada.
-    Carga eager de producto y pedido para evitar N+1.
-    """
     items = (
         db.query(ItemPedido)
         .join(Producto)
@@ -183,13 +172,8 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
     return resultado
 
 
-# ─── RESPUESTA A COTIZACIONES ──────────────────────
-def obtener_item_para_responder(db: Session, item_id: str, email_asociacion: str) -> Optional[dict]:
-    """
-    Devuelve el ItemPedido junto con su producto y pedido,
-    solo si el producto pertenece a la asociación.
-    """
-    item = (
+def obtener_item_para_responder(db: Session, item_id: str, email_asociacion: str) -> Optional[ItemPedido]:
+    return (
         db.query(ItemPedido)
         .join(Producto)
         .options(
@@ -199,29 +183,18 @@ def obtener_item_para_responder(db: Session, item_id: str, email_asociacion: str
         .filter(ItemPedido.id == item_id, Producto.asociacion_email == email_asociacion)
         .first()
     )
-    if not item:
-        return None
-    return {
-        "id": item.id,
-        "producto_nombre": item.producto.nombre,
-        "cantidad_solicitada": item.cantidad,
-        "precio_unitario_inicial": item.precio_unitario_inicial,
-        "comprador_email": item.pedido.comprador_email if item.pedido else "",
-        "pedido_id": item.pedido.id if item.pedido else "",
-    }
 
 
 def guardar_respuesta_cotizacion(
     db: Session,
     item_id: str,
     email_asociacion: str,
-    aceptado: str,          # "aceptado", "rechazado" o "contraoferta"
+    aceptado: str,
     precio_contraoferta: int = 0,
     cantidad_contraoferta: int = 0,
     fecha_entrega: str = "",
     mensaje: str = "",
 ) -> Optional[RespuestaCotizacion]:
-    # Verificar que el item pertenece a la asociación
     item = (
         db.query(ItemPedido)
         .join(Producto)

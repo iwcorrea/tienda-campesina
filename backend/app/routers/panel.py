@@ -12,17 +12,16 @@ from app.services.panel_service import (
     agregar_favorito as agregar_fav,
     eliminar_favorito as eliminar_fav,
     obtener_items_cotizacion_asociacion,
-    obtener_item_para_responder,        # <-- nuevo
-    guardar_respuesta_cotizacion,       # <-- nuevo
+    obtener_item_para_responder,
+    guardar_respuesta_cotizacion,
 )
 from app.viewmodels.panel import PanelViewModel, ProductoPanelViewModel
 from app.templates import templates
-from app.models import Producto   # necesario para editar producto
+from app.models import Producto
 
 router = APIRouter()
 
 
-# ─── PANEL PRINCIPAL ──────────────────────────────
 @router.get("/panel", response_class=HTMLResponse)
 def panel(request: Request, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     if not current_user or current_user.get("tipo") != "asociacion":
@@ -40,7 +39,6 @@ def panel(request: Request, db: Session = Depends(get_db), current_user: dict = 
     })
 
 
-# ─── CREAR PRODUCTO ───────────────────────────────
 @router.post("/panel/producto")
 def crear_producto_post(
     request: Request,
@@ -69,7 +67,6 @@ def crear_producto_post(
     return RedirectResponse(url="/panel", status_code=303)
 
 
-# ─── EDITAR PRODUCTO (GET) ─────────────────────────
 @router.get("/panel/producto/editar/{producto_id}", response_class=HTMLResponse)
 def editar_producto_form(
     request: Request,
@@ -102,7 +99,6 @@ def editar_producto_form(
     })
 
 
-# ─── ACTUALIZAR PRODUCTO ───────────────────────────
 @router.post("/panel/producto/actualizar/{producto_id}")
 def actualizar_producto_post(
     request: Request,
@@ -133,10 +129,9 @@ def actualizar_producto_post(
     if not result:
         return RedirectResponse(url="/panel", status_code=303)
 
-    return RedirectResponse(url="/panel", status_code=303)
+    return RedirectResponse(url="/panel?editado=1", status_code=303)
 
 
-# ─── ELIMINAR PRODUCTO ─────────────────────────────
 @router.post("/panel/producto/eliminar/{producto_id}")
 def eliminar_producto_post(
     request: Request,
@@ -148,10 +143,9 @@ def eliminar_producto_post(
         return RedirectResponse(url="/auth/login", status_code=303)
 
     eliminar_producto(db, email=current_user["email"], producto_id=producto_id)
-    return RedirectResponse(url="/panel", status_code=303)
+    return RedirectResponse(url="/panel?eliminado=1", status_code=303)
 
 
-# ─── COTIZACIONES RECIBIDAS ────────────────────────
 @router.get("/panel/cotizaciones", response_class=HTMLResponse)
 def panel_cotizaciones(
     request: Request,
@@ -168,7 +162,6 @@ def panel_cotizaciones(
     })
 
 
-# ─── RESPONDER COTIZACIÓN (GET) ────────────────────
 @router.get("/panel/cotizacion/responder/{item_id}", response_class=HTMLResponse)
 def responder_cotizacion_form(
     request: Request,
@@ -179,22 +172,21 @@ def responder_cotizacion_form(
     if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    item_data = obtener_item_para_responder(db, item_id, current_user["email"])
-    if not item_data:
+    item_obj = obtener_item_para_responder(db, item_id, current_user["email"])
+    if not item_obj:
         return RedirectResponse(url="/panel/cotizaciones", status_code=303)
 
     return templates.TemplateResponse("panel_responder_cotizacion.html", {
         "request": request,
-        "item": item_data,
+        "item": item_obj,
     })
 
 
-# ─── PROCESAR RESPUESTA (POST) ─────────────────────
 @router.post("/panel/cotizacion/responder/{item_id}")
 def procesar_respuesta_cotizacion(
     request: Request,
     item_id: str,
-    aceptado: str = Form(...),                     # "aceptado", "rechazado", "contraoferta"
+    aceptado: str = Form(...),
     precio_contraoferta: int = Form(0),
     cantidad_contraoferta: int = Form(0),
     fecha_entrega: str = Form(""),
