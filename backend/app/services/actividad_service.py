@@ -1,0 +1,97 @@
+from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
+from app.models import Producto, Valoracion, Noticia, Pedido, RespuestaCotizacion, Asociacion, ItemPedido
+
+
+def obtener_actividades_recientes(db: Session, limite: int = 15) -> list:
+    """
+    Devuelve una lista combinada de actividades recientes:
+    - Productos nuevos (últimos 7 días)
+    - Pedidos con respuesta aceptada
+    - Valoraciones recientes
+    - Noticias publicadas
+    """
+    actividades = []
+
+    # 1. Productos nuevos verificados
+    productos = (
+        db.query(Producto)
+        .join(Asociacion)
+        .filter(Asociacion.verificado == "1")
+        .order_by(desc(Producto.fecha_creacion))
+        .limit(5)
+        .all()
+    )
+    for p in productos:
+        actividades.append({
+            "tipo": "producto",
+            "icono": "🛒",
+            "texto": f"{p.asociacion.nombre} publicó {p.nombre}",
+            "descripcion": p.descripcion[:120] + "..." if len(p.descripcion) > 120 else p.descripcion,
+            "fecha": p.fecha_creacion,
+            "url": f"/asociacion/{p.asociacion.email}",
+            "imagen": p.imagen_url
+        })
+
+    # 2. Respuestas aceptadas (pedidos concretados)
+    respuestas = (
+        db.query(RespuestaCotizacion)
+        .filter(RespuestaCotizacion.aceptado == "aceptado")
+        .order_by(desc(RespuestaCotizacion.fecha_respuesta))
+        .limit(5)
+        .all()
+    )
+    for r in respuestas:
+        item = r.item_pedido
+        if item:
+            actividades.append({
+                "tipo": "pedido_aceptado",
+                "icono": "🤝",
+                "texto": f"Pedido aceptado: {item.producto.nombre}",
+                "descripcion": f"{item.pedido.comprador_email} y {r.asociacion.nombre if r.asociacion else r.asociacion_email} cerraron un acuerdo.",
+                "fecha": r.fecha_respuesta,
+                "url": f"/pedidos/{item.pedido.id}",
+                "imagen": item.producto.imagen_url
+            })
+
+    # 3. Valoraciones recientes
+    valoraciones = (
+        db.query(Valoracion)
+        .order_by(desc(Valoracion.fecha))
+        .limit(5)
+        .all()
+    )
+    for v in valoraciones:
+        estrellas = "⭐" * v.estrellas
+        actividades.append({
+            "tipo": "valoracion",
+            "icono": "🌟",
+            "texto": f"Valoración para {v.producto.nombre}",
+            "descripcion": f"{estrellas} | {v.comentario[:120] if v.comentario else 'Sin comentario'}",
+            "fecha": v.fecha,
+            "url": f"/catalogo?q={v.producto.nombre}",
+            "imagen": v.producto.imagen_url
+        })
+
+    # 4. Noticias
+    noticias = (
+        db.query(Noticia)
+        .order_by(desc(Noticia.fecha_publicacion))
+        .limit(5)
+        .all()
+    )
+    for n in noticias:
+        actividades.append({
+            "tipo": "noticia",
+            "icono": "📰",
+            "texto": n.titulo,
+            "descripcion": n.contenido[:120] + "..." if len(n.contenido) > 120 else n.contenido,
+            "fecha": n.fecha_publicacion,
+            "url": f"/noticias/{n.id}",
+            "imagen": n.imagen_url
+        })
+
+    # Ordenar todo por fecha descendente
+    actividades.sort(key=lambda x: x["fecha"] if x["fecha"] else datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    return actividades[:limite]
