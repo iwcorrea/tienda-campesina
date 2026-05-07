@@ -13,11 +13,14 @@ def get_db():
         db.close()
 
 
-# ── Autenticación basada en sesión (como ya usás en main.py) ──
 def get_current_user(request: Request):
     """
-    Devuelve el diccionario del usuario guardado en la sesión.
-    Si no hay sesión activa, devuelve None (las rutas pueden decidir si redirigir).
+    Devuelve un diccionario con la información del usuario en sesión:
+    {"email": "...", "tipo": "asociacion" | "comprador" | ...}
+    Si no hay sesión, retorna None.
     """
-    usuario = request.session.get("usuario")
-    return usuario  # Ej: {"email": "...", "tipo": "asociacion", ...}
+    email = request.session.get("usuario")
+    if not email:
+        return None
+    tipo = request.session.get("tipo_usuario")
+    return {"email": email, "tipo": tipo}

@@ -1,48 +1,44 @@
-import logging
-import os
-import uuid
 from fastapi import APIRouter, Request, Form, File, UploadFile, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import Asociacion, Producto, Transportista, TransportistaFavorito
-import cloudinary.uploader
+
+from app.dependencies import get_db, get_current_user
+from app.services.panel_service import (
+    obtener_asociacion_y_productos,
+    crear_producto,
+    actualizar_producto,
+    eliminar_producto,
+    listar_favoritos,
+    agregar_favorito as agregar_fav,
+    eliminar_favorito as eliminar_fav,
+)
+from app.viewmodels.panel import PanelViewModel, ProductoPanelViewModel
+from app.templates import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
-logger = logging.getLogger("panel")
 
-# ─── PANEL ─────────────────────────────────────────
+
+# ─── PANEL PRINCIPAL ──────────────────────────────
 @router.get("/panel", response_class=HTMLResponse)
-def panel(request: Request, db: Session = Depends(get_db)):
-    if "usuario" not in request.session:
+def panel(request: Request, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    asociacion = db.query(Asociacion).filter(Asociacion.email == email).first()
+
+    asociacion = obtener_asociacion_y_productos(db, current_user["email"])
     if not asociacion:
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    productos_obj = []
-    for p in asociacion.productos:
-        productos_obj.append({
-            "id": p.id,
-            "nombre": p.nombre,
-            "descripcion": p.descripcion,
-            "precio": p.precio,
-            "imagen": p.imagen_url,
-            "tipo": p.tipo,
-            "tipo_precio": p.tipo_precio
-        })
+    panel_vm = PanelViewModel.from_orm(asociacion)
     return templates.TemplateResponse("panel.html", {
         "request": request,
-        "usuario": asociacion.nombre,
-        "productos": productos_obj
+        "usuario": panel_vm.usuario,
+        "productos": [p.__dict__ for p in panel_vm.productos],  # para mantener compatibilidad con la plantilla actual
     })
 
-# ─── CREAR PRODUCTO ────────────────────────────────
+
+# ─── CREAR PRODUCTO ───────────────────────────────
 @router.post("/panel/producto")
-def crear_producto(
+def crear_producto_post(
     request: Request,
     nombre: str = Form(...),
     descripcion: str = Form(None),
@@ -50,63 +46,62 @@ def crear_producto(
     tipo: str = Form("producto"),
     tipo_precio: str = Form("fijo"),
     imagen: UploadFile = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
-    if "usuario" not in request.session:
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    imagen_url = ""
-    if imagen and imagen.filename:
-        try:
-            result = cloudinary.uploader.upload(
-                imagen.file,
-                folder="productos",
-                filename=imagen.filename,
-                use_filename=True,
-                unique_filename=True,
-                access_mode="public"
-            )
-            imagen_url = result.get("secure_url", "")
-        except Exception:
-            pass
 
-    nuevo = Producto(
-        id=str(uuid.uuid4()),
-        asociacion_email=email,
+    crear_producto(
+        db,
+        email=current_user["email"],
         nombre=nombre,
-        descripcion=descripcion or "",
+        descripcion=descripcion,
         precio=precio,
-        imagen_url=imagen_url,
         tipo=tipo,
-        tipo_precio=tipo_precio
+        tipo_precio=tipo_precio,
+        imagen_file=imagen,
     )
-    db.add(nuevo)
-    db.commit()
     return RedirectResponse(url="/panel", status_code=303)
+
 
 # ─── EDITAR PRODUCTO (GET) ─────────────────────────
 @router.get("/panel/producto/editar/{producto_id}", response_class=HTMLResponse)
-def editar_producto_form(request: Request, producto_id: str, db: Session = Depends(get_db)):
-    if "usuario" not in request.session:
+def editar_producto_form(
+    request: Request,
+    producto_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    p = db.query(Producto).filter(Producto.id == producto_id, Producto.asociacion_email == email).first()
+
+    # Obtener el producto específico
+    p = db.query(Producto).filter(
+        Producto.id == producto_id,
+        Producto.asociacion_email == current_user["email"]
+    ).first()
     if not p:
         return RedirectResponse(url="/panel", status_code=303)
-    producto = {
-        "id": p.id,
-        "nombre": p.nombre,
-        "descripcion": p.descripcion,
-        "precio": p.precio,
-        "imagen_url": p.imagen_url,
-        "tipo": p.tipo,
-        "tipo_precio": p.tipo_precio
-    }
-    return templates.TemplateResponse("editar_producto.html", {"request": request, "producto": producto})
+
+    producto_vm = ProductoPanelViewModel.from_orm(p)
+    return templates.TemplateResponse("editar_producto.html", {
+        "request": request,
+        "producto": {
+            "id": producto_vm.id,
+            "nombre": producto_vm.nombre,
+            "descripcion": producto_vm.descripcion,
+            "precio": producto_vm.precio,
+            "imagen_url": producto_vm.imagen_url,
+            "tipo": producto_vm.tipo,
+            "tipo_precio": producto_vm.tipo_precio,
+        }
+    })
+
 
 # ─── ACTUALIZAR PRODUCTO ───────────────────────────
 @router.post("/panel/producto/actualizar/{producto_id}")
-def actualizar_producto(
+def actualizar_producto_post(
     request: Request,
     producto_id: str,
     nombre: str = Form(...),
@@ -115,119 +110,99 @@ def actualizar_producto(
     tipo: str = Form("producto"),
     tipo_precio: str = Form("fijo"),
     imagen: UploadFile = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
-    if "usuario" not in request.session:
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    p = db.query(Producto).filter(Producto.id == producto_id, Producto.asociacion_email == email).first()
-    if not p:
+
+    result = actualizar_producto(
+        db,
+        email=current_user["email"],
+        producto_id=producto_id,
+        nombre=nombre,
+        descripcion=descripcion,
+        precio=precio,
+        tipo=tipo,
+        tipo_precio=tipo_precio,
+        imagen_file=imagen,
+    )
+    if not result:
         return RedirectResponse(url="/panel", status_code=303)
 
-    if imagen and imagen.filename:
-        if p.imagen_url:
-            from app.main import delete_cloudinary_asset
-            delete_cloudinary_asset(p.imagen_url, resource_type="image")
-        try:
-            result = cloudinary.uploader.upload(
-                imagen.file,
-                folder="productos",
-                filename=imagen.filename,
-                use_filename=True,
-                unique_filename=True,
-                access_mode="public"
-            )
-            p.imagen_url = result.get("secure_url", "")
-        except Exception:
-            pass
-
-    p.nombre = nombre
-    p.descripcion = descripcion or ""
-    p.precio = precio
-    p.tipo = tipo
-    p.tipo_precio = tipo_precio
-    db.commit()
     return RedirectResponse(url="/panel", status_code=303)
+
 
 # ─── ELIMINAR PRODUCTO ─────────────────────────────
 @router.post("/panel/producto/eliminar/{producto_id}")
-def eliminar_producto(request: Request, producto_id: str, db: Session = Depends(get_db)):
-    if "usuario" not in request.session:
+def eliminar_producto_post(
+    request: Request,
+    producto_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    p = db.query(Producto).filter(Producto.id == producto_id, Producto.asociacion_email == email).first()
-    if p:
-        if p.imagen_url:
-            from app.main import delete_cloudinary_asset
-            delete_cloudinary_asset(p.imagen_url, resource_type="image")
-        db.delete(p)
-        db.commit()
+
+    eliminar_producto(db, email=current_user["email"], producto_id=producto_id)
     return RedirectResponse(url="/panel", status_code=303)
 
-# ─── FAVORITOS DE TRANSPORTISTAS ─────────────────
+
+# ─── TRANSPORTISTAS FAVORITOS (LISTAR) ──────────
 @router.get("/panel/transportistas-favoritos", response_class=HTMLResponse)
-def listar_favoritos(request: Request, db: Session = Depends(get_db)):
-    if request.session.get("tipo_usuario") != "asociacion":
+def listar_favoritos_view(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    favoritos = db.query(TransportistaFavorito).filter(
-        TransportistaFavorito.asociacion_email == email
-    ).all()
-    todos = db.query(Transportista).filter(Transportista.activo == "1").all()
+
+    favoritos, todos = listar_favoritos(db, current_user["email"])
     return templates.TemplateResponse("panel_transportistas_favoritos.html", {
         "request": request,
         "favoritos": favoritos,
-        "transportistas": todos
+        "transportistas": todos,
     })
 
+
 @router.post("/panel/transportistas-favoritos/agregar")
-def agregar_favorito(
+def agregar_favorito_view(
     request: Request,
     transportista_id: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
-    if request.session.get("tipo_usuario") != "asociacion":
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    existe = db.query(TransportistaFavorito).filter(
-        TransportistaFavorito.asociacion_email == email,
-        TransportistaFavorito.transportista_id == transportista_id
-    ).first()
-    if not existe:
-        nuevo = TransportistaFavorito(
-            asociacion_email=email,
-            transportista_id=transportista_id
-        )
-        db.add(nuevo)
-        db.commit()
+
+    agregar_fav(db, current_user["email"], transportista_id)
     return RedirectResponse(url="/panel/transportistas-favoritos", status_code=303)
+
 
 @router.post("/panel/transportistas-favoritos/eliminar/{favorito_id}")
-def eliminar_favorito(
+def eliminar_favorito_view(
     request: Request,
     favorito_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
-    if request.session.get("tipo_usuario") != "asociacion":
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    fav = db.query(TransportistaFavorito).filter(
-        TransportistaFavorito.id == favorito_id,
-        TransportistaFavorito.asociacion_email == email
-    ).first()
-    if fav:
-        db.delete(fav)
-        db.commit()
+
+    eliminar_fav(db, current_user["email"], favorito_id)
     return RedirectResponse(url="/panel/transportistas-favoritos", status_code=303)
 
-# ─── API PARA CALCULAR ENVÍO ─
+
+# ─── API CALCULAR ENVÍO (se mantiene igual) ─────
 @router.get("/api/calcular-envio/{asociacion_email}")
 def calcular_envio(
     asociacion_email: str,
     distancia: float = Query(0),
     peso: float = Query(0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+    from app.models import Transportista
     transportistas = db.query(Transportista).filter(Transportista.activo == "1").all()
     resultados = []
     for t in transportistas:
@@ -237,6 +212,6 @@ def calcular_envio(
             "medio": t.tipo_vehiculo,
             "telefono": t.telefono,
             "costo_estimado": round(costo),
-            "tipo": "transportista"
+            "tipo": "transportista",
         })
     return resultados
