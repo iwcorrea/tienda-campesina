@@ -1,19 +1,21 @@
 import math
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Request, Form, Query, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user
 from app.services.pedido_service import listar_pedidos, obtener_pedido_por_id
 from app.viewmodels.pedido import PedidoViewModel
-from app.templates import templates   # <--- importación corregida
+from app.templates import templates
+from app.models import Producto, Pedido, ItemPedido
+import uuid
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
 
-@router.get("/")
+@router.get("/", response_class=HTMLResponse)
 def listar(
     request: Request,
     pagina: int = Query(1, ge=1),
@@ -25,7 +27,7 @@ def listar(
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    comprador_email = current_user.get("email") if current_user.get("tipo") == "comprador" else None
+    comprador_email = current_user.get("email") if current_user.get("tipo") in ("comprador", "persona") else None
 
     pedidos_orm, total = listar_pedidos(
         db,
@@ -49,7 +51,7 @@ def listar(
     })
 
 
-@router.get("/{pedido_id}")
+@router.get("/{pedido_id}", response_class=HTMLResponse)
 def detalle(
     request: Request,
     pedido_id: str,
@@ -63,7 +65,6 @@ def detalle(
     if not pedido:
         return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
-    # Verificamos que el usuario pueda ver este pedido
     if current_user.get("email") != pedido.comprador_email:
         return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
 
@@ -72,3 +73,40 @@ def detalle(
         "request": request,
         "pedido": pedido_vm,
     })
+
+
+@router.post("/cotizar-servicio/{producto_id}")
+def cotizar_servicio(
+    request: Request,
+    producto_id: str,
+    cantidad: int = Form(1),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    producto = db.query(Producto).filter(Producto.id == producto_id).first()
+    if not producto or producto.tipo != "servicio":
+        return RedirectResponse(url="/catalogo", status_code=303)
+
+    comprador_email = current_user["email"]
+
+    pedido = Pedido(
+        id=str(uuid.uuid4()),
+        comprador_email=comprador_email,
+        estado="pendiente"
+    )
+    db.add(pedido)
+    db.flush()
+
+    db.add(ItemPedido(
+        id=str(uuid.uuid4()),
+        pedido_id=pedido.id,
+        producto_id=producto.id,
+        cantidad=cantidad,
+        precio_unitario_inicial=producto.precio
+    ))
+    db.commit()
+
+    return RedirectResponse(url="/pedidos?servicio_cotizado=1", status_code=303)

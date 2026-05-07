@@ -1,9 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Catálogo de productos{% endblock %}
+{% block title %}Catálogo de productos y servicios{% endblock %}
 {% block content %}
 <div class="modern-section">
-    <h2 class="fw-bold mb-4">🌱 Nuestros productos</h2>
+    <h2 class="fw-bold mb-4">🌱 Nuestros productos y servicios</h2>
     {% if q %}<p class="text-muted">Buscando: "{{ q }}"</p>{% endif %}
+
+    <!-- PESTAÑAS DE FILTRO -->
+    <ul class="nav nav-pills mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if tipo != 'producto' and tipo != 'servicio' %}active{% endif %}" href="{{ url_for('catalogo') }}?q={{ q }}&tipo_precio={{ tipo_precio }}">Todos</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tipo == 'producto' %}active{% endif %}" href="{{ url_for('catalogo') }}?tipo=producto&q={{ q }}&tipo_precio={{ tipo_precio }}">Productos</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tipo == 'servicio' %}active{% endif %}" href="{{ url_for('catalogo') }}?tipo=servicio&q={{ q }}&tipo_precio={{ tipo_precio }}">Servicios</a>
+        </li>
+    </ul>
+
     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
         {% for producto in productos %}
         <div class="col">
@@ -17,13 +31,27 @@
                     {% if producto.estrellas > 0 %}
                     <div class="text-warning">⭐ {{ producto.estrellas }} ({{ producto.num_valoraciones }})</div>
                     {% endif %}
+                    <div class="mt-1">
+                        <span class="badge bg-{{ 'primary' if producto.tipo == 'producto' else 'info' }}">{{ producto.tipo | capitalize }}</span>
+                    </div>
                 </div>
                 <div class="card-footer bg-white border-0">
                     <a href="/asociacion/{{ producto.asociacion_email }}" class="btn btn-sm btn-outline-success w-100 mb-1">Ver productor</a>
-                    {% if request.session.get("tipo_usuario") == "comprador" %}
-                    <form method="post" action="/carrito/agregar/{{ producto.id }}">
-                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">+ Agregar al carrito</button>
-                    </form>
+                    {% if request.session.get("usuario") %}
+                        {% if producto.tipo == 'producto' %}
+                            <!-- Agregar al carrito solo para productos -->
+                            <form method="post" action="/carrito/agregar/{{ producto.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-primary w-100">+ Agregar al carrito</button>
+                            </form>
+                        {% else %}
+                            <!-- Solicitar cotización para servicios -->
+                            <form method="post" action="/pedidos/cotizar-servicio/{{ producto.id }}">
+                                <input type="hidden" name="cantidad" value="1">
+                                <button type="submit" class="btn btn-sm btn-outline-warning w-100">📋 Solicitar cotización</button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <a href="/auth/login" class="btn btn-sm btn-outline-secondary w-100">Iniciar sesión para comprar</a>
                     {% endif %}
                 </div>
             </div>
@@ -36,7 +64,7 @@
     <nav aria-label="Paginación del catálogo" class="mt-4">
         <ul class="pagination justify-content-center">
             <li class="page-item {% if page == 1 %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page-1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}" tabindex="-1">Anterior</a>
+                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page-1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">Anterior</a>
             </li>
             {% set start = [1, page - 2] | max %}
             {% set end = [total_pages, page + 2] | min %}
