@@ -52,7 +52,7 @@ def actualizar_perfil(
     if not a:
         return RedirectResponse(url="/panel", status_code=303)
 
-    from app.main import delete_cloudinary_asset
+    from app.cloudinary_utils import delete_cloudinary_asset
 
     if logo and logo.filename:
         if a.logo_url:

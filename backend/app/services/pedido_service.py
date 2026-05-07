@@ -33,7 +33,7 @@ def listar_pedidos(
     return pedidos, total
 
 
-def obtener_pedido_por_id(db: Session, pedido_id: int) -> Optional[Pedido]:
+def obtener_pedido_por_id(db: Session, pedido_id: str) -> Optional[Pedido]:
     return (
         db.query(Pedido)
         .options(selectinload(Pedido.items).selectinload(ItemPedido.producto))
