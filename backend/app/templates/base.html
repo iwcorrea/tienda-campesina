@@ -87,6 +87,17 @@
             <button class="btn btn-sm btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">☰</button>
 
             <div class="d-none d-lg-flex align-items-center ms-auto">
+                <!-- Enlace al carrito con badge (visible para todos) -->
+                <a class="nav-link position-relative me-3 text-white" href="/carrito" title="Ver carrito">
+                    🛒
+                    {% set carrito_count = request.session.get("carrito", []) | length %}
+                    {% if carrito_count > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ carrito_count }}
+                    </span>
+                    {% endif %}
+                </a>
+
                 {% if request.session.get("usuario") %}
                 <span class="text-white me-3">👋 {{ request.session.get("nombre_usuario", request.session["usuario"]) }}</span>
                 <a href="/auth/logout" class="btn btn-sm btn-outline-light">Cerrar sesión</a>
@@ -170,6 +181,18 @@
                     <li class="nav-item"><a class="nav-link" href="/bolsa-empleo"><i class="bi bi-briefcase-fill me-2"></i> Bolsa de Empleo</a></li>
                     <li class="nav-item"><a class="nav-link" href="/noticias"><i class="bi bi-newspaper me-2"></i> Noticias</a></li>
                     <li class="nav-item"><a class="nav-link" href="/ayuda"><i class="bi bi-question-circle me-2"></i> Ayuda</a></li>
+
+                    <!-- Enlace al carrito en sidebar (visible siempre, resaltado) -->
+                    <li class="nav-item mt-2">
+                        <a class="nav-link position-relative d-flex align-items-center" href="/carrito">
+                            <i class="bi bi-cart3 me-2"></i> Mi carrito
+                            {% set carrito_count_sidebar = request.session.get("carrito", []) | length %}
+                            {% if carrito_count_sidebar > 0 %}
+                            <span class="badge bg-danger rounded-pill ms-auto">{{ carrito_count_sidebar }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+
                     {% if request.session.get("usuario") %}
                     <li class="nav-item mt-3"><a class="nav-link text-danger" href="/auth/logout"><i class="bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
                     {% endif %}
