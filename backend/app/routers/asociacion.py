@@ -1,35 +1,41 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import Asociacion
+
+from app.dependencies import get_db
+from app.services.asociacion_service import obtener_asociacion_verificada_por_email
+from app.viewmodels.asociacion import AsociacionPerfilViewModel
+from app.templates import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
+
 
 @router.get("/asociacion/{email}", response_class=HTMLResponse)
 def perfil_asociacion(request: Request, email: str, db: Session = Depends(get_db)):
-    a = db.query(Asociacion).filter(Asociacion.email == email, Asociacion.verificado == "1").first()
-    if not a:
+    asociacion_orm = obtener_asociacion_verificada_por_email(db, email)
+    if not asociacion_orm:
         return RedirectResponse(url="/catalogo", status_code=303)
-    productos = []
-    for p in a.productos:
-        productos.append({
+
+    asociacion_vm = AsociacionPerfilViewModel.from_orm(asociacion_orm)
+
+    # La plantilla espera "asociacion" y "productos" por separado, los proveemos como el ViewModel
+    return templates.TemplateResponse("perfil.html", {
+        "request": request,
+        "asociacion": {
+            "email": asociacion_vm.email,
+            "nombre": asociacion_vm.nombre,
+            "descripcion": asociacion_vm.descripcion,
+            "direccion": asociacion_vm.direccion,
+            "telefono": asociacion_vm.telefono,
+            "logo_url": asociacion_vm.logo_url,
+            "show_whatsapp": asociacion_vm.show_whatsapp,
+        },
+        "productos": [{
             "nombre": p.nombre,
             "descripcion": p.descripcion,
             "precio": p.precio,
-            "imagen": p.imagen_url or "https://placehold.co/300x200/5B8C51/white?text=Producto",
+            "imagen": p.imagen,
             "tipo": p.tipo,
-            "tipo_precio": p.tipo_precio
-        })
-    asociacion = {
-        "email": a.email,
-        "nombre": a.nombre,
-        "descripcion": a.descripcion,
-        "direccion": a.direccion,
-        "telefono": a.telefono,
-        "logo_url": a.logo_url,
-        "show_whatsapp": a.show_whatsapp
-    }
-    return templates.TemplateResponse("perfil.html", {"request": request, "asociacion": asociacion, "productos": productos})
+            "tipo_precio": p.tipo_precio,
+        } for p in asociacion_vm.productos],
+    })
