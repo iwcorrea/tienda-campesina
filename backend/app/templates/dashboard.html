@@ -1,89 +1,26 @@
 {% extends "base.html" %}
-{% block title %}Dashboard | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block title %}Dashboard{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <!-- Tarjetas de resumen -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-2">
-            <div class="stat-card stat-card--primary">
-                <div class="stat-card__icon"><span>📦</span></div>
-                <div class="stat-card__info">
-                    <h3>{{ total_productos }}</h3>
-                    <p>Productos</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card stat-card--warning">
-                <div class="stat-card__icon"><span>📨</span></div>
-                <div class="stat-card__info">
-                    <h3>{{ mensajes_pendientes }}</h3>
-                    <p>Mensajes</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card stat-card--info">
-                <div class="stat-card__icon"><span>📦</span></div>
-                <div class="stat-card__info">
-                    <h3>{{ cotizaciones_pendientes }}</h3>
-                    <p>Cotizaciones</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card stat-card--secondary">
-                <div class="stat-card__icon"><span>💼</span></div>
-                <div class="stat-card__info">
-                    <h3>{{ vacantes_activas }}</h3>
-                    <p>Vacantes</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card stat-card--primary">
-                <div class="stat-card__icon"><span>🚚</span></div>
-                <div class="stat-card__info">
-                    <h3>{{ favoritos_count }}</h3>
-                    <p>Favoritos</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="stat-card stat-card--success">
-                <div class="stat-card__icon"><span>⭐</span></div>
-                <div class="stat-card__info">
-                    <h3>{{ total_valoraciones }}</h3>
-                    <p>Valoraciones</p>
-                </div>
-            </div>
-        </div>
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">📊 Dashboard de {{ usuario }}</h2>
+    <div class="row g-3">
+        <div class="col-md-3"><div class="card p-3"><h6>Productos</h6><h2>{{ total_productos }}</h2></div></div>
+        <div class="col-md-3"><div class="card p-3"><h6>Valoraciones</h6><h2>{{ total_valoraciones }}</h2></div></div>
+        <div class="col-md-3"><div class="card p-3"><h6>Mensajes sin leer</h6><h2>{{ mensajes_pendientes }}</h2></div></div>
+        <div class="col-md-3"><div class="card p-3"><h6>Cotiz. pendientes</h6><h2>{{ cotizaciones_pendientes }}</h2></div></div>
     </div>
-
-    <!-- Muro de actividad -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-bottom-0 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold">📰 Actividad reciente</h5>
-            <span class="badge bg-success">Últimas 5</span>
-        </div>
-        <div class="card-body p-0">
-            {% if actividades %}
-            <ul class="list-group list-group-flush">
-                {% for act in actividades %}
-                <li class="list-group-item d-flex align-items-center">
-                    <span class="me-3 fs-5">{{ act.icono }}</span>
-                    <div class="flex-grow-1">
-                        <p class="mb-0">{{ act.texto }}</p>
-                        <small class="text-muted">{{ act.fecha.strftime('%d/%m/%Y %H:%M') if act.fecha else '' }}</small>
-                    </div>
-                    <a href="{{ act.url }}" class="btn btn-sm btn-outline-success">Ver</a>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-muted p-3 mb-0">No hay actividad reciente.</p>
-            {% endif %}
-        </div>
-    </div>
+    <h4 class="mt-4">Actividades recientes</h4>
+    {% if actividades %}
+    <ul class="list-group">
+        {% for a in actividades %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ a.icono }} {{ a.texto }}</span>
+            <small class="text-muted">{{ a.fecha.strftime('%d/%m %H:%M') if a.fecha else '' }}</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">No hay actividad.</p>
+    {% endif %}
 </div>
 {% endblock %}

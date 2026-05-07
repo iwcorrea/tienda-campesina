@@ -1,284 +1,56 @@
 {% extends "base.html" %}
-{% set config = request.state.config %}
-{% block title %}{{ config.titulo_catalogo or 'Catálogo de Productos Campesinos | ' + config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
-{% block meta_description %}{{ config.descripcion_catalogo or 'Explora productos frescos y servicios de las asociaciones campesinas colombianas.' }}{% endblock %}
-{% block og_image %}{{ config.imagen_og_url or 'https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png' }}{% endblock %}
-
-{% block head %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  "itemListElement": [
-    {% for producto in productos %}
-    {
-      "@type": "Product",
-      "name": "{{ producto.nombre }}",
-      "description": "{{ producto.descripcion }}",
-      "image": "{{ producto.imagen }}",
-      "offers": {
-        "@type": "Offer",
-        "price": "{{ producto.precio }}",
-        "priceCurrency": "COP",
-        "seller": {
-          "@type": "Organization",
-          "name": "{{ producto.asociacion_nombre or producto.asociacion }}"
-        }
-      }
-    }{% if not loop.last %},{% endif %}
-    {% endfor %}
-  ]
-}
-</script>
-{% endblock %}
-
+{% block title %}Catálogo de productos{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb" class="mb-3">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Catálogo</li>
-  </ol>
-</nav>
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0">📦 Catálogo de Productos</h2>
-    <p class="text-muted mb-0">{{ total_productos }} productos encontrados</p>
-</div>
-
-<form method="get" action="/catalogo" class="row g-2 mb-4 bg-white p-3 rounded-3 shadow-sm">
-    <div class="col-md-4">
-        <input type="text" name="q" class="form-control" placeholder="Buscar..." value="{{ q }}">
-    </div>
-    <div class="col-md-2">
-        <select name="tipo" class="form-select">
-            <option value="">Todos</option>
-            <option value="producto" {% if tipo == 'producto' %}selected{% endif %}>Producto</option>
-            <option value="servicio" {% if tipo == 'servicio' %}selected{% endif %}>Servicio</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <select name="tipo_precio" class="form-select">
-            <option value="">Cualquier precio</option>
-            <option value="fijo" {% if tipo_precio == 'fijo' %}selected{% endif %}>Fijo</option>
-            <option value="convenir" {% if tipo_precio == 'convenir' %}selected{% endif %}>A convenir</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <button type="submit" class="btn btn-success w-100">Filtrar</button>
-    </div>
-    <div class="col-md-2">
-        <a href="/catalogo" class="btn btn-outline-secondary w-100">Limpiar</a>
-    </div>
-</form>
-
-<div class="row row-cols-1 row-cols-md-3 g-4">
-    {% for producto in productos %}
-    <div class="col">
-        <div class="card h-100 modern-card">
-            <img src="{{ producto.imagen }}" class="card-img-top" alt="{{ producto.nombre }}">
-            <div class="card-body">
-                <h5 class="card-title fw-bold">{{ producto.nombre }}</h5>
-                <p class="card-text text-muted small">{{ producto.descripcion }}</p>
-                <p class="text-success fw-bold fs-5">
-                    {% if producto.tipo_precio == 'convenir' %}
-                    Precio a convenir
-                    {% else %}
-                    ${{ producto.precio }}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">🌱 Nuestros productos</h2>
+    {% if q %}<p class="text-muted">Buscando: "{{ q }}"</p>{% endif %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+        {% for producto in productos %}
+        <div class="col">
+            <div class="card shadow-sm border-0 h-100">
+                <img src="{{ producto.imagen }}" class="card-img-top" alt="{{ producto.nombre }}" style="height:180px; object-fit:cover;">
+                <div class="card-body">
+                    <h5 class="card-title">{{ producto.nombre }}</h5>
+                    <p class="card-text small text-muted">{{ producto.descripcion[:80] }}...</p>
+                    <p class="fw-bold text-success mb-1">${{ producto.precio }}</p>
+                    <small>{{ producto.asociacion_nombre }}</small>
+                    {% if producto.estrellas > 0 %}
+                    <div class="text-warning">⭐ {{ producto.estrellas }} ({{ producto.num_valoraciones }})</div>
                     {% endif %}
-                </p>
-                {% if producto.tipo %}<span class="badge bg-secondary mb-2">{{ producto.tipo|capitalize }}</span>{% endif %}
-
-                <div class="mb-2">
-                    {% for i in range(1, 6) %}
-                    {% if i <= producto.estrellas %}⭐{% else %}☆{% endif %}
-                    {% endfor %}
-                    <small class="text-muted">({{ producto.num_valoraciones }})</small>
                 </div>
-
-                {% if request.session.get("usuario") %}
-                <button class="btn btn-sm btn-outline-warning mt-1" data-bs-toggle="modal" data-bs-target="#modalValorar" data-id="{{ producto.id }}" data-nombre="{{ producto.nombre }}">Valorar</button>
-                {% endif %}
-
-                {% if producto.show_whatsapp == '1' and producto.telefono %}
-                <a href="https://wa.me/57{{ producto.telefono|replace('+','')|replace(' ','') }}?text=Hola,%20vi%20tu%20producto%20{{ producto.nombre|urlencode }}%20en%20Tienda%20Campesina" target="_blank" class="btn btn-sm btn-success mt-1">💬 WhatsApp</a>
-                {% endif %}
-
-                {% if request.session.get("usuario") and producto.asociacion %}
-                <button class="btn btn-sm btn-outline-info mt-1" data-bs-toggle="modal" data-bs-target="#modalConsultar" data-destinatario="{{ producto.asociacion }}" data-producto-id="{{ producto.id }}" data-producto-nombre="{{ producto.nombre }}">💬 Consultar</button>
-                {% endif %}
-
-                {% if producto.asociacion %}
-                <button class="btn btn-sm btn-outline-info mt-1" data-bs-toggle="modal" data-bs-target="#modalEnvio" data-asociacion="{{ producto.asociacion }}" data-nombre="{{ producto.nombre }}">🚚 Calcular envío</button>
-                {% endif %}
-
-                {% if request.session.get("usuario") %}
-                <button class="btn btn-sm btn-outline-success mt-1" onclick="agregarAlPedido('{{ producto.id }}', '{{ producto.nombre }}')">➕ Agregar a pedido</button>
-                {% endif %}
-
-                <div class="asociacion-badge mt-2">
-                    {% if producto.logo_url %}
-                    <img src="{{ producto.logo_url }}" class="logo-mini">
-                    {% endif %}
-                    <a href="/asociacion/{{ producto.asociacion }}" class="text-decoration-none text-dark small">
-                        {{ producto.asociacion_nombre or producto.asociacion }}
-                    </a>
+                <div class="card-footer bg-white border-0">
+                    <a href="/asociacion/{{ producto.asociacion_email }}" class="btn btn-sm btn-outline-success w-100">Ver productor</a>
                 </div>
             </div>
         </div>
-    </div>
-    {% else %}
-    <div class="col-12 text-center py-5">
-        <p class="text-muted">No se encontraron productos.</p>
-    </div>
-    {% endfor %}
-</div>
-
-{% if total_pages > 1 %}
-<nav class="mt-4">
-    <ul class="pagination justify-content-center">
-        {% if page > 1 %}
-        <li class="page-item"><a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ page - 1 }}">Anterior</a></li>
-        {% endif %}
-        {% for p in range(1, total_pages + 1) %}
-        <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ p }}">{{ p }}</a></li>
         {% endfor %}
-        {% if page < total_pages %}
-        <li class="page-item"><a class="page-link" href="/catalogo?q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}&page={{ page + 1 }}">Siguiente</a></li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
-
-<!-- Modal valorar -->
-<div class="modal fade" id="modalValorar" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="formValorar" method="post">
-                <div class="modal-header"><h5 class="modal-title">Valorar producto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <input type="hidden" name="producto_id" id="productoId">
-                    <p id="nombreProducto" class="fw-bold"></p>
-                    <div class="mb-3"><label class="form-label">Puntuación</label>
-                        <div class="star-rating">
-                            {% for i in range(1,6) %}
-                            <input type="radio" name="estrellas" value="{{ i }}" id="star{{ i }}" {% if i==5 %}checked{% endif %}>
-                            <label for="star{{ i }}">⭐</label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="mb-3"><label class="form-label">Comentario (opcional)</label><textarea name="comentario" class="form-control" rows="2"></textarea></div>
-                </div>
-                <div class="modal-footer"><button type="submit" class="btn btn-success">Enviar valoración</button></div>
-            </form>
-        </div>
     </div>
+
+    <!-- PAGINACIÓN -->
+    {% if total_pages > 1 %}
+    <nav aria-label="Paginación del catálogo" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page-1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}" tabindex="-1">Anterior</a>
+            </li>
+            {% set start = [1, page - 2] | max %}
+            {% set end = [total_pages, page + 2] | min %}
+            {% if start > 1 %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+            {% for p in range(start, end + 1) %}
+            <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ p }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            {% if end < total_pages %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+            <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page+1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
 </div>
-
-<!-- Modal consultar -->
-<div class="modal fade" id="modalConsultar" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="formConsultar">
-                <div class="modal-header bg-success text-white"><h5 class="modal-title">💬 Consultar sobre el producto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <div class="modal-body">
-                    <input type="hidden" id="consultarDestinatario" value="">
-                    <input type="hidden" id="consultarProductoId" value="">
-                    <p id="consultarProductoNombre" class="fw-bold"></p>
-                    <div class="mb-3"><label class="form-label">Tu mensaje</label><textarea id="consultarTexto" class="form-control" rows="4" required></textarea></div>
-                </div>
-                <div class="modal-footer"><button type="submit" class="btn btn-success">Enviar consulta</button></div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal envío -->
-<div class="modal fade" id="modalEnvio" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white"><h5 class="modal-title">🚚 Calcular envío</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <p id="envioProducto" class="fw-bold"></p>
-                <div class="mb-3"><label class="form-label">Distancia (km)</label><input type="number" id="distancia" class="form-control" placeholder="Ej: 15"></div>
-                <div class="mb-3"><label class="form-label">Peso estimado (kg)</label><input type="number" id="peso" class="form-control" placeholder="Ej: 5"></div>
-                <button class="btn btn-success btn-sm" id="btnCalcular">Calcular</button>
-                <div id="resultadoEnvio" class="mt-3"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-// Agregar al pedido (AJAX + toast)
-async function agregarAlPedido(productoId, productoNombre) {
-    try {
-        let formData = new FormData();
-        formData.append('producto_id', productoId);
-        formData.append('cantidad', 1);
-        let resp = await fetch('/pedido/agregar-item', { method: 'POST', body: formData });
-        if (resp.ok) {
-            let toastEl = document.getElementById('liveToast');
-            let toastMsg = document.getElementById('toastMessage');
-            toastMsg.textContent = `"${productoNombre}" agregado al pedido`;
-            let toast = new bootstrap.Toast(toastEl);
-            toast.show();
-        }
-    } catch(e) { console.error(e); }
-}
-
-// Modal valoración
-document.addEventListener('DOMContentLoaded', function() {
-    var modalVal = document.getElementById('modalValorar');
-    modalVal.addEventListener('show.bs.modal', function(event) {
-        var button = event.relatedTarget;
-        document.getElementById('productoId').value = button.getAttribute('data-id');
-        document.getElementById('nombreProducto').textContent = button.getAttribute('data-nombre');
-        document.getElementById('formValorar').action = '/valorar/' + button.getAttribute('data-id');
-    });
-
-    // Modal consulta
-    var modalCons = document.getElementById('modalConsultar');
-    modalCons.addEventListener('show.bs.modal', function(event) {
-        var button = event.relatedTarget;
-        document.getElementById('consultarDestinatario').value = button.getAttribute('data-destinatario');
-        document.getElementById('consultarProductoId').value = button.getAttribute('data-producto-id');
-        document.getElementById('consultarProductoNombre').textContent = button.getAttribute('data-producto-nombre');
-        document.getElementById('consultarTexto').value = '';
-    });
-    document.getElementById('formConsultar').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        let formData = new FormData();
-        formData.append('destinatario_email', document.getElementById('consultarDestinatario').value);
-        formData.append('producto_id', document.getElementById('consultarProductoId').value);
-        formData.append('texto', document.getElementById('consultarTexto').value);
-        let resp = await fetch('/mensajes/enviar', { method: 'POST', body: formData });
-        if (resp.ok) {
-            bootstrap.Modal.getInstance(modalCons).hide();
-            alert('Mensaje enviado');
-        }
-    });
-
-    // Modal envío
-    var modalEnv = document.getElementById('modalEnvio');
-    let asociacionActual = "";
-    modalEnv.addEventListener('show.bs.modal', function(event) {
-        var button = event.relatedTarget;
-        asociacionActual = button.getAttribute('data-asociacion');
-        document.getElementById('envioProducto').textContent = button.getAttribute('data-nombre');
-        document.getElementById('resultadoEnvio').innerHTML = '';
-        document.getElementById('distancia').value = '';
-        document.getElementById('peso').value = '';
-    });
-    document.getElementById('btnCalcular').addEventListener('click', async function() {
-        let distancia = parseFloat(document.getElementById('distancia').value) || 0;
-        let peso = parseFloat(document.getElementById('peso').value) || 0;
-        let resp = await fetch(`/api/calcular-envio/${asociacionActual}?distancia=${distancia}&peso=${peso}`);
-        let datos = await resp.json();
-        let html = '<ul class="list-group">';
-        if (datos.length === 0) html += '<li class="list-group-item text-muted">Sin transportistas.</li>';
-        else datos.forEach(t => html += `<li class="list-group-item"><strong>${t.nombre}</strong> (${t.medio}) – $${t.costo_estimado}</li>`);
-        html += '</ul>';
-        document.getElementById('resultadoEnvio').innerHTML = html;
-    });
-});
-</script>
 {% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Pedido #{{ pedido.id[:8] }}{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2>Pedido #{{ pedido.id[:8] }}</h2>
+    <p>Estado: <span class="badge bg-info">{{ pedido.estado }}</span> | Fecha: {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}</p>
+    <p>Comprador: {{ pedido.comprador_email }}</p>
+    <hr>
+    <h4>Productos</h4>
+    <table class="table table-sm">
+        <thead><tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th>Subtotal</th></tr></thead>
+        <tbody>
+            {% for item in pedido.items %}
+            <tr>
+                <td>{{ item.producto_nombre }}</td>
+                <td>{{ item.cantidad }}</td>
+                <td>${{ item.precio_unitario }}</td>
+                <td>${{ item.subtotal }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="fw-bold text-end">Total: ${{ pedido.total }}</p>
+    <a href="/pedidos" class="btn btn-secondary">← Volver</a>
+</div>
+{% endblock %}

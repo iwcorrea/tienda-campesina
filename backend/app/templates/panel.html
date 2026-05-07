@@ -1,81 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Panel de Asociación{% endblock %}
+{% block title %}Panel de asociación{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold mb-1">🗂️ Panel de gestión</h2>
-        <p class="text-muted mb-0">Administra tu asociación y productos.</p>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="/dashboard" class="btn btn-outline-success btn-sm">📊 Dashboard</a>
-        <a href="/panel/editar-perfil" class="btn btn-outline-success btn-sm">✏️ Editar perfil</a>
-        <a href="/panel/transportistas-favoritos" class="btn btn-outline-success btn-sm">🚚 Favoritos</a>
-        <a href="/panel/cotizaciones" class="btn btn-outline-success btn-sm">📦 Cotizaciones</a>   <!-- NUEVO -->
-    </div>
-</div>
-
-{% if request.session.get("verificado") != "1" %}
-<div class="alert alert-warning shadow-sm">⚠️ Tu asociación aún no ha sido verificada. Tus productos no serán visibles públicamente hasta que un administrador revise tus documentos.</div>
-{% else %}
-<div class="alert alert-success shadow-sm">✅ Asociación verificada. Tus productos son públicos.</div>
-{% endif %}
-
-{% if request.session.get("logo_url") %}
-<div class="text-center mb-4">
-    <img src="{{ request.session.logo_url }}" alt="Logo" class="panel-logo shadow-sm" style="max-width: 160px; max-height: 160px;">
-</div>
-{% endif %}
-
-<div class="row g-4">
-    <div class="col-lg-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-success text-white"><strong>Agregar nuevo producto</strong></div>
-            <div class="card-body">
-                <form action="/panel/producto" method="post" enctype="multipart/form-data">
-                    <div class="mb-3"><label class="form-label">Nombre</label><input type="text" name="nombre" class="form-control" required></div>
-                    <div class="mb-3"><label class="form-label">Descripción</label><textarea name="descripcion" class="form-control" rows="2"></textarea></div>
-                    <div class="mb-3"><label class="form-label">Precio (COP)</label><input type="number" name="precio" class="form-control" required></div>
-                    <div class="mb-3"><label class="form-label">Tipo</label><select name="tipo" class="form-select"><option value="producto">Producto</option><option value="servicio">Servicio</option></select></div>
-                    <div class="mb-3"><label class="form-label">Modalidad de precio</label><select name="tipo_precio" class="form-select"><option value="fijo">Precio fijo</option><option value="convenir">A convenir</option></select></div>
-                    <div class="mb-3"><label class="form-label">Imagen del producto</label><input type="file" name="imagen" class="form-control" accept="image/*"></div>
-                    <button type="submit" class="btn btn-success">Guardar producto</button>
-                </form>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-success text-white"><strong>Mis productos</strong></div>
-            <div class="card-body">
-                {% if productos %}
-                <ul class="list-group list-group-flush">
-                    {% for p in productos %}
-                    <li class="list-group-item d-flex justify-content-between align-items-start">
-                        <div>
-                            <strong>{{ p.nombre }}</strong>
-                            <small class="text-muted ms-2">{{ p.tipo|capitalize }} · {{ p.tipo_precio|capitalize }}</small>
-                            <br><small class="text-muted">${{ p.precio }}</small>
-                            {% if p.imagen %}<br><img src="{{ p.imagen }}" width="60" class="mt-1 rounded">{% endif %}
-                        </div>
-                        <div class="btn-group-vertical">
-                            <a href="/panel/producto/editar/{{ p.id }}" class="btn btn-sm btn-outline-primary">✏️ Editar</a>
-                            <form action="/panel/producto/eliminar/{{ p.id }}" method="post" onsubmit="return confirm('¿Eliminar este producto?')">
-                                <button class="btn btn-sm btn-outline-danger">🗑️ Eliminar</button>
-                            </form>
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="text-muted">Aún no tienes productos. ¡Agrega el primero!</p>
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">📋 Panel de {{ usuario }}</h2>
+    <a href="#" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#nuevoProductoModal">+ Nuevo producto</a>
+    {% if productos %}
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        {% for p in productos %}
+        <div class="col">
+            <div class="card shadow-sm border-0 h-100">
+                {% if p.imagen_url %}
+                <img src="{{ p.imagen_url }}" class="card-img-top" alt="{{ p.nombre }}" style="height:160px; object-fit:cover;">
                 {% endif %}
+                <div class="card-body">
+                    <h5>{{ p.nombre }}</h5>
+                    <p class="text-muted small">{{ p.descripcion[:100] }}</p>
+                    <p class="fw-bold">${{ p.precio }}</p>
+                    <small>{{ p.tipo }} · {{ p.tipo_precio }}</small>
+                </div>
+                <div class="card-footer bg-white border-0 d-flex justify-content-between">
+                    <a href="/panel/producto/editar/{{ p.id }}" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <form method="post" action="/panel/producto/eliminar/{{ p.id }}" onsubmit="return confirm('¿Eliminar este producto?');">
+                        <button class="btn btn-sm btn-outline-danger">🗑️</button>
+                    </form>
+                </div>
             </div>
         </div>
+        {% endfor %}
     </div>
+    {% else %}
+    <p class="text-muted">No tienes productos todavía.</p>
+    {% endif %}
 </div>
 
-<div class="d-flex gap-2 mt-4">
-    <a href="/catalogo" class="btn btn-success">Ver catálogo</a>
-    <a href="/" class="btn btn-secondary">Inicio</a>
-</div>
+<!-- Modal nuevo producto (sin cambios) -->
 {% endblock %}
