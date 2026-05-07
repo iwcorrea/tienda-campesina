@@ -1,103 +1,41 @@
 {% extends "base.html" %}
-{% block title %}{{ vacante.cargo }} en {{ vacante.asociacion.nombre }} | Bolsa de Empleo Rural{% endblock %}
-{% block meta_description %}Vacante: {{ vacante.cargo }} en {{ vacante.asociacion.nombre }}. {{ vacante.descripcion[:150] }}{% endblock %}
-{% block head %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "JobPosting",
-  "title": "{{ vacante.cargo }}",
-  "description": "{{ vacante.descripcion }}",
-  "datePosted": "{{ vacante.fecha_publicacion.strftime('%Y-%m-%d') if vacante.fecha_publicacion else '' }}",
-  "validThrough": "{{ vacante.fecha_limite.strftime('%Y-%m-%d') if vacante.fecha_limite else '' }}",
-  "hiringOrganization": {
-    "@type": "Organization",
-    "name": "{{ vacante.asociacion.nombre }}"
-  },
-  "jobLocation": {
-    "@type": "Place",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "{{ vacante.ubicacion }}"
-    }
-  }
-}
-</script>
-{% endblock %}
+{% block title %}{{ vacante.cargo }}{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb" class="mb-3">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
-    <li class="breadcrumb-item"><a href="/bolsa-empleo">Bolsa de Empleo</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ vacante.cargo }}</li>
-  </ol>
-</nav>
-
-{% if request.query_params.get("aplicado") == "1" %}
-<div class="alert alert-success shadow-sm">✅ Tu postulación ha sido enviada correctamente. ¡Mucha suerte!</div>
-{% endif %}
-
 <div class="modern-section">
-    <h2 class="fw-bold">{{ vacante.cargo }}</h2>
-    <p class="text-muted">Publicado por <strong>{{ vacante.asociacion.nombre }}</strong></p>
-
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>📍 Ubicación:</strong> {{ vacante.ubicacion or 'No especificada' }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>💰 Salario:</strong>
-                        {% if vacante.salario > 0 %}${{ "{:,.0f}".format(vacante.salario) }}{% else %}A convenir{% endif %}
-                    </p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>📄 Tipo de contrato:</strong> {{ vacante.tipo_contrato|replace('_',' ')|capitalize }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>⏰ Jornada:</strong> {{ vacante.jornada|replace('_',' ')|capitalize }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>📅 Fecha límite:</strong> {{ vacante.fecha_limite.strftime('%d/%m/%Y') }}</p>
-                </div>
-                <div class="col-md-6">
-                    {% if vacante.terminos_url %}
-                    <p><strong>📎 Términos de referencia:</strong> <a href="{{ vacante.terminos_url }}" target="_blank">Descargar PDF</a></p>
-                    {% endif %}
-                </div>
-            </div>
-            {% if vacante.requisitos %}
-            <hr>
-            <h5>Requisitos</h5>
-            <p>{{ vacante.requisitos|replace('\n','<br>')|safe }}</p>
-            {% endif %}
-            <hr>
-            <h5>Descripción</h5>
-            <p>{{ vacante.descripcion|replace('\n','<br>')|safe }}</p>
-        </div>
-    </div>
-
-    {% if request.session.get("tipo_usuario") == "persona" %}
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
-            <h5 class="fw-bold">📩 Postularme</h5>
-            {% if persona and not persona.hoja_vida_url %}
-            <div class="alert alert-warning small">
-                <i class="bi bi-exclamation-triangle me-1"></i> Aún no has subido tu hoja de vida. Puedes hacerlo desde <a href="/perfil" class="alert-link">tu perfil</a> para destacar entre los postulantes.
-            </div>
-            {% endif %}
-            <form action="/aplicar/{{ vacante.id }}" method="post">
-                <div class="mb-3"><label class="form-label">Mensaje (opcional)</label><textarea name="mensaje" class="form-control" rows="3" placeholder="Preséntate y explica por qué eres el candidato ideal"></textarea></div>
-                <button type="submit" class="btn btn-success">Enviar postulación</button>
-            </form>
-        </div>
-    </div>
-    {% elif not request.session.get("usuario") %}
-    <p><a href="/auth/login" class="btn btn-outline-success">Inicia sesión para postularte</a></p>
-    {% else %}
-    <p class="text-muted">Solo los usuarios registrados como persona pueden postularse.</p>
+    <h2>{{ vacante.cargo }}</h2>
+    <p><strong>Asociación:</strong> {{ vacante.asociacion.nombre if vacante.asociacion else vacante.asociacion_email }}</p>
+    <p><strong>Ubicación:</strong> {{ vacante.ubicacion }}</p>
+    <p><strong>Salario:</strong> {% if vacante.salario > 0 %}${{ vacante.salario }}{% else %}A convenir{% endif %}</p>
+    <p><strong>Tipo de contrato:</strong> {{ vacante.tipo_contrato | replace('_', ' ') | capitalize }}</p>
+    <p><strong>Jornada:</strong> {{ vacante.jornada | replace('_', ' ') | capitalize }}</p>
+    <p><strong>Requisitos:</strong> {{ vacante.requisitos or 'No especificados' }}</p>
+    <p><strong>Fecha límite:</strong> {{ vacante.fecha_limite.strftime('%d/%m/%Y') }}</p>
+    <p><strong>Descripción:</strong> {{ vacante.descripcion }}</p>
+    {% if vacante.terminos_url %}
+    <a href="{{ vacante.terminos_url }}" target="_blank" class="btn btn-outline-secondary">Términos de referencia</a>
     {% endif %}
-    <a href="/bolsa-empleo" class="btn btn-secondary mt-2">← Volver a la bolsa</a>
+
+    <div class="mt-4 d-flex gap-2">
+        {% if request.session.get("tipo_usuario") == "persona" %}
+            {% if not aplicado %}
+            <form method="post" action="/aplicar/{{ vacante.id }}">
+                <div class="mb-2">
+                    <textarea name="mensaje" class="form-control" rows="2" placeholder="Mensaje opcional"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">Aplicar</button>
+            </form>
+            {% else %}
+            <span class="text-success">✔ Ya aplicaste a esta vacante</span>
+            {% endif %}
+        {% endif %}
+
+        {% if request.session.get("usuario") %}
+        <form method="post" action="/contactos/agregar">
+            <input type="hidden" name="contacto_email" value="{{ vacante.asociacion_email }}">
+            <input type="hidden" name="tipo_relacion" value="proveedor">
+            <button type="submit" class="btn btn-outline-primary">➕ Agregar asociación a contactos</button>
+        </form>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

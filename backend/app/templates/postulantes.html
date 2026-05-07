@@ -1,22 +1,35 @@
 {% extends "base.html" %}
 {% block title %}Postulantes a {{ vacante.cargo }}{% endblock %}
 {% block content %}
-<h2>Postulantes a {{ vacante.cargo }}</h2>
-<a href="/panel/vacantes" class="btn btn-secondary mb-3">⬅ Volver a vacantes</a>
-
-{% if postulantes %}
-<ul class="list-group">
-    {% for p in postulantes %}
-    <li class="list-group-item">
-        <strong>{{ p.nombre }}</strong>
-        {% if p.hoja_vida_url %}<a href="{{ p.hoja_vida_url }}" target="_blank">📄 Ver hoja de vida</a>{% endif %}
-        <br><small>Email: {{ p.email }} | Tel: {{ p.telefono }}</small>
-        <br><small>Mensaje: {{ p.mensaje or 'Sin mensaje' }}</small>
-        <br><small class="text-muted">Aplicó el {{ p.fecha }}</small>
-    </li>
-    {% endfor %}
-</ul>
-{% else %}
-<p>No hay postulaciones aún.</p>
-{% endif %}
+<div class="modern-section">
+    <h2>Postulantes a {{ vacante.cargo }}</h2>
+    {% if postulantes %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Hoja de vida</th><th>Mensaje</th><th>Fecha</th><th>Contacto</th></tr></thead>
+            <tbody>
+                {% for p in postulantes %}
+                <tr>
+                    <td>{{ p.nombre }}</td>
+                    <td>{{ p.email }}</td>
+                    <td>{{ p.telefono }}</td>
+                    <td>{% if p.hoja_vida_url %}<a href="{{ p.hoja_vida_url }}" target="_blank">Ver</a>{% else %}-{% endif %}</td>
+                    <td>{{ p.mensaje }}</td>
+                    <td>{{ p.fecha }}</td>
+                    <td>
+                        <form method="post" action="/contactos/agregar">
+                            <input type="hidden" name="contacto_email" value="{{ p.email }}">
+                            <input type="hidden" name="tipo_relacion" value="mano_obra">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">➕ Agregar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No hay postulantes todavía.</p>
+    {% endif %}
+</div>
 {% endblock %}

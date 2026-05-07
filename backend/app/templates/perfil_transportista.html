@@ -1,32 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Perfil Transportista{% endblock %}
+{% block title %}{{ transportista.nombre }}{% endblock %}
 {% block content %}
 <div class="modern-section">
-    <h2 class="fw-bold mb-4">🚚 Mi Perfil de Transportista</h2>
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
-            <form action="/perfil-transportista/actualizar" method="post">
-                <div class="mb-3"><input type="text" name="nombre" class="form-control" value="{{ transportista.nombre }}" required></div>
-                <div class="mb-3"><input type="text" name="telefono" class="form-control" value="{{ transportista.telefono }}"></div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <select name="tipo_vehiculo" class="form-select mb-3">
-                            <option value="moto" {% if transportista.tipo_vehiculo == 'moto' %}selected{% endif %}>🏍️ Moto</option>
-                            <option value="camioneta" {% if transportista.tipo_vehiculo == 'camioneta' %}selected{% endif %}>🚗 Camioneta</option>
-                            <option value="camion" {% if transportista.tipo_vehiculo == 'camion' %}selected{% endif %}>🚛 Camión</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <input type="text" name="capacidad" class="form-control mb-3" value="{{ transportista.capacidad }}">
-                    </div>
-                </div>
-                <div class="mb-3"><input type="text" name="zona_cobertura" class="form-control" value="{{ transportista.zona_cobertura }}"></div>
-                <div class="row">
-                    <div class="col-md-6"><input type="number" name="tarifa_base" class="form-control mb-3" value="{{ transportista.tarifa_base }}"></div>
-                    <div class="col-md-6"><input type="number" name="costo_km" class="form-control mb-3" value="{{ transportista.costo_km }}"></div>
-                </div>
-                <button type="submit" class="btn btn-success">Guardar cambios</button>
+    <div class="row">
+        <div class="col-md-6">
+            <h2>{{ transportista.nombre }}</h2>
+            <p><strong>Email:</strong> {{ transportista.email }}</p>
+            <p><strong>Teléfono:</strong> {{ transportista.telefono }}</p>
+            <p><strong>Tipo de vehículo:</strong> {{ transportista.tipo_vehiculo }}</p>
+            <p><strong>Capacidad:</strong> {{ transportista.capacidad }}</p>
+            <p><strong>Zona de cobertura:</strong> {{ transportista.zona_cobertura }}</p>
+            <p><strong>Tarifa base:</strong> ${{ transportista.tarifa_base }}</p>
+            <p><strong>Costo por km:</strong> ${{ transportista.costo_km }}</p>
+        </div>
+        <div class="col-md-6">
+            {% if transportista.documento_url %}
+            <a href="{{ transportista.documento_url }}" target="_blank" class="btn btn-outline-secondary">Ver documento</a>
+            {% endif %}
+            {% if request.session.get("usuario") %}
+            <form method="post" action="/contactos/agregar" class="mt-3">
+                <input type="hidden" name="contacto_email" value="{{ transportista.email }}">
+                <input type="hidden" name="tipo_relacion" value="transportista">
+                <button type="submit" class="btn btn-outline-primary">➕ Agregar a mis contactos</button>
             </form>
+            {% endif %}
         </div>
     </div>
 </div>
