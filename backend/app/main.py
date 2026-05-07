@@ -3,12 +3,12 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.auth import router as auth_router
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
+from app.templates import templates   # <--- ahora se importa desde el nuevo módulo
 import cloudinary
 import time
 from sqlalchemy import text
@@ -59,7 +59,7 @@ async def timeout_y_configuracion(request: Request, call_next):
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, same_site="lax", https_only=True)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-templates = Jinja2Templates(directory="app/templates")
+# templates ya no se crea aquí, se importa de app.templates
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(auth_router, prefix="/auth")

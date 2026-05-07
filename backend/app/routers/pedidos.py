@@ -2,12 +2,13 @@ import math
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user
 from app.services.pedido_service import listar_pedidos, obtener_pedido_por_id
 from app.viewmodels.pedido import PedidoViewModel
-from app.main import templates
+from app.templates import templates   # <--- importación corregida
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
@@ -22,11 +23,9 @@ def listar(
     current_user: Optional[dict] = Depends(get_current_user),
 ):
     if not current_user:
-        # Redirigir a login si no hay sesión
-        from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    comprador_email = current_user.get("email") if current_user["tipo"] == "comprador" else None
+    comprador_email = current_user.get("email") if current_user.get("tipo") == "comprador" else None
 
     pedidos_orm, total = listar_pedidos(
         db,
@@ -58,16 +57,14 @@ def detalle(
     current_user: Optional[dict] = Depends(get_current_user),
 ):
     if not current_user:
-        from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/auth/login", status_code=303)
 
     pedido = obtener_pedido_por_id(db, pedido_id)
     if not pedido:
         return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
-    # Solo el comprador del pedido o un admin (asociación?) puede verlo, según tu lógica
-    # Podés ajustar esta verificación
-    if current_user["email"] != pedido.comprador_email:
+    # Verificamos que el usuario pueda ver este pedido
+    if current_user.get("email") != pedido.comprador_email:
         return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
 
     pedido_vm = PedidoViewModel.from_orm(pedido)
