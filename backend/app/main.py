@@ -22,7 +22,8 @@ from app.routers import pedidos
 from app.routers import carrito
 from app.routers import ayuda
 from app.routers import noticias
-from app.routers import notificaciones  # <-- nuevo
+from app.routers import notificaciones
+from app.routers import contactos  # <-- nuevo
 
 logging.basicConfig(level=logging.INFO)
 
@@ -92,7 +93,8 @@ app.include_router(pedidos.router)
 app.include_router(carrito.router)
 app.include_router(ayuda.router)
 app.include_router(noticias.router)
-app.include_router(notificaciones.router)  # <-- nuevo
+app.include_router(notificaciones.router)
+app.include_router(contactos.router)  # <-- nuevo
 
 
 @app.on_event("startup")
@@ -167,5 +169,16 @@ def on_startup():
             if col_name not in existing_resp:
                 sql = f'ALTER TABLE respuestas_cotizaciones ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))
+
+        # Crear tabla contactos si no existe (migración independiente)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS contactos (
+                id VARCHAR PRIMARY KEY,
+                usuario_email VARCHAR NOT NULL,
+                contacto_email VARCHAR NOT NULL,
+                tipo_relacion VARCHAR DEFAULT 'contacto',
+                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+        """))
 
         conn.commit()

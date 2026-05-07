@@ -250,3 +250,12 @@ class Noticia(Base):
     contenido = Column(Text, default="")
     imagen_url = Column(Text, default="")
     fecha_publicacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+class Contacto(Base):
+    __tablename__ = "contactos"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    usuario_email = Column(String, nullable=False, index=True)       # quien agrega
+    contacto_email = Column(String, nullable=False)                  # quien es agregado
+    tipo_relacion = Column(String, default="contacto")               # "favorito", "cliente", "proveedor"
+    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))    

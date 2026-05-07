@@ -157,6 +157,7 @@
                             <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
                             <li class="nav-item"><a class="nav-link" href="/panel"><i class="bi bi-grid me-2"></i> Panel productos</a></li>
                             <li class="nav-item"><a class="nav-link" href="/pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/contactos"><i class="bi bi-people me-2"></i> Contactos</a></li>
                             <li class="nav-item"><hr class="dropdown-divider my-2"></li>
                             <li class="nav-item"><span class="sidebar-section-title">Gestión</span></li>
                             <li class="nav-item"><a class="nav-link" href="/panel/vacantes"><i class="bi bi-briefcase me-2"></i> Vacantes</a></li>
@@ -179,10 +180,13 @@
                         {% elif request.session.get("tipo_usuario") == "persona" %}
                             <li class="nav-item"><a class="nav-link" href="/perfil"><i class="bi bi-person me-2"></i> Mi perfil</a></li>
                             <li class="nav-item"><a class="nav-link" href="/pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/contactos"><i class="bi bi-people me-2"></i> Contactos</a></li>
                             <li class="nav-item"><a class="nav-link" href="/mensajes"><i class="bi bi-chat-dots me-2"></i> Mensajes <span id="unread-badge" class="badge bg-danger rounded-pill ms-1" style="display:none;">0</span></a></li>
                             <li class="nav-item"><a class="nav-link" href="/perfil#aplicaciones"><i class="bi bi-file-earmark-text me-2"></i> Postulaciones</a></li>
                         {% elif request.session.get("tipo_usuario") == "transportista" %}
                             <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/contactos"><i class="bi bi-people me-2"></i> Contactos</a></li>
                         {% endif %}
                     {% else %}
                         <li class="nav-item d-lg-none"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
@@ -217,7 +221,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Cerrar offcanvas en móviles
+        // Cerrar offcanvas correctamente
         document.querySelector('#sidebar .btn-close').addEventListener('click', function() {
             var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('sidebar'));
             if (offcanvas) offcanvas.hide();
@@ -228,7 +232,7 @@
         });
 
         {% if request.session.get("usuario") %}
-        // Badge de mensajes no leídos en el menú lateral
+        // Badge de mensajes no leídos (menú lateral)
         async function updateUnreadBadge() {
             try {
                 let resp = await fetch('/api/mensajes/no-leidos');
@@ -254,7 +258,7 @@
                 let list = document.getElementById('notif-list');
 
                 if (data.notificaciones && data.notificaciones.length > 0) {
-                    // Solo los mensajes no leídos incrementan el número rojo
+                    // Solo los mensajes no leídos incrementan el badge
                     let unreadCount = data.notificaciones.filter(n => n.tipo === 'mensaje').length;
                     if (badge) {
                         if (unreadCount > 0) {

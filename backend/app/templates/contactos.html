@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Mis contactos{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">👥 Mis contactos</h2>
+    <form method="post" action="/contactos/agregar" class="row g-3 mb-4">
+        <div class="col-md-5">
+            <input type="email" name="contacto_email" class="form-control" placeholder="Email del contacto" required>
+        </div>
+        <div class="col-md-3">
+            <select name="tipo_relacion" class="form-select">
+                <option value="contacto">Contacto</option>
+                <option value="cliente">Cliente</option>
+                <option value="proveedor">Proveedor</option>
+                <option value="transportista">Transportista</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-success">Agregar</button>
+        </div>
+    </form>
+    {% if contactos %}
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for c in contactos %}
+        <div class="col">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    {% if c.logo %}
+                    <img src="{{ c.logo }}" class="rounded-circle mb-2" width="60" height="60">
+                    {% else %}
+                    <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-2" style="width:60px; height:60px;">
+                        <span class="fs-3">{{ c.nombre[0] }}</span>
+                    </div>
+                    {% endif %}
+                    <h6>{{ c.nombre }}</h6>
+                    <small class="text-muted">{{ c.tipo }} · {{ c.relacion }}</small>
+                    <div class="mt-2">
+                        <a href="/mensajes/enviar?destinatario_email={{ c.email }}" class="btn btn-sm btn-outline-primary me-1">Mensaje</a>
+                        <form method="post" action="/contactos/eliminar" class="d-inline">
+                            <input type="hidden" name="contacto_email" value="{{ c.email }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No tienes contactos. Agrega el email de un comprador, asociación o transportista.</p>
+    {% endif %}
+</div>
+{% endblock %}

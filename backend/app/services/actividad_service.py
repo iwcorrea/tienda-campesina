@@ -1,16 +1,16 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from app.models import Producto, Valoracion, Noticia, Pedido, RespuestaCotizacion, Asociacion, ItemPedido
+from app.models import Producto, Valoracion, Noticia, Asociacion
 
 
 def obtener_actividades_recientes(db: Session, limite: int = 15) -> list:
     """
-    Devuelve una lista combinada de actividades recientes:
-    - Productos nuevos (últimos 7 días)
-    - Pedidos con respuesta aceptada
+    Devuelve actividades públicas para el feed social:
+    - Productos nuevos verificados
     - Valoraciones recientes
     - Noticias publicadas
+    Los acuerdos (pedidos aceptados) son privados y se manejan por notificaciones.
     """
     actividades = []
 
@@ -34,28 +34,7 @@ def obtener_actividades_recientes(db: Session, limite: int = 15) -> list:
             "imagen": p.imagen_url
         })
 
-    # 2. Respuestas aceptadas (pedidos concretados)
-    respuestas = (
-        db.query(RespuestaCotizacion)
-        .filter(RespuestaCotizacion.aceptado == "aceptado")
-        .order_by(desc(RespuestaCotizacion.fecha_respuesta))
-        .limit(5)
-        .all()
-    )
-    for r in respuestas:
-        item = r.item_pedido
-        if item:
-            actividades.append({
-                "tipo": "pedido_aceptado",
-                "icono": "🤝",
-                "texto": f"Pedido aceptado: {item.producto.nombre}",
-                "descripcion": f"{item.pedido.comprador_email} y {r.asociacion.nombre if r.asociacion else r.asociacion_email} cerraron un acuerdo.",
-                "fecha": r.fecha_respuesta,
-                "url": f"/pedidos/{item.pedido.id}",
-                "imagen": item.producto.imagen_url
-            })
-
-    # 3. Valoraciones recientes
+    # 2. Valoraciones recientes
     valoraciones = (
         db.query(Valoracion)
         .order_by(desc(Valoracion.fecha))
@@ -74,7 +53,7 @@ def obtener_actividades_recientes(db: Session, limite: int = 15) -> list:
             "imagen": v.producto.imagen_url
         })
 
-    # 4. Noticias
+    # 3. Noticias
     noticias = (
         db.query(Noticia)
         .order_by(desc(Noticia.fecha_publicacion))
