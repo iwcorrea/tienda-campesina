@@ -19,7 +19,12 @@
                     {% endif %}
                 </div>
                 <div class="card-footer bg-white border-0">
-                    <a href="/asociacion/{{ producto.asociacion_email }}" class="btn btn-sm btn-outline-success w-100">Ver productor</a>
+                    <a href="/asociacion/{{ producto.asociacion_email }}" class="btn btn-sm btn-outline-success w-100 mb-1">Ver productor</a>
+                    {% if request.session.get("tipo_usuario") == "comprador" %}
+                    <form method="post" action="/carrito/agregar/{{ producto.id }}">
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">+ Agregar al carrito</button>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
         </div>

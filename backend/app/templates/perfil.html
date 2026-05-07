@@ -1,44 +1,41 @@
 {% extends "base.html" %}
-{% block title %}{{ asociacion.nombre }} | {{ request.state.config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
-{% block meta_description %}{{ asociacion.descripcion or 'Conoce más sobre esta asociación campesina y sus productos.' }}{% endblock %}
-{% block og_image %}{{ asociacion.logo_url or 'https://res.cloudinary.com/dypamgiml/image/upload/v1/logos/tienda-campesina-og.png' }}{% endblock %}
-{% block head %}
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"{{ asociacion.nombre }}","description":"{{ asociacion.descripcion }}","url":"{{ request.url.scheme }}://{{ request.url.hostname }}/asociacion/{{ asociacion.email }}","logo":"{{ asociacion.logo_url }}","address":{"@type":"PostalAddress","addressLocality":"{{ asociacion.direccion }}"},"contactPoint":{"@type":"ContactPoint","telephone":"{{ asociacion.telefono }}","contactType":"customer service"}}</script>
-{% endblock %}
+{% block title %}{{ asociacion.nombre }}{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb" class="mb-3">
-  <ol class="breadcrumb"><li class="breadcrumb-item"><a href="/">Inicio</a></li><li class="breadcrumb-item"><a href="/catalogo">Catálogo</a></li><li class="breadcrumb-item active">{{ asociacion.nombre }}</li></ol>
-</nav>
 <div class="modern-section">
     <div class="row">
-        <div class="col-md-3 text-center mb-3">
-            {% if asociacion.logo_url %}<img src="{{ asociacion.logo_url }}" class="img-fluid rounded shadow-sm mb-3">{% endif %}
-            {% if asociacion.show_whatsapp == '1' and asociacion.telefono %}
-            <a href="https://wa.me/57{{ asociacion.telefono|replace('+','')|replace(' ','') }}?text=Hola,%20vi%20tu%20perfil%20en%20Tienda%20Campesina" target="_blank" class="btn btn-success w-100">💬 Contactar por WhatsApp</a>
+        <div class="col-md-4">
+            <img src="{{ asociacion.logo_url or 'https://placehold.co/300x200/5B8C51/white?text=Logo' }}" class="img-fluid rounded mb-3">
+            <h2>{{ asociacion.nombre }}</h2>
+            <p>{{ asociacion.descripcion }}</p>
+            <p><strong>Dirección:</strong> {{ asociacion.direccion }}</p>
+            <p><strong>Teléfono:</strong> {{ asociacion.telefono }}</p>
+            {% if asociacion.show_whatsapp == "1" %}
+            <a href="https://wa.me/{{ asociacion.telefono }}" class="btn btn-success">Contactar por WhatsApp</a>
             {% endif %}
         </div>
-        <div class="col-md-9">
-            <h1 class="fw-bold">{{ asociacion.nombre }}</h1>
-            <p class="lead">{{ asociacion.descripcion }}</p>
-            {% if asociacion.direccion %}<p><strong>📍 Ubicación:</strong> {{ asociacion.direccion }}</p>{% endif %}
-        </div>
-    </div>
-    <hr class="my-4">
-    <h3 class="fw-bold mb-4">Productos y servicios</h3>
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        {% for p in productos %}
-        <div class="col">
-            <div class="card modern-card h-100">
-                <img src="{{ p.imagen }}" class="card-img-top" alt="{{ p.nombre }}">
-                <div class="card-body">
-                    <h5 class="card-title">{{ p.nombre }}</h5>
-                    <p class="card-text text-muted small">{{ p.descripcion }}</p>
-                    {% if p.tipo %}<span class="badge bg-secondary">{{ p.tipo|capitalize }}</span>{% endif %}
-                    <p class="mt-2 fw-bold">{% if p.tipo_precio == 'convenir' %}Precio a convenir{% else %}${{ p.precio }}{% endif %}</p>
+        <div class="col-md-8">
+            <h3>Productos</h3>
+            <div class="row row-cols-1 row-cols-md-2 g-3">
+                {% for producto in productos %}
+                <div class="col">
+                    <div class="card shadow-sm border-0">
+                        <img src="{{ producto.imagen }}" class="card-img-top" alt="{{ producto.nombre }}" style="height:150px; object-fit:cover;">
+                        <div class="card-body">
+                            <h5>{{ producto.nombre }}</h5>
+                            <p class="text-muted small">{{ producto.descripcion[:80] }}...</p>
+                            <p class="fw-bold">${{ producto.precio }}</p>
+                            <small>{{ producto.tipo }} / {{ producto.tipo_precio }}</small>
+                            {% if request.session.get("tipo_usuario") == "comprador" %}
+                            <form method="post" action="/carrito/agregar/{{ producto.id }}" class="mt-2">
+                                <button type="submit" class="btn btn-sm btn-outline-primary w-100">+ Agregar al carrito</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
     </div>
 </div>
 {% endblock %}

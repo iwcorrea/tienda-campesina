@@ -9,7 +9,7 @@ from app.auth import router as auth_router
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
 from app.templates import templates
-from app.cloudinary_utils import delete_cloudinary_asset  # ← ahora desde utilidad
+from app.cloudinary_utils import delete_cloudinary_asset
 import cloudinary
 import time
 from sqlalchemy import text
@@ -19,6 +19,7 @@ from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, va
 from app.routers import personas, empleos, herramientas, mensajes
 from app.routers import transportistas
 from app.routers import pedidos
+from app.routers import carrito   # <-- nuevo
 from app.routers import ayuda
 from app.routers import noticias
 
@@ -87,6 +88,7 @@ app.include_router(herramientas.router)
 app.include_router(mensajes.router)
 app.include_router(transportistas.router)
 app.include_router(pedidos.router)
+app.include_router(carrito.router)      # <-- nuevo
 app.include_router(ayuda.router)
 app.include_router(noticias.router)
 
