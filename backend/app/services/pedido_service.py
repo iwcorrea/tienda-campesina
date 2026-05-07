@@ -1,10 +1,7 @@
 import math
 from typing import List, Optional, Tuple
-
 from sqlalchemy.orm import Session, selectinload
-
-from app.models import Pedido
-
+from app.models import Pedido, ItemPedido
 
 def listar_pedidos(
     db: Session,
@@ -13,25 +10,17 @@ def listar_pedidos(
     comprador_email: Optional[str] = None,
     estado: Optional[str] = None,
 ) -> Tuple[List[Pedido], int]:
-    """
-    Lista pedidos con sus items y el producto de cada item cargados (eager).
-    Filtra opcionalmente por comprador_email y estado.
-    """
     query = db.query(Pedido).options(
         selectinload(Pedido.items).selectinload(ItemPedido.producto)
     )
-
     if comprador_email:
         query = query.filter(Pedido.comprador_email == comprador_email)
     if estado:
         query = query.filter(Pedido.estado == estado)
-
     total = query.count()
     offset = (pagina - 1) * por_pagina
     pedidos = query.order_by(Pedido.fecha_creacion.desc()).offset(offset).limit(por_pagina).all()
-
     return pedidos, total
-
 
 def obtener_pedido_por_id(db: Session, pedido_id: str) -> Optional[Pedido]:
     return (
@@ -40,7 +29,3 @@ def obtener_pedido_por_id(db: Session, pedido_id: str) -> Optional[Pedido]:
         .filter(Pedido.id == pedido_id)
         .first()
     )
-
-
-# Importación tardía para evitar errores circulares
-from app.models import ItemPedido
