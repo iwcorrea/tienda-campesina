@@ -33,3 +33,17 @@ def obtener_pedido_por_id(db: Session, pedido_id: str) -> Optional[Pedido]:
         .filter(Pedido.id == pedido_id)
         .first()
     )
+
+def actualizar_estado_pedido_si_aplica(db: Session, pedido_id: str):
+    """Si todos los ítems del pedido tienen al menos una respuesta aceptada, el pedido pasa a 'aceptado'."""
+    pedido = obtener_pedido_por_id(db, pedido_id)
+    if not pedido:
+        return
+    todos_aceptados = True
+    for item in pedido.items:
+        if not any(r.aceptado == "aceptado" for r in item.respuestas):
+            todos_aceptados = False
+            break
+    if todos_aceptados:
+        pedido.estado = "aceptado"
+        db.commit()

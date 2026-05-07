@@ -20,8 +20,12 @@
                             <td>${{ item.precio_unitario_inicial }}</td>
                             <td>{{ item.pedido.comprador_email }}</td>
                             <td>
-                                {% if item.respuesta_aceptada %}
+                                {% if item.respuesta_aceptada and item.respuesta_aceptada.contrato_url %}
                                     <span class="badge bg-success">Aceptada</span>
+                                    <a href="{{ item.respuesta_aceptada.contrato_url }}" target="_blank" class="btn btn-sm btn-outline-success ms-1">Contrato</a>
+                                    {% if item.respuesta_aceptada.factura_url %}
+                                    <a href="{{ item.respuesta_aceptada.factura_url }}" target="_blank" class="btn btn-sm btn-outline-info ms-1">Factura</a>
+                                    {% endif %}
                                 {% else %}
                                     <a href="/panel/cotizacion/responder/{{ item.id }}" class="btn btn-sm btn-outline-success">Responder</a>
                                 {% endif %}

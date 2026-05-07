@@ -8,7 +8,7 @@
     <hr>
     <h4>Productos</h4>
     <table class="table table-sm">
-        <thead><tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th>Subtotal</th><th>Contrato</th><th>Factura</th></tr></thead>
+        <thead><tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th>Subtotal</th><th>Contrato</th><th>Factura</th><th>Valorar</th></tr></thead>
         <tbody>
             {% for item in pedido.items %}
             {% set resp = item.respuestas | selectattr("aceptado","equalto","aceptado") | first %}
@@ -29,6 +29,44 @@
                     <a href="{{ resp.factura_url }}" target="_blank" class="btn btn-sm btn-outline-info">Ver factura</a>
                     {% else %}
                     <span class="text-muted">Pendiente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if pedido.estado == "aceptado" %}
+                    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#valorarModal{{ item.producto_id }}">⭐ Valorar</button>
+
+                    <!-- Modal valoración -->
+                    <div class="modal fade" id="valorarModal{{ item.producto_id }}" tabindex="-1" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                          <form method="post" action="/valoraciones/crear/{{ item.producto_id }}">
+                            <div class="modal-header">
+                              <h5 class="modal-title">Valorar "{{ item.producto_nombre }}"</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                              <div class="mb-3">
+                                <label class="form-label">Puntuación</label>
+                                <select class="form-select" name="estrellas" required>
+                                  <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                                  <option value="4">⭐⭐⭐⭐ (4)</option>
+                                  <option value="3">⭐⭐⭐ (3)</option>
+                                  <option value="2">⭐⭐ (2)</option>
+                                  <option value="1">⭐ (1)</option>
+                                </select>
+                              </div>
+                              <div class="mb-3">
+                                <label class="form-label">Comentario (opcional)</label>
+                                <textarea class="form-control" name="comentario" rows="2"></textarea>
+                              </div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="submit" class="btn btn-success">Enviar valoración</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
                     {% endif %}
                 </td>
             </tr>

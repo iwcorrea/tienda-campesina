@@ -7,6 +7,8 @@ from app.cloudinary_utils import delete_cloudinary_asset
 from app.services.contrato_service import generar_contrato_html, subir_contrato
 from app.services.factura_service import generar_factura_html, generar_numero_factura, subir_factura
 from app.services.notificacion_service import crear_notificacion
+from app.services.pedido_service import actualizar_estado_pedido_si_aplica
+from app.services.contacto_service import agregar_contacto
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
@@ -163,7 +165,11 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
     )
     resultado = []
     for item in items:
-        respuesta_aceptada = any(r.aceptado == "aceptado" for r in item.respuestas) if item.respuestas else False
+        resp_aceptada = None
+        for r in item.respuestas:
+            if r.aceptado == "aceptado":
+                resp_aceptada = r
+                break
         resultado.append({
             "id": item.id,
             "producto": {"nombre": item.producto.nombre if item.producto else "Producto eliminado"},
@@ -173,7 +179,10 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
             },
             "cantidad": item.cantidad,
             "precio_unitario_inicial": item.precio_unitario_inicial,
-            "respuesta_aceptada": respuesta_aceptada,
+            "respuesta_aceptada": {
+                "contrato_url": resp_aceptada.contrato_url if resp_aceptada else "",
+                "factura_url": resp_aceptada.factura_url if resp_aceptada else ""
+            } if resp_aceptada else None
         })
     return resultado
 
@@ -229,7 +238,7 @@ def guardar_respuesta_cotizacion(
         precio_total = cantidad_final * precio_unit
         asociacion_nombre = item.producto.asociacion.nombre if item.producto.asociacion else email_asociacion
 
-        # 1. Generar contrato
+        # 1. Contrato
         html_contrato = generar_contrato_html(
             comprador_email=comprador_email,
             asociacion_nombre=asociacion_nombre,
@@ -247,7 +256,7 @@ def guardar_respuesta_cotizacion(
         except Exception:
             pass
 
-        # 2. Generar factura
+        # 2. Factura
         numero_factura = generar_numero_factura()
         items_factura = [{
             "producto_nombre": producto.nombre,
@@ -270,15 +279,23 @@ def guardar_respuesta_cotizacion(
         except Exception:
             pass
 
-        # 3. Notificar al comprador
+        # 3. Notificación al comprador
         crear_notificacion(
             db,
             destinatario_email=comprador_email,
             remitente_email=email_asociacion,
-            texto=f"Tu cotización para '{producto.nombre}' fue aceptada. Contrato: {url_contrato or 'No disponible'} | Factura: {url_factura or 'No disponible'}",
+            texto=f"Tu cotización para '{producto.nombre}' fue aceptada. Revisa los documentos en tu pedido.",
             producto_id=producto.id
         )
 
     db.add(nueva)
     db.commit()
+
+    # 4. Actualizar estado del pedido si todos los ítems están aceptados
+    actualizar_estado_pedido_si_aplica(db, item.pedido_id)
+
+    # 5. Agregar contacto mutuo automáticamente
+    agregar_contacto(db, comprador_email, email_asociacion, "proveedor")
+    agregar_contacto(db, email_asociacion, comprador_email, "cliente")
+
     return nueva
