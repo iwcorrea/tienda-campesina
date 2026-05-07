@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-
 @dataclass
 class MensajeViewModel:
     id: str
@@ -13,6 +12,8 @@ class MensajeViewModel:
     leido: str
     fecha_envio: datetime
     mensaje_padre_id: Optional[str]
+    remitente_nombre: str = ""
+    destinatario_nombre: str = ""
 
     @classmethod
     def from_orm(cls, mensaje) -> "MensajeViewModel":

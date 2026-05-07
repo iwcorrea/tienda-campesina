@@ -2,26 +2,37 @@
 {% block title %}Conversación{% endblock %}
 {% block content %}
 <div class="modern-section">
-    <a href="/mensajes" class="btn btn-sm btn-outline-success mb-3">← Volver a mensajes</a>
-    <h4 class="fw-bold mb-4">💬 Conversación</h4>
-    <div class="mb-4">
-        {% for msg in hilo %}
-        <div class="card mb-2 {% if msg.remitente_email == request.session.usuario %}border-primary{% else %}border-success{% endif %}">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <strong>{{ msg.remitente.nombre if msg.remitente else msg.remitente_email }}</strong>
-                    <small class="text-muted">{{ msg.fecha_envio.strftime('%d/%m/%Y %H:%M') }}</small>
-                </div>
-                <p class="mb-0 mt-2">{{ msg.texto }}</p>
+    <h2>Conversación</h2>
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            {% for m in hilo %}
+            <div class="mb-3 p-3 {% if m.remitente_email == request.session.get('usuario') %}bg-light{% else %}bg-white{% endif %} rounded">
+                <strong>{{ m.remitente_nombre or m.remitente_email }}</strong> → <strong>{{ m.destinatario_nombre or m.destinatario_email }}</strong>
+                <br><small class="text-muted">{{ m.fecha_envio.strftime('%d/%m/%Y %H:%M') if m.fecha_envio else '' }}</small>
+                <p class="mt-2">{{ m.texto }}</p>
+                {% if m.producto_id %}
+                <a href="/catalogo?q={{ m.producto_id }}" class="btn btn-sm btn-outline-success">Ver producto</a>
+                {% endif %}
+                <!-- Agregar a contactos -->
+                {% if m.remitente_email != request.session.get("usuario") %}
+                <form method="post" action="/contactos/agregar" class="d-inline ms-2">
+                    <input type="hidden" name="contacto_email" value="{{ m.remitente_email }}">
+                    <input type="hidden" name="tipo_relacion" value="contacto">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">➕ Agregar a contactos</button>
+                </form>
+                {% endif %}
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
-    <form method="post" action="/mensajes/responder/{{ mensaje.id }}">
-        <div class="mb-3">
-            <textarea name="texto" class="form-control" rows="3" required></textarea>
+
+    <form method="post" action="/mensajes/responder/{{ mensaje.id }}" class="mb-4">
+        <div class="mb-2">
+            <textarea name="texto" class="form-control" rows="3" placeholder="Escribe tu respuesta..." required></textarea>
         </div>
-        <button type="submit" class="btn btn-success">Enviar respuesta</button>
+        <button type="submit" class="btn btn-success">Responder</button>
     </form>
+
+    <a href="/mensajes" class="btn btn-secondary">← Volver</a>
 </div>
 {% endblock %}

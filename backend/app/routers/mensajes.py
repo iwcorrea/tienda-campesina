@@ -12,12 +12,12 @@ from app.services.mensaje_service import (
     responder_mensaje,
     enviar_mensaje_nuevo,
     contar_no_leidos,
+    obtener_nombre_usuario,
 )
 from app.viewmodels.mensaje import MensajeViewModel
 from app.templates import templates
 
 router = APIRouter()
-
 
 @router.get("/mensajes", response_class=HTMLResponse)
 def bandeja_entrada(
@@ -30,13 +30,17 @@ def bandeja_entrada(
 
     email = current_user["email"]
     mensajes_orm = obtener_bandeja_entrada(db, email)
-    mensajes_vm = [MensajeViewModel.from_orm(m) for m in mensajes_orm]
+    mensajes_vm = []
+    for m in mensajes_orm:
+        vm = MensajeViewModel.from_orm(m)
+        vm.remitente_nombre = obtener_nombre_usuario(db, m.remitente_email)
+        mensajes_vm.append(vm)
+
     return templates.TemplateResponse("mensajes.html", {
         "request": request,
         "mensajes": mensajes_vm,
         "tipo_bandeja": "entrada",
     })
-
 
 @router.get("/mensajes/enviados", response_class=HTMLResponse)
 def bandeja_salida(
@@ -49,13 +53,17 @@ def bandeja_salida(
 
     email = current_user["email"]
     mensajes_orm = obtener_bandeja_salida(db, email)
-    mensajes_vm = [MensajeViewModel.from_orm(m) for m in mensajes_orm]
+    mensajes_vm = []
+    for m in mensajes_orm:
+        vm = MensajeViewModel.from_orm(m)
+        vm.destinatario_nombre = obtener_nombre_usuario(db, m.destinatario_email)
+        mensajes_vm.append(vm)
+
     return templates.TemplateResponse("mensajes.html", {
         "request": request,
         "mensajes": mensajes_vm,
         "tipo_bandeja": "salida",
     })
-
 
 @router.get("/mensajes/{mensaje_id}", response_class=HTMLResponse)
 def ver_mensaje(
@@ -74,13 +82,18 @@ def ver_mensaje(
 
     marcar_como_leido(db, mensaje, email)
     hilo = obtener_hilo(db, mensaje)
-    hilo_vm = [MensajeViewModel.from_orm(m) for m in hilo]
+    hilo_vm = []
+    for m in hilo:
+        vm = MensajeViewModel.from_orm(m)
+        vm.remitente_nombre = obtener_nombre_usuario(db, m.remitente_email)
+        vm.destinatario_nombre = obtener_nombre_usuario(db, m.destinatario_email)
+        hilo_vm.append(vm)
+
     return templates.TemplateResponse("mensaje_detalle.html", {
         "request": request,
-        "mensaje": MensajeViewModel.from_orm(mensaje),
+        "mensaje": hilo_vm[0],
         "hilo": hilo_vm,
     })
-
 
 @router.post("/mensajes/responder/{mensaje_id}")
 def responder(
@@ -101,7 +114,6 @@ def responder(
     responder_mensaje(db, original, email, texto)
     return RedirectResponse(url=f"/mensajes/{mensaje_id}", status_code=303)
 
-
 @router.post("/mensajes/enviar")
 def enviar(
     request: Request,
@@ -116,7 +128,6 @@ def enviar(
 
     enviar_mensaje_nuevo(db, current_user["email"], destinatario_email, texto, producto_id)
     return RedirectResponse(url="/catalogo", status_code=303)
-
 
 @router.get("/api/mensajes/no-leidos")
 def no_leidos(

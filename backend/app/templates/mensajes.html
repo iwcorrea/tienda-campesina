@@ -2,31 +2,54 @@
 {% block title %}Mensajes{% endblock %}
 {% block content %}
 <div class="modern-section">
-    <h2 class="fw-bold mb-4">📨 {{ 'Mensajes recibidos' if tipo_bandeja == 'entrada' else 'Mensajes enviados' }}</h2>
-    <div class="mb-3">
-        <a href="/mensajes" class="btn btn-sm btn-outline-success me-2">📥 Recibidos</a>
-        <a href="/mensajes/enviados" class="btn btn-sm btn-outline-success">📤 Enviados</a>
-    </div>
+    <h2 class="fw-bold mb-4">📬 Bandeja de {{ 'entrada' if tipo_bandeja == 'entrada' else 'salida' }}</h2>
+
+    <ul class="nav nav-pills mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if tipo_bandeja == 'entrada' %}active{% endif %}" href="/mensajes">Recibidos</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if tipo_bandeja == 'salida' %}active{% endif %}" href="/mensajes/enviados">Enviados</a>
+        </li>
+    </ul>
+
     {% if mensajes %}
-    <div class="list-group">
-        {% for m in mensajes %}
-        <a href="/mensajes/{{ m.id }}" class="list-group-item list-group-item-action {% if m.leido == '0' and tipo_bandeja == 'entrada' %}fw-bold{% endif %}">
-            <div class="d-flex justify-content-between">
-                <span>
-                    <strong>{{ 'Tú' if tipo_bandeja == 'salida' else (m.remitente.nombre if m.remitente else m.remitente_email) }}</strong>
-                    {% if tipo_bandeja == 'salida' %}
-                    → {{ m.destinatario.nombre if m.destinatario else m.destinatario_email }}
-                    {% endif %}
-                </span>
-                <small class="text-muted">{{ m.fecha_envio.strftime('%d/%m/%Y %H:%M') }}</small>
-            </div>
-            <p class="mb-0 text-muted small">{{ m.texto[:100] }}{% if m.texto|length > 100 %}...{% endif %}</p>
-            {% if m.producto %}<small class="text-success">Producto: {{ m.producto.nombre }}</small>{% endif %}
-        </a>
-        {% endfor %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>{{ 'Remitente' if tipo_bandeja == 'entrada' else 'Destinatario' }}</th>
+                    <th>Mensaje</th>
+                    <th>Producto</th>
+                    <th>Fecha</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in mensajes %}
+                <tr class="{{ 'fw-bold' if tipo_bandeja == 'entrada' and m.leido == '0' else '' }}">
+                    <td>
+                        {% if tipo_bandeja == 'entrada' %}
+                            {{ m.remitente_nombre or m.remitente_email }}
+                        {% else %}
+                            {{ m.destinatario_nombre or m.destinatario_email }}
+                        {% endif %}
+                    </td>
+                    <td>{{ m.texto[:60] }}{% if m.texto|length > 60 %}...{% endif %}</td>
+                    <td>
+                        {% if m.producto_id %}
+                        <a href="/catalogo?q={{ m.producto_id }}" class="btn btn-sm btn-outline-success">Ver producto</a>
+                        {% endif %}
+                    </td>
+                    <td>{{ m.fecha_envio.strftime('%d/%m/%Y %H:%M') if m.fecha_envio else '' }}</td>
+                    <td><a href="/mensajes/{{ m.id }}" class="btn btn-sm btn-outline-primary">Abrir</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     {% else %}
-    <p class="text-muted">No tienes mensajes {{ 'recibidos' if tipo_bandeja == 'entrada' else 'enviados' }}.</p>
+    <p class="text-muted">No hay mensajes en esta bandeja.</p>
     {% endif %}
 </div>
 {% endblock %}
