@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 from sqlalchemy.orm import Session, selectinload
-from app.models import Asociacion, Producto, Transportista, TransportistaFavorito, ItemPedido
+from app.models import Asociacion, Producto, Transportista, TransportistaFavorito, ItemPedido, RespuestaCotizacion
 import cloudinary.uploader
 from app.cloudinary_utils import delete_cloudinary_asset
 
@@ -181,7 +181,8 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
             "precio_unitario_inicial": item.precio_unitario_inicial,
         })
     return resultado
-    
+
+
 # ─── RESPUESTA A COTIZACIONES ──────────────────────
 def obtener_item_para_responder(db: Session, item_id: str, email_asociacion: str) -> Optional[dict]:
     """
@@ -214,7 +215,7 @@ def guardar_respuesta_cotizacion(
     db: Session,
     item_id: str,
     email_asociacion: str,
-    aceptado: str,          # "aceptado" o "rechazado" o "contraoferta"
+    aceptado: str,          # "aceptado", "rechazado" o "contraoferta"
     precio_contraoferta: int = 0,
     cantidad_contraoferta: int = 0,
     fecha_entrega: str = "",
@@ -241,4 +242,4 @@ def guardar_respuesta_cotizacion(
     )
     db.add(nueva)
     db.commit()
-    return nueva    
+    return nueva
