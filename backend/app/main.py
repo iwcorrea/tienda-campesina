@@ -22,6 +22,7 @@ from app.routers import pedidos
 from app.routers import carrito
 from app.routers import ayuda
 from app.routers import noticias
+from app.routers import notificaciones  # <-- nuevo
 
 logging.basicConfig(level=logging.INFO)
 
@@ -91,6 +92,7 @@ app.include_router(pedidos.router)
 app.include_router(carrito.router)
 app.include_router(ayuda.router)
 app.include_router(noticias.router)
+app.include_router(notificaciones.router)  # <-- nuevo
 
 
 @app.on_event("startup")
