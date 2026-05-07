@@ -11,7 +11,8 @@ def listar_pedidos(
     estado: Optional[str] = None,
 ) -> Tuple[List[Pedido], int]:
     query = db.query(Pedido).options(
-        selectinload(Pedido.items).selectinload(ItemPedido.producto)
+        selectinload(Pedido.items).selectinload(ItemPedido.producto),
+        selectinload(Pedido.items).selectinload(ItemPedido.respuestas)
     )
     if comprador_email:
         query = query.filter(Pedido.comprador_email == comprador_email)
@@ -25,7 +26,10 @@ def listar_pedidos(
 def obtener_pedido_por_id(db: Session, pedido_id: str) -> Optional[Pedido]:
     return (
         db.query(Pedido)
-        .options(selectinload(Pedido.items).selectinload(ItemPedido.producto))
+        .options(
+            selectinload(Pedido.items).selectinload(ItemPedido.producto),
+            selectinload(Pedido.items).selectinload(ItemPedido.respuestas)
+        )
         .filter(Pedido.id == pedido_id)
         .first()
     )

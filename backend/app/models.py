@@ -236,6 +236,7 @@ class RespuestaCotizacion(Base):
     fecha_entrega_contraoferta = Column(String, default="")
     mensaje = Column(Text, default="")
     fecha_respuesta = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    contrato_url = Column(Text, default="")
 
     item_pedido = relationship("ItemPedido", back_populates="respuestas")
     asociacion = relationship("Asociacion")

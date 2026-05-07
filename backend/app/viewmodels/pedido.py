@@ -1,29 +1,37 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
-
 from app.models import Pedido, ItemPedido
 
-
 @dataclass
-class ItemPedidoViewModel:
+class DetallePedidoViewModel:
     producto_nombre: str
     cantidad: int
     precio_unitario: float
     subtotal: float
+    respuestas: list
 
     @classmethod
-    def from_orm(cls, item: ItemPedido) -> "ItemPedidoViewModel":
-        nombre = item.producto.nombre if item.producto else "Producto eliminado"
-        precio = float(item.precio_unitario_inicial) if item.precio_unitario_inicial else 0.0
-        subtotal = round(item.cantidad * precio, 2)
+    def from_orm(cls, detalle: ItemPedido) -> "DetallePedidoViewModel":
+        respuestas_vm = []
+        for r in detalle.respuestas:
+            respuestas_vm.append({
+                "aceptado": r.aceptado,
+                "precio_contraoferta": r.precio_contraoferta,
+                "cantidad_contraoferta": r.cantidad_contraoferta,
+                "fecha_entrega_contraoferta": r.fecha_entrega_contraoferta,
+                "mensaje": r.mensaje,
+                "contrato_url": r.contrato_url,
+                "fecha_respuesta": r.fecha_respuesta.isoformat() if r.fecha_respuesta else None
+            })
+        subtotal = round(detalle.cantidad * detalle.precio_unitario_inicial, 2)
         return cls(
-            producto_nombre=nombre,
-            cantidad=item.cantidad,
-            precio_unitario=precio,
+            producto_nombre=detalle.producto.nombre if detalle.producto else "Producto eliminado",
+            cantidad=detalle.cantidad,
+            precio_unitario=float(detalle.precio_unitario_inicial),
             subtotal=subtotal,
+            respuestas=respuestas_vm
         )
-
 
 @dataclass
 class PedidoViewModel:
@@ -32,11 +40,11 @@ class PedidoViewModel:
     estado: str
     total: float
     comprador_email: str
-    items: List[ItemPedidoViewModel]
+    items: List[DetallePedidoViewModel]
 
     @classmethod
     def from_orm(cls, pedido: Pedido) -> "PedidoViewModel":
-        items_vm = [ItemPedidoViewModel.from_orm(item) for item in pedido.items]
+        items_vm = [DetallePedidoViewModel.from_orm(item) for item in pedido.items]
         total = sum(item.subtotal for item in items_vm)
         return cls(
             id=pedido.id,

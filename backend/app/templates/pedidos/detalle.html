@@ -8,7 +8,7 @@
     <hr>
     <h4>Productos</h4>
     <table class="table table-sm">
-        <thead><tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th>Subtotal</th></tr></thead>
+        <thead><tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th>Subtotal</th><th>Contrato</th></tr></thead>
         <tbody>
             {% for item in pedido.items %}
             <tr>
@@ -16,6 +16,14 @@
                 <td>{{ item.cantidad }}</td>
                 <td>${{ item.precio_unitario }}</td>
                 <td>${{ item.subtotal }}</td>
+                <td>
+                    {% set resp = item.respuestas | selectattr("aceptado","equalto","aceptado") | first %}
+                    {% if resp and resp.contrato_url %}
+                    <a href="{{ resp.contrato_url }}" target="_blank" class="btn btn-sm btn-outline-success">Ver contrato</a>
+                    {% else %}
+                    <span class="text-muted">Pendiente</span>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

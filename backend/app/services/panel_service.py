@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.models import Asociacion, Producto, Transportista, TransportistaFavorito, ItemPedido, RespuestaCotizacion
 import cloudinary.uploader
 from app.cloudinary_utils import delete_cloudinary_asset
+from app.services.contrato_service import generar_contrato_html, subir_contrato
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
@@ -151,7 +152,8 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
         .join(Producto)
         .options(
             selectinload(ItemPedido.producto),
-            selectinload(ItemPedido.pedido)
+            selectinload(ItemPedido.pedido),
+            selectinload(ItemPedido.respuestas)
         )
         .filter(Producto.asociacion_email == email)
         .order_by(ItemPedido.pedido_id.desc())
@@ -159,6 +161,7 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
     )
     resultado = []
     for item in items:
+        respuesta_aceptada = any(r.aceptado == "aceptado" for r in item.respuestas) if item.respuestas else False
         resultado.append({
             "id": item.id,
             "producto": {"nombre": item.producto.nombre if item.producto else "Producto eliminado"},
@@ -168,6 +171,7 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
             },
             "cantidad": item.cantidad,
             "precio_unitario_inicial": item.precio_unitario_inicial,
+            "respuesta_aceptada": respuesta_aceptada,
         })
     return resultado
 
@@ -198,6 +202,7 @@ def guardar_respuesta_cotizacion(
     item = (
         db.query(ItemPedido)
         .join(Producto)
+        .options(selectinload(ItemPedido.producto), selectinload(ItemPedido.pedido))
         .filter(ItemPedido.id == item_id, Producto.asociacion_email == email_asociacion)
         .first()
     )
@@ -213,6 +218,32 @@ def guardar_respuesta_cotizacion(
         fecha_entrega_contraoferta=fecha_entrega,
         mensaje=mensaje,
     )
+
+    if aceptado == "aceptado":
+        producto = item.producto
+        comprador_email = item.pedido.comprador_email
+        cantidad_final = cantidad_contraoferta if cantidad_contraoferta > 0 else item.cantidad
+        precio_unit = precio_contraoferta if precio_contraoferta > 0 else item.precio_unitario_inicial
+        precio_total = cantidad_final * precio_unit
+        asociacion_nombre = item.producto.asociacion.nombre if item.producto.asociacion else email_asociacion
+
+        html = generar_contrato_html(
+            comprador_email=comprador_email,
+            asociacion_nombre=asociacion_nombre,
+            asociacion_email=email_asociacion,
+            producto_nombre=producto.nombre,
+            cantidad=cantidad_final,
+            precio_unitario=precio_unit,
+            precio_total=precio_total,
+            fecha_entrega=fecha_entrega,
+        )
+        filename = f"contrato_{item.pedido.id}_{producto.id}.html"
+        try:
+            url_contrato = subir_contrato(html, filename)
+            nueva.contrato_url = url_contrato
+        except Exception:
+            pass
+
     db.add(nueva)
     db.commit()
     return nueva

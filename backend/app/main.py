@@ -19,7 +19,7 @@ from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, va
 from app.routers import personas, empleos, herramientas, mensajes
 from app.routers import transportistas
 from app.routers import pedidos
-from app.routers import carrito   # <-- nuevo
+from app.routers import carrito
 from app.routers import ayuda
 from app.routers import noticias
 
@@ -88,7 +88,7 @@ app.include_router(herramientas.router)
 app.include_router(mensajes.router)
 app.include_router(transportistas.router)
 app.include_router(pedidos.router)
-app.include_router(carrito.router)      # <-- nuevo
+app.include_router(carrito.router)
 app.include_router(ayuda.router)
 app.include_router(noticias.router)
 
@@ -154,6 +154,16 @@ def on_startup():
         ]:
             if col_name not in existing_vac:
                 sql = f'ALTER TABLE vacantes ADD COLUMN IF NOT EXISTS {col_name} {col_type}'
+                conn.execute(text(sql))
+
+        # RespuestasCotizacion (columna contrato_url)
+        existing_resp = set()
+        rows_resp = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='respuestas_cotizaciones'"))
+        for row in rows_resp:
+            existing_resp.add(row[0])
+        for col_name in ["contrato_url"]:
+            if col_name not in existing_resp:
+                sql = f'ALTER TABLE respuestas_cotizaciones ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))
 
         conn.commit()
