@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Request, Form, Depends
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
 from app.templates import templates
-from app.models import Persona  # Ajusta si es diferente
+from app.models import Persona
 
 router = APIRouter()
 
 @router.get("/personas", response_class=HTMLResponse)
 def listar_personas(request: Request, db: Session = Depends(get_db)):
-    # Ejemplo: listar personas (si aplica)
+    # Ejemplo: podrías obtener todas las personas, pero por ahora solo mostramos la página
     return templates.TemplateResponse("personas.html", {"request": request})
 
 @router.get("/personas/{email}", response_class=HTMLResponse)

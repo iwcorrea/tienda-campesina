@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ persona.nombre }}{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2>{{ persona.nombre }}</h2>
+    <p><strong>Email:</strong> {{ persona.email }}</p>
+    <p><strong>Teléfono:</strong> {{ persona.telefono }}</p>
+    {% if persona.hoja_vida_url %}
+    <a href="{{ persona.hoja_vida_url }}" class="btn btn-primary">Ver hoja de vida</a>
+    {% endif %}
+</div>
+{% endblock %}
