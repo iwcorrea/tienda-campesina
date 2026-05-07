@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Nuevo mensaje{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2>Nuevo mensaje</h2>
+    <form method="post" action="/mensajes/enviar" class="mt-4">
+        <div class="mb-3">
+            <label for="destinatario_email" class="form-label">Email del destinatario</label>
+            <input type="email" class="form-control" id="destinatario_email" name="destinatario_email" value="{{ destinatario_email }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="producto_id" class="form-label">Producto relacionado (opcional)</label>
+            <input type="text" class="form-control" id="producto_id" name="producto_id" placeholder="ID del producto">
+        </div>
+        <div class="mb-3">
+            <label for="texto" class="form-label">Mensaje</label>
+            <textarea class="form-control" id="texto" name="texto" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Enviar</button>
+    </form>
+</div>
+{% endblock %}

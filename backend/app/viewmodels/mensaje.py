@@ -3,27 +3,25 @@ from datetime import datetime
 from typing import Optional
 
 @dataclass
-class MensajeViewModel:
+class MensajeChatViewModel:
     id: str
     remitente_email: str
     destinatario_email: str
-    producto_id: Optional[str]
     texto: str
-    leido: str
     fecha_envio: datetime
-    mensaje_padre_id: Optional[str]
+    leido: str
+    producto_id: Optional[str]
     remitente_nombre: str = ""
     destinatario_nombre: str = ""
 
     @classmethod
-    def from_orm(cls, mensaje) -> "MensajeViewModel":
+    def from_orm(cls, mensaje) -> "MensajeChatViewModel":
         return cls(
             id=mensaje.id,
             remitente_email=mensaje.remitente_email,
             destinatario_email=mensaje.destinatario_email,
-            producto_id=mensaje.producto_id,
             texto=mensaje.texto,
-            leido=mensaje.leido,
             fecha_envio=mensaje.fecha_envio,
-            mensaje_padre_id=mensaje.mensaje_padre_id,
+            leido=mensaje.leido,
+            producto_id=mensaje.producto_id,
         )

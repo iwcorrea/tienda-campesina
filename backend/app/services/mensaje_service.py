@@ -1,74 +1,70 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_, and_
 from app.models import Mensaje, Asociacion, Persona, Transportista
 
-def obtener_bandeja_entrada(db: Session, email: str) -> List[Mensaje]:
-    return (
+def obtener_conversaciones(db: Session, email: str) -> List[dict]:
+    """
+    Devuelve una lista de conversaciones únicas basadas en los mensajes
+    donde el usuario es remitente o destinatario.
+    Cada elemento contiene el último mensaje y el otro participante.
+    """
+    # Subconsulta: último mensaje por cada par (email, otro_email)
+    mensajes = (
         db.query(Mensaje)
-        .filter(Mensaje.destinatario_email == email)
+        .filter(
+            or_(Mensaje.remitente_email == email, Mensaje.destinatario_email == email)
+        )
         .order_by(Mensaje.fecha_envio.desc())
         .all()
     )
 
-def obtener_bandeja_salida(db: Session, email: str) -> List[Mensaje]:
-    return (
-        db.query(Mensaje)
-        .filter(Mensaje.remitente_email == email)
-        .order_by(Mensaje.fecha_envio.desc())
-        .all()
-    )
+    # Agrupar manualmente por contacto
+    conversaciones = {}
+    for m in mensajes:
+        otro = m.remitente_email if m.destinatario_email == email else m.destinatario_email
+        if otro not in conversaciones:
+            conversaciones[otro] = m
+    resultado = []
+    for otro, ultimo in conversaciones.items():
+        nombre = obtener_nombre_usuario(db, otro)
+        resultado.append({
+            "contacto_email": otro,
+            "contacto_nombre": nombre,
+            "ultimo_mensaje": ultimo.texto[:80] + ("..." if len(ultimo.texto) > 80 else ""),
+            "fecha": ultimo.fecha_envio,
+            "leido": ultimo.leido if ultimo.destinatario_email == email else "1",
+            "producto_id": ultimo.producto_id,
+            "mensaje_id": ultimo.id
+        })
+    resultado.sort(key=lambda x: x["fecha"], reverse=True)
+    return resultado
 
-def obtener_mensaje_por_id(db: Session, mensaje_id: str, email: str) -> Optional[Mensaje]:
+def obtener_hilo_con_contacto(db: Session, email: str, contacto_email: str) -> List[Mensaje]:
+    """Todos los mensajes entre el usuario y el contacto, orden cronológico."""
     return (
         db.query(Mensaje)
         .filter(
-            Mensaje.id == mensaje_id,
-            (Mensaje.destinatario_email == email) | (Mensaje.remitente_email == email),
+            or_(
+                and_(Mensaje.remitente_email == email, Mensaje.destinatario_email == contacto_email),
+                and_(Mensaje.remitente_email == contacto_email, Mensaje.destinatario_email == email)
+            )
         )
-        .first()
-    )
-
-def marcar_como_leido(db: Session, mensaje: Mensaje, email: str):
-    if mensaje.destinatario_email == email and mensaje.leido == "0":
-        mensaje.leido = "1"
-        db.commit()
-
-def obtener_hilo(db: Session, mensaje: Mensaje) -> List[Mensaje]:
-    respuestas = (
-        db.query(Mensaje)
-        .filter(Mensaje.mensaje_padre_id == mensaje.id)
         .order_by(Mensaje.fecha_envio.asc())
         .all()
     )
-    return [mensaje] + respuestas
 
-def responder_mensaje(
-    db: Session,
-    mensaje_original: Mensaje,
-    email_remitente: str,
-    texto: str,
-) -> Mensaje:
-    destinatario = (
-        mensaje_original.remitente_email
-        if mensaje_original.remitente_email != email_remitente
-        else mensaje_original.destinatario_email
-    )
-    nuevo = Mensaje(
-        id=str(uuid.uuid4()),
-        remitente_email=email_remitente,
-        destinatario_email=destinatario,
-        producto_id=mensaje_original.producto_id,
-        texto=texto,
-        leido="0",
-        mensaje_padre_id=mensaje_original.id,
-    )
-    db.add(nuevo)
+def marcar_conversacion_leida(db: Session, email: str, contacto_email: str):
+    """Marca como leídos todos los mensajes recibidos de ese contacto."""
+    db.query(Mensaje).filter(
+        Mensaje.destinatario_email == email,
+        Mensaje.remitente_email == contacto_email,
+        Mensaje.leido == "0"
+    ).update({"leido": "1"})
     db.commit()
-    return nuevo
 
-def enviar_mensaje_nuevo(
+def enviar_mensaje(
     db: Session,
     email_remitente: str,
     destinatario_email: str,
@@ -95,7 +91,6 @@ def contar_no_leidos(db: Session, email: str) -> int:
     )
 
 def obtener_nombre_usuario(db: Session, email: str) -> str:
-    """Devuelve el nombre público del usuario según su tipo, o el email si no se encuentra."""
     a = db.query(Asociacion).filter(Asociacion.email == email).first()
     if a:
         return a.nombre or email

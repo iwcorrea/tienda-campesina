@@ -1,38 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Conversación{% endblock %}
+{% block title %}Chat con {{ contacto_nombre }}{% endblock %}
 {% block content %}
-<div class="modern-section">
-    <h2>Conversación</h2>
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            {% for m in hilo %}
-            <div class="mb-3 p-3 {% if m.remitente_email == request.session.get('usuario') %}bg-light{% else %}bg-white{% endif %} rounded">
-                <strong>{{ m.remitente_nombre or m.remitente_email }}</strong> → <strong>{{ m.destinatario_nombre or m.destinatario_email }}</strong>
-                <br><small class="text-muted">{{ m.fecha_envio.strftime('%d/%m/%Y %H:%M') if m.fecha_envio else '' }}</small>
-                <p class="mt-2">{{ m.texto }}</p>
-                {% if m.producto_id %}
-                <a href="/catalogo?q={{ m.producto_id }}" class="btn btn-sm btn-outline-success">Ver producto</a>
-                {% endif %}
-                <!-- Agregar a contactos -->
-                {% if m.remitente_email != request.session.get("usuario") %}
-                <form method="post" action="/contactos/agregar" class="d-inline ms-2">
-                    <input type="hidden" name="contacto_email" value="{{ m.remitente_email }}">
-                    <input type="hidden" name="tipo_relacion" value="contacto">
-                    <button type="submit" class="btn btn-sm btn-outline-primary">➕ Agregar a contactos</button>
-                </form>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
+<div class="modern-section d-flex flex-column" style="height: calc(100vh - 200px);">
+    <div class="d-flex align-items-center mb-3">
+        <a href="/mensajes" class="btn btn-outline-secondary me-2">←</a>
+        <h4 class="mb-0">{{ contacto_nombre }}</h4>
+        <form method="post" action="/contactos/agregar" class="ms-auto">
+            <input type="hidden" name="contacto_email" value="{{ contacto_email }}">
+            <input type="hidden" name="tipo_relacion" value="contacto">
+            <button type="submit" class="btn btn-sm btn-outline-primary">➕ Agregar contacto</button>
+        </form>
     </div>
 
-    <form method="post" action="/mensajes/responder/{{ mensaje.id }}" class="mb-4">
-        <div class="mb-2">
-            <textarea name="texto" class="form-control" rows="3" placeholder="Escribe tu respuesta..." required></textarea>
+    <!-- Mensajes -->
+    <div class="flex-grow-1 overflow-auto mb-3 bg-light rounded p-3" id="chat-box">
+        {% for m in hilo %}
+        <div class="d-flex mb-3 {% if m.remitente_email == request.session.get('usuario') %}justify-content-end{% else %}justify-content-start{% endif %}">
+            <div class="p-3 rounded-3 {% if m.remitente_email == request.session.get('usuario') %}bg-success text-white{% else %}bg-white border{% endif %}" style="max-width: 70%;">
+                <div class="small {% if m.remitente_email == request.session.get('usuario') %}text-white-50{% else %}text-muted{% endif %}">
+                    {{ m.remitente_nombre or m.remitente_email }} · {{ m.fecha_envio.strftime('%d/%m/%Y %H:%M') if m.fecha_envio else '' }}
+                </div>
+                <p class="mb-1">{{ m.texto }}</p>
+                {% if m.producto_id %}
+                <a href="/catalogo?q={{ m.producto_id }}" class="btn btn-sm btn-outline-light mt-1">Ver producto</a>
+                {% endif %}
+            </div>
         </div>
-        <button type="submit" class="btn btn-success">Responder</button>
-    </form>
+        {% endfor %}
+    </div>
 
-    <a href="/mensajes" class="btn btn-secondary">← Volver</a>
+    <!-- Responder -->
+    <form method="post" action="/mensajes/enviar" class="d-flex gap-2">
+        <input type="hidden" name="destinatario_email" value="{{ contacto_email }}">
+        <textarea name="texto" class="form-control" rows="1" placeholder="Escribe un mensaje..." required></textarea>
+        <button type="submit" class="btn btn-success">Enviar</button>
+    </form>
 </div>
 {% endblock %}

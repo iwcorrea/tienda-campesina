@@ -4,23 +4,20 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, get_current_user
 from app.services.mensaje_service import (
-    obtener_bandeja_entrada,
-    obtener_bandeja_salida,
-    obtener_mensaje_por_id,
-    marcar_como_leido,
-    obtener_hilo,
-    responder_mensaje,
-    enviar_mensaje_nuevo,
+    obtener_conversaciones,
+    obtener_hilo_con_contacto,
+    marcar_conversacion_leida,
+    enviar_mensaje,
     contar_no_leidos,
     obtener_nombre_usuario,
 )
-from app.viewmodels.mensaje import MensajeViewModel
+from app.viewmodels.mensaje import MensajeChatViewModel
 from app.templates import templates
 
 router = APIRouter()
 
 @router.get("/mensajes", response_class=HTMLResponse)
-def bandeja_entrada(
+def bandeja_principal(
     request: Request,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
@@ -28,91 +25,25 @@ def bandeja_entrada(
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    email = current_user["email"]
-    mensajes_orm = obtener_bandeja_entrada(db, email)
-    mensajes_vm = []
-    for m in mensajes_orm:
-        vm = MensajeViewModel.from_orm(m)
-        vm.remitente_nombre = obtener_nombre_usuario(db, m.remitente_email)
-        mensajes_vm.append(vm)
-
+    conversaciones = obtener_conversaciones(db, current_user["email"])
     return templates.TemplateResponse("mensajes.html", {
         "request": request,
-        "mensajes": mensajes_vm,
-        "tipo_bandeja": "entrada",
+        "conversaciones": conversaciones,
     })
 
-@router.get("/mensajes/enviados", response_class=HTMLResponse)
-def bandeja_salida(
+@router.get("/mensajes/nuevo", response_class=HTMLResponse)
+def nuevo_mensaje(
     request: Request,
-    db: Session = Depends(get_db),
+    destinatario_email: str = "",
     current_user: dict = Depends(get_current_user),
 ):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    email = current_user["email"]
-    mensajes_orm = obtener_bandeja_salida(db, email)
-    mensajes_vm = []
-    for m in mensajes_orm:
-        vm = MensajeViewModel.from_orm(m)
-        vm.destinatario_nombre = obtener_nombre_usuario(db, m.destinatario_email)
-        mensajes_vm.append(vm)
-
-    return templates.TemplateResponse("mensajes.html", {
+    return templates.TemplateResponse("mensaje_nuevo.html", {
         "request": request,
-        "mensajes": mensajes_vm,
-        "tipo_bandeja": "salida",
+        "destinatario_email": destinatario_email,
     })
-
-@router.get("/mensajes/{mensaje_id}", response_class=HTMLResponse)
-def ver_mensaje(
-    request: Request,
-    mensaje_id: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    if not current_user:
-        return RedirectResponse(url="/auth/login", status_code=303)
-
-    email = current_user["email"]
-    mensaje = obtener_mensaje_por_id(db, mensaje_id, email)
-    if not mensaje:
-        return RedirectResponse(url="/mensajes", status_code=303)
-
-    marcar_como_leido(db, mensaje, email)
-    hilo = obtener_hilo(db, mensaje)
-    hilo_vm = []
-    for m in hilo:
-        vm = MensajeViewModel.from_orm(m)
-        vm.remitente_nombre = obtener_nombre_usuario(db, m.remitente_email)
-        vm.destinatario_nombre = obtener_nombre_usuario(db, m.destinatario_email)
-        hilo_vm.append(vm)
-
-    return templates.TemplateResponse("mensaje_detalle.html", {
-        "request": request,
-        "mensaje": hilo_vm[0],
-        "hilo": hilo_vm,
-    })
-
-@router.post("/mensajes/responder/{mensaje_id}")
-def responder(
-    request: Request,
-    mensaje_id: str,
-    texto: str = Form(...),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    if not current_user:
-        return RedirectResponse(url="/auth/login", status_code=303)
-
-    email = current_user["email"]
-    original = obtener_mensaje_por_id(db, mensaje_id, email)
-    if not original:
-        return RedirectResponse(url="/mensajes", status_code=303)
-
-    responder_mensaje(db, original, email, texto)
-    return RedirectResponse(url=f"/mensajes/{mensaje_id}", status_code=303)
 
 @router.post("/mensajes/enviar")
 def enviar(
@@ -126,8 +57,38 @@ def enviar(
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    enviar_mensaje_nuevo(db, current_user["email"], destinatario_email, texto, producto_id)
-    return RedirectResponse(url="/catalogo", status_code=303)
+    enviar_mensaje(db, current_user["email"], destinatario_email, texto, producto_id)
+    return RedirectResponse(url=f"/mensajes/chat/{destinatario_email}", status_code=303)
+
+@router.get("/mensajes/chat/{contacto_email}", response_class=HTMLResponse)
+def ver_chat(
+    request: Request,
+    contacto_email: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    email = current_user["email"]
+    marcar_conversacion_leida(db, email, contacto_email)
+
+    hilo = obtener_hilo_con_contacto(db, email, contacto_email)
+    hilo_vm = []
+    for m in hilo:
+        vm = MensajeChatViewModel.from_orm(m)
+        vm.remitente_nombre = obtener_nombre_usuario(db, m.remitente_email)
+        vm.destinatario_nombre = obtener_nombre_usuario(db, m.destinatario_email)
+        hilo_vm.append(vm)
+
+    contacto_nombre = obtener_nombre_usuario(db, contacto_email)
+
+    return templates.TemplateResponse("mensaje_detalle.html", {
+        "request": request,
+        "hilo": hilo_vm,
+        "contacto_email": contacto_email,
+        "contacto_nombre": contacto_nombre,
+    })
 
 @router.get("/api/mensajes/no-leidos")
 def no_leidos(
@@ -137,6 +98,5 @@ def no_leidos(
 ):
     if not current_user:
         return {"count": 0}
-
     count = contar_no_leidos(db, current_user["email"])
     return {"count": count}
