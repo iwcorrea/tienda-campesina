@@ -10,6 +10,7 @@ from app.services.pedido_service import listar_pedidos, obtener_pedido_por_id
 from app.viewmodels.pedido import PedidoViewModel
 from app.templates import templates
 from app.models import Producto, Pedido, ItemPedido
+from app.services.notificacion_service import crear_notificacion
 import uuid
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
@@ -108,5 +109,23 @@ def cotizar_servicio(
         precio_unitario_inicial=producto.precio
     ))
     db.commit()
+
+    # Notificar a la asociación dueña del servicio
+    crear_notificacion(
+        db,
+        destinatario_email=producto.asociacion_email,
+        remitente_email=comprador_email,
+        texto=f"📋 Nueva solicitud de cotización para el servicio '{producto.nombre}' de {comprador_email}.",
+        producto_id=producto.id
+    )
+
+    # Confirmación al comprador
+    crear_notificacion(
+        db,
+        destinatario_email=comprador_email,
+        remitente_email=comprador_email,
+        texto=f"✅ Solicitaste cotización para '{producto.nombre}'. La asociación te responderá pronto.",
+        producto_id=producto.id
+    )
 
     return RedirectResponse(url="/pedidos?servicio_cotizado=1", status_code=303)

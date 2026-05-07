@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
 from app.models import Pedido, ItemPedido, Producto
 from app.templates import templates
+from app.services.notificacion_service import crear_notificacion
 
 router = APIRouter(prefix="/carrito", tags=["carrito"])
 
@@ -125,6 +126,23 @@ def confirmar_pedido(
                 precio_unitario_inicial=item["precio"]
             ))
         db.commit()
+
+        # Notificar a la asociación
+        crear_notificacion(
+            db,
+            destinatario_email=email_asoc,
+            remitente_email=comprador_email,
+            texto=f"📦 Nuevo pedido de {comprador_email} con {len(items)} producto(s). ID pedido: {pedido.id[:8]}",
+            producto_id=items[0]["producto_id"]
+        )
+
+    # Notificar al comprador
+    crear_notificacion(
+        db,
+        destinatario_email=comprador_email,
+        remitente_email=comprador_email,
+        texto=f"✅ Confirmaste tu pedido con {len(carrito)} producto(s). Recibirás una respuesta pronto.",
+    )
 
     request.session["carrito"] = []
     return RedirectResponse(url="/pedidos?confirmado=1", status_code=303)
