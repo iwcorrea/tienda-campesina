@@ -1,55 +1,60 @@
-import uuid
-from fastapi import APIRouter, Request, Form, File, UploadFile, Depends, Query
+from fastapi import APIRouter, Request, Form, File, UploadFile, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import Asociacion, Vacante, Aplicacion, Persona
-import cloudinary.uploader
-import datetime
+
+from app.dependencies import get_db, get_current_user
+from app.services.empleo_service import (
+    listar_vacantes_publicas,
+    obtener_vacante_por_id,
+    obtener_persona_actual,
+    aplicar_a_vacante,
+    listar_vacantes_por_asociacion,
+    crear_vacante,
+    eliminar_vacante,
+    obtener_postulantes,
+)
+from app.viewmodels.empleo import VacanteViewModel
+from app.templates import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
-def subir_terminos(file: UploadFile):
-    if not file or not file.filename:
-        return ""
-    try:
-        result = cloudinary.uploader.upload(
-            file.file,
-            folder="terminos_referencia",
-            resource_type="raw",
-            filename=file.filename,
-            use_filename=True,
-            unique_filename=True,
-            access_mode="public"
-        )
-        return result.get("secure_url", "")
-    except Exception:
-        return ""
 
 # ─── BOLSA DE EMPLEO (PÚBLICA) ─────────────────────
 @router.get("/bolsa-empleo", response_class=HTMLResponse)
-def bolsa_empleo(request: Request, db: Session = Depends(get_db)):
-    vacantes = db.query(Vacante).filter(Vacante.fecha_limite >= datetime.datetime.now()).order_by(Vacante.fecha_publicacion.desc()).all()
-    return templates.TemplateResponse("bolsa_empleo.html", {"request": request, "vacantes": vacantes})
+def bolsa_empleo(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    vacantes_orm = listar_vacantes_publicas(db)
+    vacantes_vm = [VacanteViewModel.from_orm(v) for v in vacantes_orm]
+    return templates.TemplateResponse("bolsa_empleo.html", {
+        "request": request,
+        "vacantes": vacantes_vm,
+    })
+
 
 # ─── DETALLE DE VACANTE ────────────────────────────
 @router.get("/bolsa-empleo/{vacante_id}", response_class=HTMLResponse)
-def detalle_vacante(request: Request, vacante_id: str, db: Session = Depends(get_db)):
-    vacante = db.query(Vacante).filter(Vacante.id == vacante_id).first()
+def detalle_vacante(
+    request: Request,
+    vacante_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    vacante = obtener_vacante_por_id(db, vacante_id)
     if not vacante:
         return RedirectResponse(url="/bolsa-empleo", status_code=303)
 
     persona_actual = None
-    if request.session.get("tipo_usuario") == "persona":
-        persona_actual = db.query(Persona).filter(Persona.email == request.session["usuario"]).first()
+    if current_user and current_user.get("tipo") == "persona":
+        persona_actual = obtener_persona_actual(db, current_user["email"])
 
     return templates.TemplateResponse("vacante_detalle.html", {
         "request": request,
         "vacante": vacante,
-        "persona": persona_actual
+        "persona": persona_actual,
     })
+
 
 # ─── APLICAR A VACANTE (SOLO PERSONAS) ─────────────
 @router.post("/aplicar/{vacante_id}")
@@ -57,107 +62,100 @@ def aplicar_vacante(
     request: Request,
     vacante_id: str,
     mensaje: str = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
-    if request.session.get("tipo_usuario") != "persona":
+    if not current_user or current_user.get("tipo") != "persona":
         return RedirectResponse(url="/auth/login", status_code=303)
-    persona_email = request.session["usuario"]
-    existente = db.query(Aplicacion).filter(
-        Aplicacion.vacante_id == vacante_id,
-        Aplicacion.persona_email == persona_email
-    ).first()
-    if existente:
-        return RedirectResponse(url="/bolsa-empleo", status_code=303)
 
-    nueva = Aplicacion(vacante_id=vacante_id, persona_email=persona_email, mensaje=mensaje or "")
-    db.add(nueva)
-    db.commit()
+    aplicar_a_vacante(db, vacante_id, current_user["email"], mensaje)
     return RedirectResponse(url=f"/bolsa-empleo/{vacante_id}?aplicado=1", status_code=303)
+
 
 # ─── PANEL DE VACANTES PARA ASOCIACIÓN ─────────────
 @router.get("/panel/vacantes", response_class=HTMLResponse)
-def panel_vacantes(request: Request, db: Session = Depends(get_db)):
-    if request.session.get("tipo_usuario") != "asociacion":
+def panel_vacantes(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    vacantes = db.query(Vacante).filter(Vacante.asociacion_email == email).order_by(Vacante.fecha_publicacion.desc()).all()
-    return templates.TemplateResponse("panel_vacantes.html", {"request": request, "vacantes": vacantes})
+
+    vacantes_orm = listar_vacantes_por_asociacion(db, current_user["email"])
+    vacantes_vm = [VacanteViewModel.from_orm(v) for v in vacantes_orm]
+    return templates.TemplateResponse("panel_vacantes.html", {
+        "request": request,
+        "vacantes": vacantes_vm,
+    })
+
 
 @router.post("/panel/vacantes/crear")
-def crear_vacante(
+def crear_vacante_post(
     request: Request,
     cargo: str = Form(...),
     descripcion: str = Form(None),
     ubicacion: str = Form(None),
     salario: int = Form(0),
-    salario_convenir: str = Form(None),       # "1" si está marcado
+    salario_convenir: str = Form(None),
     tipo_contrato: str = Form("termino_fijo"),
     jornada: str = Form("completa"),
     requisitos: str = Form(""),
     fecha_limite: str = Form(...),
     terminos: UploadFile = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
-    if request.session.get("tipo_usuario") != "asociacion":
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    try:
-        fecha = datetime.datetime.strptime(fecha_limite, "%Y-%m-%d")
-    except ValueError:
-        fecha = datetime.datetime.now() + datetime.timedelta(days=30)
 
-    salario_final = 0 if salario_convenir == "1" else salario
-    terminos_url = subir_terminos(terminos)
-
-    nueva = Vacante(
-        id=str(uuid.uuid4()),
-        asociacion_email=email,
+    crear_vacante(
+        db,
+        asociacion_email=current_user["email"],
         cargo=cargo,
-        descripcion=descripcion or "",
-        ubicacion=ubicacion or "",
-        salario=salario_final,
+        descripcion=descripcion,
+        ubicacion=ubicacion,
+        salario=salario,
+        salario_convenir=salario_convenir,
         tipo_contrato=tipo_contrato,
         jornada=jornada,
-        requisitos=requisitos or "",
-        fecha_limite=fecha,
-        terminos_url=terminos_url
+        requisitos=requisitos,
+        fecha_limite_str=fecha_limite,
+        terminos=terminos,
     )
-    db.add(nueva)
-    db.commit()
     return RedirectResponse(url="/panel/vacantes", status_code=303)
 
+
 @router.get("/panel/vacantes/{vacante_id}/postulantes", response_class=HTMLResponse)
-def ver_postulantes(request: Request, vacante_id: str, db: Session = Depends(get_db)):
-    if request.session.get("tipo_usuario") != "asociacion":
+def ver_postulantes(
+    request: Request,
+    vacante_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    vacante = db.query(Vacante).filter(Vacante.id == vacante_id, Vacante.asociacion_email == email).first()
+
+    vacante, postulantes = obtener_postulantes(db, vacante_id, current_user["email"])
     if not vacante:
         return RedirectResponse(url="/panel/vacantes", status_code=303)
-    aplicaciones = db.query(Aplicacion).filter(Aplicacion.vacante_id == vacante_id).all()
-    postulantes = []
-    for a in aplicaciones:
-        persona = a.persona
-        postulantes.append({
-            "nombre": persona.nombre if persona else "Desconocido",
-            "email": persona.email if persona else "",
-            "telefono": persona.telefono if persona else "",
-            "hoja_vida_url": persona.hoja_vida_url if persona else "",
-            "mensaje": a.mensaje,
-            "fecha": a.fecha_aplicacion.strftime("%d/%m/%Y") if a.fecha_aplicacion else ""
-        })
-    return templates.TemplateResponse("postulantes.html", {"request": request, "vacante": vacante, "postulantes": postulantes})
+
+    return templates.TemplateResponse("postulantes.html", {
+        "request": request,
+        "vacante": vacante,
+        "postulantes": postulantes,
+    })
+
 
 @router.post("/panel/vacantes/eliminar/{vacante_id}")
-def eliminar_vacante(request: Request, vacante_id: str, db: Session = Depends(get_db)):
-    if request.session.get("tipo_usuario") != "asociacion":
+def eliminar_vacante_post(
+    request: Request,
+    vacante_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
-    email = request.session["usuario"]
-    vacante = db.query(Vacante).filter(Vacante.id == vacante_id, Vacante.asociacion_email == email).first()
-    if vacante:
-        if vacante.terminos_url:
-            from app.main import delete_cloudinary_asset
-            delete_cloudinary_asset(vacante.terminos_url, resource_type="raw")
-        db.delete(vacante)
-        db.commit()
+
+    eliminar_vacante(db, vacante_id, current_user["email"])
     return RedirectResponse(url="/panel/vacantes", status_code=303)

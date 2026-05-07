@@ -3,7 +3,10 @@
 {% block content %}
 <div class="modern-section">
     <h2 class="fw-bold mb-4">📋 Panel de {{ usuario }}</h2>
-    <a href="#" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#nuevoProductoModal">+ Nuevo producto</a>
+    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#nuevoProductoModal">
+        + Nuevo producto
+    </button>
+
     {% if productos %}
     <div class="row row-cols-1 row-cols-md-2 g-4">
         {% for p in productos %}
@@ -33,5 +36,68 @@
     {% endif %}
 </div>
 
-<!-- Modal nuevo producto (sin cambios) -->
+<!-- ─── MODAL NUEVO PRODUCTO ──────────────────────── -->
+<div class="modal fade" id="nuevoProductoModal" tabindex="-1" aria-labelledby="nuevoProductoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" action="/panel/producto" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title" id="nuevoProductoLabel">Nuevo producto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="nombre" class="form-label">Nombre del producto *</label>
+            <input type="text" class="form-control" id="nombre" name="nombre" required>
+          </div>
+          <div class="mb-3">
+            <label for="descripcion" class="form-label">Descripción</label>
+            <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="precio" class="form-label">Precio *</label>
+              <input type="number" class="form-control" id="precio" name="precio" min="0" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="tipo" class="form-label">Tipo</label>
+              <select class="form-select" id="tipo" name="tipo">
+                <option value="producto">Producto</option>
+                <option value="servicio">Servicio</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="tipo_precio" class="form-label">Modalidad de precio</label>
+            <select class="form-select" id="tipo_precio" name="tipo_precio">
+              <option value="fijo">Fijo</option>
+              <option value="negociable">Negociable</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="imagen" class="form-label">Imagen del producto</label>
+            <input class="form-control" type="file" id="imagen" name="imagen" accept="image/*" onchange="previewImage(event)">
+            <img id="preview" src="#" alt="Vista previa" class="img-thumbnail mt-2" style="max-height: 200px; display: none;">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Crear producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function previewImage(event) {
+    var reader = new FileReader();
+    reader.onload = function() {
+        var preview = document.getElementById('preview');
+        preview.src = reader.result;
+        preview.style.display = 'block';
+    }
+    reader.readAsDataURL(event.target.files[0]);
+}
+</script>
 {% endblock %}
