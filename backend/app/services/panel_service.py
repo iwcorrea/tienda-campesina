@@ -181,3 +181,64 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
             "precio_unitario_inicial": item.precio_unitario_inicial,
         })
     return resultado
+    
+# ─── RESPUESTA A COTIZACIONES ──────────────────────
+def obtener_item_para_responder(db: Session, item_id: str, email_asociacion: str) -> Optional[dict]:
+    """
+    Devuelve el ItemPedido junto con su producto y pedido,
+    solo si el producto pertenece a la asociación.
+    """
+    item = (
+        db.query(ItemPedido)
+        .join(Producto)
+        .options(
+            selectinload(ItemPedido.producto),
+            selectinload(ItemPedido.pedido)
+        )
+        .filter(ItemPedido.id == item_id, Producto.asociacion_email == email_asociacion)
+        .first()
+    )
+    if not item:
+        return None
+    return {
+        "id": item.id,
+        "producto_nombre": item.producto.nombre,
+        "cantidad_solicitada": item.cantidad,
+        "precio_unitario_inicial": item.precio_unitario_inicial,
+        "comprador_email": item.pedido.comprador_email if item.pedido else "",
+        "pedido_id": item.pedido.id if item.pedido else "",
+    }
+
+
+def guardar_respuesta_cotizacion(
+    db: Session,
+    item_id: str,
+    email_asociacion: str,
+    aceptado: str,          # "aceptado" o "rechazado" o "contraoferta"
+    precio_contraoferta: int = 0,
+    cantidad_contraoferta: int = 0,
+    fecha_entrega: str = "",
+    mensaje: str = "",
+) -> Optional[RespuestaCotizacion]:
+    # Verificar que el item pertenece a la asociación
+    item = (
+        db.query(ItemPedido)
+        .join(Producto)
+        .filter(ItemPedido.id == item_id, Producto.asociacion_email == email_asociacion)
+        .first()
+    )
+    if not item:
+        return None
+
+    nueva = RespuestaCotizacion(
+        item_pedido_id=item_id,
+        asociacion_email=email_asociacion,
+        aceptado=aceptado,
+        precio_contraoferta=precio_contraoferta,
+        cantidad_contraoferta=cantidad_contraoferta,
+        fecha_entrega_contraoferta=fecha_entrega,
+        mensaje=mensaje,
+    )
+    db.add(nueva)
+    db.commit()
+    return nueva    

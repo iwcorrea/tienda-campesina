@@ -12,6 +12,8 @@ from app.services.panel_service import (
     agregar_favorito as agregar_fav,
     eliminar_favorito as eliminar_fav,
     obtener_items_cotizacion_asociacion,
+    obtener_item_para_responder,        # <-- nuevo
+    guardar_respuesta_cotizacion,       # <-- nuevo
 )
 from app.viewmodels.panel import PanelViewModel, ProductoPanelViewModel
 from app.templates import templates
@@ -149,7 +151,7 @@ def eliminar_producto_post(
     return RedirectResponse(url="/panel", status_code=303)
 
 
-# ─── COTIZACIONES ─────────────────────────────────
+# ─── COTIZACIONES RECIBIDAS ────────────────────────
 @router.get("/panel/cotizaciones", response_class=HTMLResponse)
 def panel_cotizaciones(
     request: Request,
@@ -160,14 +162,63 @@ def panel_cotizaciones(
         return RedirectResponse(url="/auth/login", status_code=303)
 
     items = obtener_items_cotizacion_asociacion(db, current_user["email"])
-
     return templates.TemplateResponse("panel_cotizaciones.html", {
         "request": request,
         "items": items,
     })
 
 
-# ─── TRANSPORTISTAS FAVORITOS (LISTAR) ──────────
+# ─── RESPONDER COTIZACIÓN (GET) ────────────────────
+@router.get("/panel/cotizacion/responder/{item_id}", response_class=HTMLResponse)
+def responder_cotizacion_form(
+    request: Request,
+    item_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    item_data = obtener_item_para_responder(db, item_id, current_user["email"])
+    if not item_data:
+        return RedirectResponse(url="/panel/cotizaciones", status_code=303)
+
+    return templates.TemplateResponse("panel_responder_cotizacion.html", {
+        "request": request,
+        "item": item_data,
+    })
+
+
+# ─── PROCESAR RESPUESTA (POST) ─────────────────────
+@router.post("/panel/cotizacion/responder/{item_id}")
+def procesar_respuesta_cotizacion(
+    request: Request,
+    item_id: str,
+    aceptado: str = Form(...),                     # "aceptado", "rechazado", "contraoferta"
+    precio_contraoferta: int = Form(0),
+    cantidad_contraoferta: int = Form(0),
+    fecha_entrega: str = Form(""),
+    mensaje: str = Form(""),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    guardar_respuesta_cotizacion(
+        db,
+        item_id=item_id,
+        email_asociacion=current_user["email"],
+        aceptado=aceptado,
+        precio_contraoferta=precio_contraoferta,
+        cantidad_contraoferta=cantidad_contraoferta,
+        fecha_entrega=fecha_entrega,
+        mensaje=mensaje,
+    )
+    return RedirectResponse(url="/panel/cotizaciones?respondida=1", status_code=303)
+
+
+# ─── TRANSPORTISTAS FAVORITOS ──────────────────────
 @router.get("/panel/transportistas-favoritos", response_class=HTMLResponse)
 def listar_favoritos_view(
     request: Request,
