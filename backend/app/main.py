@@ -156,12 +156,12 @@ def on_startup():
                 sql = f'ALTER TABLE vacantes ADD COLUMN IF NOT EXISTS {col_name} {col_type}'
                 conn.execute(text(sql))
 
-        # RespuestasCotizacion (columna contrato_url)
+        # RespuestasCotizacion (nuevas columnas contrato_url, factura_url)
         existing_resp = set()
         rows_resp = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='respuestas_cotizaciones'"))
         for row in rows_resp:
             existing_resp.add(row[0])
-        for col_name in ["contrato_url"]:
+        for col_name in ["contrato_url", "factura_url"]:
             if col_name not in existing_resp:
                 sql = f'ALTER TABLE respuestas_cotizaciones ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))

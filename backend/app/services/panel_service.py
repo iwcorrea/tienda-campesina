@@ -5,6 +5,8 @@ from app.models import Asociacion, Producto, Transportista, TransportistaFavorit
 import cloudinary.uploader
 from app.cloudinary_utils import delete_cloudinary_asset
 from app.services.contrato_service import generar_contrato_html, subir_contrato
+from app.services.factura_service import generar_factura_html, generar_numero_factura, subir_factura
+from app.services.notificacion_service import crear_notificacion
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
@@ -227,7 +229,8 @@ def guardar_respuesta_cotizacion(
         precio_total = cantidad_final * precio_unit
         asociacion_nombre = item.producto.asociacion.nombre if item.producto.asociacion else email_asociacion
 
-        html = generar_contrato_html(
+        # 1. Generar contrato
+        html_contrato = generar_contrato_html(
             comprador_email=comprador_email,
             asociacion_nombre=asociacion_nombre,
             asociacion_email=email_asociacion,
@@ -237,12 +240,44 @@ def guardar_respuesta_cotizacion(
             precio_total=precio_total,
             fecha_entrega=fecha_entrega,
         )
-        filename = f"contrato_{item.pedido.id}_{producto.id}.html"
+        filename_contrato = f"contrato_{item.pedido.id}_{producto.id}.html"
         try:
-            url_contrato = subir_contrato(html, filename)
+            url_contrato = subir_contrato(html_contrato, filename_contrato)
             nueva.contrato_url = url_contrato
         except Exception:
             pass
+
+        # 2. Generar factura
+        numero_factura = generar_numero_factura()
+        items_factura = [{
+            "producto_nombre": producto.nombre,
+            "cantidad": cantidad_final,
+            "precio_unitario": precio_unit,
+            "subtotal": precio_total
+        }]
+        html_factura = generar_factura_html(
+            numero_factura=numero_factura,
+            comprador_email=comprador_email,
+            asociacion_nombre=asociacion_nombre,
+            asociacion_email=email_asociacion,
+            items=items_factura,
+            total=precio_total,
+        )
+        filename_factura = f"factura_{numero_factura}.html"
+        try:
+            url_factura = subir_factura(html_factura, filename_factura)
+            nueva.factura_url = url_factura
+        except Exception:
+            pass
+
+        # 3. Notificar al comprador
+        crear_notificacion(
+            db,
+            destinatario_email=comprador_email,
+            remitente_email=email_asociacion,
+            texto=f"Tu cotización para '{producto.nombre}' fue aceptada. Contrato: {url_contrato or 'No disponible'} | Factura: {url_factura or 'No disponible'}",
+            producto_id=producto.id
+        )
 
     db.add(nueva)
     db.commit()

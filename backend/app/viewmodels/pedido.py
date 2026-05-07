@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from app.models import Pedido, ItemPedido
 
+
 @dataclass
 class DetallePedidoViewModel:
     producto_nombre: str
@@ -22,6 +23,7 @@ class DetallePedidoViewModel:
                 "fecha_entrega_contraoferta": r.fecha_entrega_contraoferta,
                 "mensaje": r.mensaje,
                 "contrato_url": r.contrato_url,
+                "factura_url": r.factura_url,
                 "fecha_respuesta": r.fecha_respuesta.isoformat() if r.fecha_respuesta else None
             })
         subtotal = round(detalle.cantidad * detalle.precio_unitario_inicial, 2)
@@ -32,6 +34,7 @@ class DetallePedidoViewModel:
             subtotal=subtotal,
             respuestas=respuestas_vm
         )
+
 
 @dataclass
 class PedidoViewModel:
