@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from app.models import Asociacion, Producto, Transportista, TransportistaFavorito
 import cloudinary.uploader
-from app.main import delete_cloudinary_asset  # importación tardía dentro de funciones
+from app.cloudinary_utils import delete_cloudinary_asset
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:

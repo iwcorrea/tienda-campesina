@@ -1,14 +1,15 @@
 import logging
 import os
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.auth import router as auth_router
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
-from app.templates import templates   # <--- ahora se importa desde el nuevo módulo
+from app.templates import templates
+from app.cloudinary_utils import delete_cloudinary_asset  # ← ahora desde utilidad
 import cloudinary
 import time
 from sqlalchemy import text
@@ -28,6 +29,15 @@ app = FastAPI()
 cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
+
+# ─── MANEJO GLOBAL DE ERRORES ──
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logging.error(f"Error no manejado: {exc}", exc_info=True)
+    return HTMLResponse(
+        content=templates.get_template("500.html").render({"request": request}),
+        status_code=500
+    )
 
 # ─── MIDDLEWARE COMBINADO ──
 @app.middleware("http")
@@ -59,7 +69,6 @@ async def timeout_y_configuracion(request: Request, call_next):
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, same_site="lax", https_only=True)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# templates ya no se crea aquí, se importa de app.templates
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.include_router(auth_router, prefix="/auth")
@@ -81,26 +90,6 @@ app.include_router(pedidos.router)
 app.include_router(ayuda.router)
 app.include_router(noticias.router)
 
-def delete_cloudinary_asset(url: str, resource_type: str = "image"):
-    if not url or "cloudinary.com" not in url:
-        return
-    try:
-        parts = url.split("/")
-        upload_idx = -1
-        for i, part in enumerate(parts):
-            if part == "upload":
-                upload_idx = i
-                break
-        if upload_idx == -1 or upload_idx + 2 >= len(parts):
-            return
-        public_id_with_ext = "/".join(parts[upload_idx + 2:])
-        if resource_type in ("image", "video"):
-            public_id = public_id_with_ext.rsplit(".", 1)[0]
-        else:
-            public_id = public_id_with_ext
-        cloudinary.uploader.destroy(public_id, resource_type=resource_type)
-    except Exception:
-        pass
 
 @app.on_event("startup")
 def on_startup():
@@ -150,7 +139,7 @@ def on_startup():
                     sql = f'ALTER TABLE transportistas ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                     conn.execute(text(sql))
 
-        # Vacantes (nuevas columnas)
+        # Vacantes
         existing_vac = set()
         rows_vac = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='vacantes'"))
         for row in rows_vac:
