@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
-from sqlalchemy.orm import Session
-from app.models import Asociacion, Producto, Transportista, TransportistaFavorito
+from sqlalchemy.orm import Session, selectinload
+from app.models import Asociacion, Producto, Transportista, TransportistaFavorito, ItemPedido
 import cloudinary.uploader
 from app.cloudinary_utils import delete_cloudinary_asset
 
@@ -148,3 +148,36 @@ def eliminar_favorito(db: Session, email: str, favorito_id: str) -> bool:
         db.commit()
         return True
     return False
+
+
+# ─── COTIZACIONES ─────────────────────────────────
+
+def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
+    """
+    Devuelve los ItemPedido cuyos productos pertenecen a la asociación dada.
+    Carga eager de producto y pedido para evitar N+1.
+    """
+    items = (
+        db.query(ItemPedido)
+        .join(Producto)
+        .options(
+            selectinload(ItemPedido.producto),
+            selectinload(ItemPedido.pedido)
+        )
+        .filter(Producto.asociacion_email == email)
+        .order_by(ItemPedido.pedido_id.desc())
+        .all()
+    )
+    resultado = []
+    for item in items:
+        resultado.append({
+            "id": item.id,
+            "producto": {"nombre": item.producto.nombre if item.producto else "Producto eliminado"},
+            "pedido": {
+                "id": item.pedido.id if item.pedido else "",
+                "comprador_email": item.pedido.comprador_email if item.pedido else ""
+            },
+            "cantidad": item.cantidad,
+            "precio_unitario_inicial": item.precio_unitario_inicial,
+        })
+    return resultado

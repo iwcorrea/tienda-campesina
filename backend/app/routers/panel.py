@@ -11,9 +11,11 @@ from app.services.panel_service import (
     listar_favoritos,
     agregar_favorito as agregar_fav,
     eliminar_favorito as eliminar_fav,
+    obtener_items_cotizacion_asociacion,
 )
 from app.viewmodels.panel import PanelViewModel, ProductoPanelViewModel
 from app.templates import templates
+from app.models import Producto   # necesario para editar producto
 
 router = APIRouter()
 
@@ -32,7 +34,7 @@ def panel(request: Request, db: Session = Depends(get_db), current_user: dict = 
     return templates.TemplateResponse("panel.html", {
         "request": request,
         "usuario": panel_vm.usuario,
-        "productos": [p.__dict__ for p in panel_vm.productos],  # para mantener compatibilidad con la plantilla actual
+        "productos": [p.__dict__ for p in panel_vm.productos],
     })
 
 
@@ -76,7 +78,6 @@ def editar_producto_form(
     if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    # Obtener el producto específico
     p = db.query(Producto).filter(
         Producto.id == producto_id,
         Producto.asociacion_email == current_user["email"]
@@ -148,6 +149,24 @@ def eliminar_producto_post(
     return RedirectResponse(url="/panel", status_code=303)
 
 
+# ─── COTIZACIONES ─────────────────────────────────
+@router.get("/panel/cotizaciones", response_class=HTMLResponse)
+def panel_cotizaciones(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    items = obtener_items_cotizacion_asociacion(db, current_user["email"])
+
+    return templates.TemplateResponse("panel_cotizaciones.html", {
+        "request": request,
+        "items": items,
+    })
+
+
 # ─── TRANSPORTISTAS FAVORITOS (LISTAR) ──────────
 @router.get("/panel/transportistas-favoritos", response_class=HTMLResponse)
 def listar_favoritos_view(
@@ -194,7 +213,7 @@ def eliminar_favorito_view(
     return RedirectResponse(url="/panel/transportistas-favoritos", status_code=303)
 
 
-# ─── API CALCULAR ENVÍO (se mantiene igual) ─────
+# ─── API CALCULAR ENVÍO ─
 @router.get("/api/calcular-envio/{asociacion_email}")
 def calcular_envio(
     asociacion_email: str,
