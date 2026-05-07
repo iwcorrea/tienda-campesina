@@ -4,37 +4,35 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db, get_current_user  # asumo que tenés get_current_user
-from app.services import pedido_service
+from app.dependencies import get_db, get_current_user
+from app.services.pedido_service import listar_pedidos, obtener_pedido_por_id
 from app.viewmodels.pedido import PedidoViewModel
-from app.main import templates  # ajustá si es distinto
+from app.main import templates
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
 
 @router.get("/")
-def listar_pedidos(
+def listar(
     request: Request,
     pagina: int = Query(1, ge=1),
     por_pagina: int = Query(10, ge=1, le=50),
     estado: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),  # sesión actual
+    current_user: Optional[dict] = Depends(get_current_user),
 ):
-    # Filtramos por comprador o productor según el rol
-    comprador_id = None
-    productor_id = None
-    if current_user.get("rol") == "comprador":
-        comprador_id = current_user["id"]
-    elif current_user.get("rol") == "productor":
-        productor_id = current_user["productor_id"]  # asumiendo que el usuario tiene productor_id
+    if not current_user:
+        # Redirigir a login si no hay sesión
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/auth/login", status_code=303)
 
-    pedidos_orm, total = pedido_service.listar_pedidos(
+    comprador_email = current_user.get("email") if current_user["tipo"] == "comprador" else None
+
+    pedidos_orm, total = listar_pedidos(
         db,
         pagina=pagina,
         por_pagina=por_pagina,
-        comprador_id=comprador_id,
-        productor_id=productor_id,
+        comprador_email=comprador_email,
         estado=estado,
     )
 
@@ -53,18 +51,23 @@ def listar_pedidos(
 
 
 @router.get("/{pedido_id}")
-def detalle_pedido(
+def detalle(
     request: Request,
-    pedido_id: int,
+    pedido_id: str,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: Optional[dict] = Depends(get_current_user),
 ):
-    pedido = pedido_service.obtener_pedido_por_id(db, pedido_id)
+    if not current_user:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    pedido = obtener_pedido_por_id(db, pedido_id)
     if not pedido:
         return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
-    # Verificar que el usuario pueda ver este pedido (comprador del pedido o productor dueño)
-    if (current_user["id"] != pedido.comprador_id) and (current_user.get("productor_id") != pedido.productor_id):
+    # Solo el comprador del pedido o un admin (asociación?) puede verlo, según tu lógica
+    # Podés ajustar esta verificación
+    if current_user["email"] != pedido.comprador_email:
         return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
 
     pedido_vm = PedidoViewModel.from_orm(pedido)
