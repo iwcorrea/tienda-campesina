@@ -187,6 +187,7 @@
                             <li class="nav-item"><a class="nav-link" href="/perfil-transportista"><i class="bi bi-truck me-2"></i> Perfil</a></li>
                             <li class="nav-item"><a class="nav-link" href="/pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
                             <li class="nav-item"><a class="nav-link" href="/contactos"><i class="bi bi-people me-2"></i> Contactos</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/mis-envios"><i class="bi bi-box-seam me-2"></i> Mis envíos</a></li>
                         {% endif %}
                     {% else %}
                         <li class="nav-item d-lg-none"><a class="nav-link" href="/auth/login"><i class="bi bi-box-arrow-in-right me-2"></i> Iniciar sesión</a></li>
@@ -258,7 +259,6 @@
                 let list = document.getElementById('notif-list');
 
                 if (data.notificaciones && data.notificaciones.length > 0) {
-                    // Solo los mensajes no leídos incrementan el badge
                     let unreadCount = data.notificaciones.filter(n => n.tipo === 'mensaje').length;
                     if (badge) {
                         if (unreadCount > 0) {
@@ -268,7 +268,6 @@
                             badge.style.display = 'none';
                         }
                     }
-                    // Construir lista del dropdown
                     list.innerHTML = '';
                     data.notificaciones.forEach(n => {
                         let li = document.createElement('li');

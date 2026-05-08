@@ -23,7 +23,8 @@ from app.routers import carrito
 from app.routers import ayuda
 from app.routers import noticias
 from app.routers import notificaciones
-from app.routers import contactos  # <-- nuevo
+from app.routers import contactos
+from app.routers import transportista_envios   # nuevo
 
 logging.basicConfig(level=logging.INFO)
 
@@ -94,7 +95,8 @@ app.include_router(carrito.router)
 app.include_router(ayuda.router)
 app.include_router(noticias.router)
 app.include_router(notificaciones.router)
-app.include_router(contactos.router)  # <-- nuevo
+app.include_router(contactos.router)
+app.include_router(transportista_envios.router)   # nuevo
 
 
 @app.on_event("startup")
@@ -160,7 +162,7 @@ def on_startup():
                 sql = f'ALTER TABLE vacantes ADD COLUMN IF NOT EXISTS {col_name} {col_type}'
                 conn.execute(text(sql))
 
-        # RespuestasCotizacion (nuevas columnas contrato_url, factura_url)
+        # RespuestasCotizacion (contrato_url, factura_url)
         existing_resp = set()
         rows_resp = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='respuestas_cotizaciones'"))
         for row in rows_resp:
@@ -170,7 +172,17 @@ def on_startup():
                 sql = f'ALTER TABLE respuestas_cotizaciones ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))
 
-        # Crear tabla contactos si no existe (migración independiente)
+        # Pedidos (nuevas columnas transportista_id, estado_envio)
+        existing_ped = set()
+        rows_ped = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='pedidos'"))
+        for row in rows_ped:
+            existing_ped.add(row[0])
+        for col_name in ["transportista_id", "estado_envio"]:
+            if col_name not in existing_ped:
+                sql = f'ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
+                conn.execute(text(sql))
+
+        # Contactos (por si acaso)
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS contactos (
                 id VARCHAR PRIMARY KEY,

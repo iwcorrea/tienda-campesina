@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Mis envíos{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">🚚 Mis envíos</h2>
+    {% if envios %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Pedido</th><th>Comprador</th><th>Productos</th><th>Total</th><th>Estado pedido</th><th>Estado envío</th><th>Acción</th></tr></thead>
+            <tbody>
+                {% for envio in envios %}
+                <tr>
+                    <td>#{{ envio.pedido_id[:8] }}</td>
+                    <td>{{ envio.comprador_email }}</td>
+                    <td>
+                        {% for p in envio.productos %}
+                        {{ p.nombre }} ({{ p.cantidad }})<br>
+                        {% endfor %}
+                    </td>
+                    <td>${{ envio.total }}</td>
+                    <td>{{ envio.estado_pedido }}</td>
+                    <td>{{ envio.estado_envio }}</td>
+                    <td>
+                        {% if envio.estado_envio != 'entregado' %}
+                        <form method="post" action="/mis-envios/actualizar-estado" class="d-flex gap-1">
+                            <input type="hidden" name="pedido_id" value="{{ envio.pedido_id }}">
+                            {% if envio.estado_envio == 'pendiente' %}
+                            <button type="submit" name="nuevo_estado" value="en_transito" class="btn btn-sm btn-outline-warning">En tránsito</button>
+                            {% elif envio.estado_envio == 'en_transito' %}
+                            <button type="submit" name="nuevo_estado" value="entregado" class="btn btn-sm btn-outline-success">Entregado</button>
+                            {% endif %}
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No tienes envíos asignados.</p>
+    {% endif %}
+</div>
+{% endblock %}

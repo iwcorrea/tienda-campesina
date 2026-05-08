@@ -26,6 +26,7 @@
                                     {% if item.respuesta_aceptada.factura_url %}
                                     <a href="{{ item.respuesta_aceptada.factura_url }}" target="_blank" class="btn btn-sm btn-outline-info ms-1">Factura</a>
                                     {% endif %}
+                                    <a href="/panel/asignar-transportista/{{ item.pedido.id }}" class="btn btn-sm btn-outline-warning ms-1">Transportista</a>
                                 {% else %}
                                     <a href="/panel/cotizacion/responder/{{ item.id }}" class="btn btn-sm btn-outline-success">Responder</a>
                                 {% endif %}

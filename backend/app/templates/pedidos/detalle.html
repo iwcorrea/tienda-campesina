@@ -5,6 +5,9 @@
     <h2>Pedido #{{ pedido.id[:8] }}</h2>
     <p>Estado: <span class="badge bg-info">{{ pedido.estado }}</span> | Fecha: {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}</p>
     <p>Comprador: {{ pedido.comprador_email }}</p>
+    {% if pedido.transportista %}
+    <p>Transportista: {{ pedido.transportista.email }} | Envío: {{ pedido.estado_envio }}</p>
+    {% endif %}
     <hr>
     <h4>Productos</h4>
     <table class="table table-sm">
@@ -32,10 +35,9 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if pedido.estado == "aceptado" %}
+                    {% if pedido.estado == "aceptado" or pedido.estado == "entregado" %}
                     <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#valorarModal{{ item.producto_id }}">⭐ Valorar</button>
 
-                    <!-- Modal valoración -->
                     <div class="modal fade" id="valorarModal{{ item.producto_id }}" tabindex="-1" aria-hidden="true">
                       <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">

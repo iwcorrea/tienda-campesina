@@ -208,8 +208,11 @@ class Pedido(Base):
     comprador_email = Column(String, nullable=False)
     estado = Column(String, default="pendiente")
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    transportista_id = Column(String, ForeignKey("transportistas.id"), nullable=True)
+    estado_envio = Column(String, default="pendiente")   # pendiente, en_transito, entregado
 
     items = relationship("ItemPedido", back_populates="pedido", cascade="all, delete-orphan")
+    transportista = relationship("Transportista")
 
 class ItemPedido(Base):
     __tablename__ = "items_pedido"

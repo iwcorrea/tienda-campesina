@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Asignar transportista{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2>Asignar transportista al pedido #{{ pedido.id[:8] }}</h2>
+    <form method="post" class="mt-4">
+        <div class="mb-3">
+            <label for="transportista_id" class="form-label">Elige un transportista</label>
+            <select class="form-select" name="transportista_id" required>
+                <option value="">Seleccionar...</option>
+                {% for t in transportistas %}
+                <option value="{{ t.id }}">{{ t.nombre }} - {{ t.tipo_vehiculo }} ({{ t.zona_cobertura }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Asignar</button>
+        <a href="/panel/cotizaciones" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}
