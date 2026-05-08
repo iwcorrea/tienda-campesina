@@ -78,13 +78,16 @@ class Vacante(Base):
     cargo = Column(String, nullable=False)
     descripcion = Column(Text, default="")
     ubicacion = Column(String, default="")
-    salario = Column(Integer, default=0)                     # 0 = a convenir
-    tipo_contrato = Column(String, default="termino_fijo")   # "termino_fijo", "indefinido", "prestacion", "obra_labor"
-    jornada = Column(String, default="completa")             # "completa", "medio_tiempo", "por_horas"
+    salario = Column(Integer, default=0)
+    tipo_contrato = Column(String, default="termino_fijo")
+    jornada = Column(String, default="completa")
     requisitos = Column(Text, default="")
-    terminos_url = Column(Text, default="")                  # URL PDF términos de referencia
+    terminos_url = Column(Text, default="")
     fecha_limite = Column(DateTime(timezone=True), nullable=False)
     fecha_publicacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    estado = Column(String, default="activa")               # activa / cubierta
+    persona_seleccionada_email = Column(String, nullable=True)
+    contrato_trabajo_url = Column(Text, default="")
 
     asociacion = relationship("Asociacion")
 

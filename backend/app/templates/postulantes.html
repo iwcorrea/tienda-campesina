@@ -3,10 +3,12 @@
 {% block content %}
 <div class="modern-section">
     <h2>Postulantes a {{ vacante.cargo }}</h2>
+    <p>Estado: <span class="badge bg-{{ 'success' if vacante.estado == 'cubierta' else 'warning' }}">{{ vacante.estado }}</span></p>
+
     {% if postulantes %}
     <div class="table-responsive">
         <table class="table table-hover">
-            <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Hoja de vida</th><th>Mensaje</th><th>Fecha</th><th>Contacto</th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Hoja de vida</th><th>Mensaje</th><th>Fecha</th><th>Contacto</th><th>Acción</th></tr></thead>
             <tbody>
                 {% for p in postulantes %}
                 <tr>
@@ -23,6 +25,14 @@
                             <button type="submit" class="btn btn-sm btn-outline-primary">➕ Agregar</button>
                         </form>
                     </td>
+                    <td>
+                        {% if vacante.estado == "activa" %}
+                        <form method="post" action="/panel/vacantes/{{ vacante.id }}/seleccionar">
+                            <input type="hidden" name="persona_email" value="{{ p.email }}">
+                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('¿Seleccionar a {{ p.nombre }} para esta vacante? Se generará un documento de contratación.')">Seleccionar</button>
+                        </form>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -31,5 +41,7 @@
     {% else %}
     <p class="text-muted">No hay postulantes todavía.</p>
     {% endif %}
+
+    <a href="/panel/vacantes" class="btn btn-secondary mt-3">← Volver a vacantes</a>
 </div>
 {% endblock %}

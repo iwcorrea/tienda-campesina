@@ -10,13 +10,18 @@
     <p><strong>Jornada:</strong> {{ vacante.jornada | replace('_', ' ') | capitalize }}</p>
     <p><strong>Requisitos:</strong> {{ vacante.requisitos or 'No especificados' }}</p>
     <p><strong>Fecha límite:</strong> {{ vacante.fecha_limite.strftime('%d/%m/%Y') }}</p>
+    <p><strong>Estado:</strong> <span class="badge bg-{{ 'success' if vacante.estado == 'cubierta' else 'warning' }}">{{ vacante.estado }}</span></p>
     <p><strong>Descripción:</strong> {{ vacante.descripcion }}</p>
     {% if vacante.terminos_url %}
     <a href="{{ vacante.terminos_url }}" target="_blank" class="btn btn-outline-secondary">Términos de referencia</a>
     {% endif %}
 
+    {% if vacante.contrato_trabajo_url %}
+    <a href="{{ vacante.contrato_trabajo_url }}" target="_blank" class="btn btn-outline-success ms-2">Ver contrato de trabajo</a>
+    {% endif %}
+
     <div class="mt-4 d-flex gap-2">
-        {% if request.session.get("tipo_usuario") == "persona" %}
+        {% if request.session.get("tipo_usuario") == "persona" and vacante.estado == "activa" %}
             {% if not aplicado %}
             <form method="post" action="/aplicar/{{ vacante.id }}">
                 <div class="mb-2">

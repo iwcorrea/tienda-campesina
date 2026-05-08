@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, Form, File, UploadFile, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-
 from app.dependencies import get_db, get_current_user
 from app.services.empleo_service import (
     listar_vacantes_publicas,
@@ -12,19 +11,17 @@ from app.services.empleo_service import (
     crear_vacante,
     eliminar_vacante,
     obtener_postulantes,
+    seleccionar_candidato,
 )
+from app.services.notificacion_service import crear_notificacion
 from app.viewmodels.empleo import VacanteViewModel
 from app.templates import templates
 
 router = APIRouter()
 
 
-# ─── BOLSA DE EMPLEO (PÚBLICA) ─────────────────────
 @router.get("/bolsa-empleo", response_class=HTMLResponse)
-def bolsa_empleo(
-    request: Request,
-    db: Session = Depends(get_db),
-):
+def bolsa_empleo(request: Request, db: Session = Depends(get_db)):
     vacantes_orm = listar_vacantes_publicas(db)
     vacantes_vm = [VacanteViewModel.from_orm(v) for v in vacantes_orm]
     return templates.TemplateResponse("bolsa_empleo.html", {
@@ -33,7 +30,6 @@ def bolsa_empleo(
     })
 
 
-# ─── DETALLE DE VACANTE ────────────────────────────
 @router.get("/bolsa-empleo/{vacante_id}", response_class=HTMLResponse)
 def detalle_vacante(
     request: Request,
@@ -49,14 +45,23 @@ def detalle_vacante(
     if current_user and current_user.get("tipo") == "persona":
         persona_actual = obtener_persona_actual(db, current_user["email"])
 
+    aplicado = False
+    if persona_actual:
+        from app.models import Aplicacion
+        existente = db.query(Aplicacion).filter(
+            Aplicacion.vacante_id == vacante_id,
+            Aplicacion.persona_email == persona_actual.email
+        ).first()
+        aplicado = existente is not None
+
     return templates.TemplateResponse("vacante_detalle.html", {
         "request": request,
         "vacante": vacante,
         "persona": persona_actual,
+        "aplicado": aplicado,
     })
 
 
-# ─── APLICAR A VACANTE (SOLO PERSONAS) ─────────────
 @router.post("/aplicar/{vacante_id}")
 def aplicar_vacante(
     request: Request,
@@ -72,7 +77,6 @@ def aplicar_vacante(
     return RedirectResponse(url=f"/bolsa-empleo/{vacante_id}?aplicado=1", status_code=303)
 
 
-# ─── PANEL DE VACANTES PARA ASOCIACIÓN ─────────────
 @router.get("/panel/vacantes", response_class=HTMLResponse)
 def panel_vacantes(
     request: Request,
@@ -145,6 +149,40 @@ def ver_postulantes(
         "vacante": vacante,
         "postulantes": postulantes,
     })
+
+
+@router.post("/panel/vacantes/{vacante_id}/seleccionar")
+def seleccionar_candidato_post(
+    request: Request,
+    vacante_id: str,
+    persona_email: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    vacante = seleccionar_candidato(db, vacante_id, current_user["email"], persona_email)
+    if not vacante:
+        return RedirectResponse(url="/panel/vacantes?error=seleccion", status_code=303)
+
+    # Notificar a la persona seleccionada
+    crear_notificacion(
+        db,
+        destinatario_email=persona_email,
+        remitente_email=current_user["email"],
+        texto=f"Has sido seleccionado para el cargo '{vacante.cargo}'. Revisa tu bandeja de mensajes.",
+    )
+
+    # Notificar a la asociación (confirmación)
+    crear_notificacion(
+        db,
+        destinatario_email=current_user["email"],
+        remitente_email=current_user["email"],
+        texto=f"Seleccionaste a {persona_email} para la vacante '{vacante.cargo}'. Documento generado.",
+    )
+
+    return RedirectResponse(url="/panel/vacantes?seleccionado=1", status_code=303)
 
 
 @router.post("/panel/vacantes/eliminar/{vacante_id}")

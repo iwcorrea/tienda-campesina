@@ -192,5 +192,14 @@ def on_startup():
                 fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
         """))
+        # Vacantes (nuevas columnas)
+        existing_vac2 = set()
+        rows_vac2 = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='vacantes'"))
+        for row in rows_vac2:
+            existing_vac2.add(row[0])
+        for col_name in ["estado", "persona_seleccionada_email", "contrato_trabajo_url"]:
+            if col_name not in existing_vac2:
+                sql = f'ALTER TABLE vacantes ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
+                conn.execute(text(sql))
 
         conn.commit()

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Contrato generado{% endblock %}
+{% block content %}
+<div class="modern-section text-center">
+    <h2>✅ Contrato de trabajo generado exitosamente</h2>
+    <p>El documento ha sido guardado en la nube y está disponible para ambas partes.</p>
+    {% if url %}
+    <a href="{{ url }}" target="_blank" class="btn btn-success">Ver contrato</a>
+    {% endif %}
+    <br>
+    <a href="/panel/vacantes" class="btn btn-secondary mt-3">Volver a vacantes</a>
+</div>
+{% endblock %}
