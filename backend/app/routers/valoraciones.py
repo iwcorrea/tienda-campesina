@@ -55,7 +55,6 @@ def valorar_comprador(
     if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    # Verificar que el pedido pertenezca a la asociación y esté en estado válido
     pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
     if not pedido:
         return RedirectResponse(url="/panel/cotizaciones?error=pedido", status_code=303)
@@ -71,7 +70,6 @@ def valorar_comprador(
     if pedido.estado not in ("aceptado", "entregado"):
         return RedirectResponse(url="/panel/cotizaciones?error=estado", status_code=303)
 
-    # Verificar que no exista ya una valoración para este pedido y comprador
     existente = db.query(ValoracionComprador).filter(
         ValoracionComprador.pedido_id == pedido_id,
         ValoracionComprador.asociacion_email == current_user["email"],

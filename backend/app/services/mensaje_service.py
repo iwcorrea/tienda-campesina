@@ -1,31 +1,25 @@
 import uuid
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, desc
 from app.models import Mensaje, Asociacion, Persona, Transportista
 
 def obtener_conversaciones(db: Session, email: str) -> List[dict]:
-    """
-    Devuelve una lista de conversaciones únicas basadas en los mensajes
-    donde el usuario es remitente o destinatario.
-    Cada elemento contiene el último mensaje y el otro participante.
-    """
-    # Subconsulta: último mensaje por cada par (email, otro_email)
     mensajes = (
         db.query(Mensaje)
         .filter(
             or_(Mensaje.remitente_email == email, Mensaje.destinatario_email == email)
         )
-        .order_by(Mensaje.fecha_envio.desc())
+        .order_by(desc(Mensaje.fecha_envio))
         .all()
     )
 
-    # Agrupar manualmente por contacto
     conversaciones = {}
     for m in mensajes:
         otro = m.remitente_email if m.destinatario_email == email else m.destinatario_email
         if otro not in conversaciones:
             conversaciones[otro] = m
+
     resultado = []
     for otro, ultimo in conversaciones.items():
         nombre = obtener_nombre_usuario(db, otro)
@@ -38,11 +32,11 @@ def obtener_conversaciones(db: Session, email: str) -> List[dict]:
             "producto_id": ultimo.producto_id,
             "mensaje_id": ultimo.id
         })
+    
     resultado.sort(key=lambda x: x["fecha"], reverse=True)
     return resultado
 
 def obtener_hilo_con_contacto(db: Session, email: str, contacto_email: str) -> List[Mensaje]:
-    """Todos los mensajes entre el usuario y el contacto, orden cronológico."""
     return (
         db.query(Mensaje)
         .filter(
@@ -56,7 +50,6 @@ def obtener_hilo_con_contacto(db: Session, email: str, contacto_email: str) -> L
     )
 
 def marcar_conversacion_leida(db: Session, email: str, contacto_email: str):
-    """Marca como leídos todos los mensajes recibidos de ese contacto."""
     db.query(Mensaje).filter(
         Mensaje.destinatario_email == email,
         Mensaje.remitente_email == contacto_email,

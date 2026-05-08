@@ -202,16 +202,29 @@ def on_startup():
                 sql = f'ALTER TABLE vacantes ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))
 
-        # ValoracionesComprador (nueva tabla)
+                # ValoracionesComprador (nueva tabla)
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS valoraciones_compradores (
                 id VARCHAR PRIMARY KEY,
                 comprador_email VARCHAR NOT NULL,
-                asociacion_email VARCHAR NOT NULL REFERENCES asociaciones(email),
-                pedido_id VARCHAR NOT NULL REFERENCES pedidos(id),
+                asociacion_email VARCHAR NOT NULL,
+                pedido_id VARCHAR NOT NULL,
                 estrellas INTEGER NOT NULL,
                 comentario TEXT DEFAULT '',
-                fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                FOREIGN KEY (asociacion_email) REFERENCES asociaciones(email),
+                FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
+            )
+        """))
+
+        # SolicitudesContacto (nueva tabla)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS solicitudes_contacto (
+                id VARCHAR PRIMARY KEY,
+                solicitante_email VARCHAR NOT NULL,
+                receptor_email VARCHAR NOT NULL,
+                estado VARCHAR DEFAULT 'pendiente',
+                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
         """))
         conn.commit()

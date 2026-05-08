@@ -3,23 +3,44 @@
 {% block content %}
 <div class="modern-section">
     <h2 class="fw-bold mb-4">👥 Mis contactos</h2>
-    <form method="post" action="/contactos/agregar" class="row g-3 mb-4">
-        <div class="col-md-5">
-            <input type="email" name="contacto_email" class="form-control" placeholder="Email del contacto" required>
+
+    {% if solicitudes %}
+    <h4>Solicitudes pendientes</h4>
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+        {% for s in solicitudes %}
+        <div class="col">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center">
+                    <h6>{{ s.nombre }}</h6>
+                    <small class="text-muted">{{ s.tipo }}</small>
+                    <div class="mt-2">
+                        <form method="post" action="/contactos/aceptar" class="d-inline">
+                            <input type="hidden" name="solicitud_id" value="{{ s.id }}">
+                            <button type="submit" class="btn btn-sm btn-success">Aceptar</button>
+                        </form>
+                        <form method="post" action="/contactos/rechazar" class="d-inline">
+                            <input type="hidden" name="solicitud_id" value="{{ s.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Rechazar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="col-md-3">
-            <select name="tipo_relacion" class="form-select">
-                <option value="contacto">Contacto</option>
-                <option value="cliente">Cliente</option>
-                <option value="proveedor">Proveedor</option>
-                <option value="transportista">Transportista</option>
-            </select>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="/contactos/solicitar" class="row g-3 mb-4">
+        <div class="col-md-8">
+            <input type="email" name="contacto_email" class="form-control" placeholder="Email de la persona, asociación o transportista" required>
         </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-success">Agregar</button>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-success w-100">Enviar solicitud</button>
         </div>
     </form>
+
     {% if contactos %}
+    <h4>Conectados</h4>
     <div class="row row-cols-1 row-cols-md-3 g-4">
         {% for c in contactos %}
         <div class="col">
@@ -35,7 +56,7 @@
                     <h6>{{ c.nombre }}</h6>
                     <small class="text-muted">{{ c.tipo }} · {{ c.relacion }}</small>
                     <div class="mt-2">
-                        <a href="/mensajes/enviar?destinatario_email={{ c.email }}" class="btn btn-sm btn-outline-primary me-1">Mensaje</a>
+                        <a href="/mensajes/chat/{{ c.email }}" class="btn btn-sm btn-outline-primary me-1">Mensaje</a>
                         <form method="post" action="/contactos/eliminar" class="d-inline">
                             <input type="hidden" name="contacto_email" value="{{ c.email }}">
                             <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
@@ -47,7 +68,7 @@
         {% endfor %}
     </div>
     {% else %}
-    <p class="text-muted">No tienes contactos. Agrega el email de un comprador, asociación o transportista.</p>
+    <p class="text-muted">No tienes contactos todavía. Busca y envía solicitudes para conectarte.</p>
     {% endif %}
 </div>
 {% endblock %}

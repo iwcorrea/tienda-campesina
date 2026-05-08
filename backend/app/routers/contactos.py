@@ -2,7 +2,11 @@ from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
-from app.services.contacto_service import agregar_contacto, eliminar_contacto, listar_contactos, obtener_info_contacto
+from app.services.contacto_service import (
+    enviar_solicitud_contacto, listar_contactos, eliminar_contacto, obtener_info_contacto,
+    listar_solicitudes_pendientes, aceptar_solicitud, rechazar_solicitud
+)
+from app.services.notificacion_service import crear_notificacion
 from app.templates import templates
 
 router = APIRouter(prefix="/contactos", tags=["contactos"])
@@ -11,6 +15,7 @@ router = APIRouter(prefix="/contactos", tags=["contactos"])
 def panel_contactos(request: Request, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
+        
     contactos_orm = listar_contactos(db, current_user["email"])
     contactos = []
     for c in contactos_orm:
@@ -22,18 +27,59 @@ def panel_contactos(request: Request, db: Session = Depends(get_db), current_use
             "logo": info.get("logo") if info else None,
             "relacion": c.tipo_relacion
         })
-    return templates.TemplateResponse("contactos.html", {"request": request, "contactos": contactos})
+    
+    solicitudes = listar_solicitudes_pendientes(db, current_user["email"])
+    solicitudes_info = []
+    for s in solicitudes:
+        info = obtener_info_contacto(db, s.solicitante_email)
+        solicitudes_info.append({
+            "id": s.id,
+            "email": s.solicitante_email,
+            "nombre": info["nombre"] if info else s.solicitante_email,
+            "tipo": info["tipo"] if info else "desconocido"
+        })
 
-@router.post("/agregar")
-def agregar(request: Request, contacto_email: str = Form(...), tipo_relacion: str = Form("contacto"), db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    return templates.TemplateResponse("contactos.html", {
+        "request": request,
+        "contactos": contactos,
+        "solicitudes": solicitudes_info
+    })
+
+@router.post("/solicitar")
+def solicitar_contacto(request: Request, contacto_email: str = Form(...), db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
-    agregar_contacto(db, current_user["email"], contacto_email, tipo_relacion)
-    return RedirectResponse(url="/contactos", status_code=303)
+    
+    enviar_solicitud_contacto(db, current_user["email"], contacto_email)
+    
+    crear_notificacion(
+        db,
+        destinatario_email=contacto_email,
+        remitente_email=current_user["email"],
+        texto=f"{current_user['email']} te ha enviado una solicitud de contacto."
+    )
+    
+    return RedirectResponse(url="/contactos?enviada=1", status_code=303)
+
+@router.post("/aceptar")
+def aceptar_solicitud_post(request: Request, solicitud_id: str = Form(...), db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    if not current_user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
+    aceptar_solicitud(db, solicitud_id, current_user["email"])
+    return RedirectResponse(url="/contactos?aceptada=1", status_code=303)
+
+@router.post("/rechazar")
+def rechazar_solicitud_post(request: Request, solicitud_id: str = Form(...), db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    if not current_user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+    
+    rechazar_solicitud(db, solicitud_id, current_user["email"])
+    return RedirectResponse(url="/contactos?rechazada=1", status_code=303)
 
 @router.post("/eliminar")
 def eliminar(request: Request, contacto_email: str = Form(...), db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
     eliminar_contacto(db, current_user["email"], contacto_email)
-    return RedirectResponse(url="/contactos", status_code=303)
+    return RedirectResponse(url="/contactos?eliminado=1", status_code=303)

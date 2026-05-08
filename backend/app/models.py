@@ -278,4 +278,13 @@ class ValoracionComprador(Base):
     fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     asociacion = relationship("Asociacion")
-    pedido = relationship("Pedido")    
+    pedido = relationship("Pedido")
+
+class SolicitudContacto(Base):
+    __tablename__ = "solicitudes_contacto"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    solicitante_email = Column(String, nullable=False, index=True)
+    receptor_email = Column(String, nullable=False)
+    estado = Column(String, default="pendiente")  # pendiente, aceptada, rechazada
+    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
