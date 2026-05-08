@@ -35,7 +35,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if pedido.estado == "aceptado" or pedido.estado == "entregado" %}
+                    {% if (pedido.estado == "aceptado" or pedido.estado == "entregado") and request.session.get("tipo_usuario") == "persona" %}
                     <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#valorarModal{{ item.producto_id }}">⭐ Valorar</button>
 
                     <div class="modal fade" id="valorarModal{{ item.producto_id }}" tabindex="-1" aria-hidden="true">
@@ -75,7 +75,32 @@
             {% endfor %}
         </tbody>
     </table>
-    <p class="fw-bold text-end">Total: ${{ pedido.total }}</p>
+
+    <!-- Valoración del comprador (visible para la asociación) -->
+    {% if (pedido.estado == "aceptado" or pedido.estado == "entregado") and request.session.get("tipo_usuario") == "asociacion" %}
+    <hr>
+    <h5>Valorar al comprador</h5>
+    <form method="post" action="/valoraciones/comprador/{{ pedido.id }}" class="row g-3">
+        <input type="hidden" name="comprador_email" value="{{ pedido.comprador_email }}">
+        <div class="col-md-3">
+            <select class="form-select" name="estrellas" required>
+                <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                <option value="4">⭐⭐⭐⭐ (4)</option>
+                <option value="3">⭐⭐⭐ (3)</option>
+                <option value="2">⭐⭐ (2)</option>
+                <option value="1">⭐ (1)</option>
+            </select>
+        </div>
+        <div class="col-md-5">
+            <input type="text" name="comentario" class="form-control" placeholder="Comentario (opcional)">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-outline-warning">Valorar comprador</button>
+        </div>
+    </form>
+    {% endif %}
+
+    <p class="fw-bold text-end mt-3">Total: ${{ pedido.total }}</p>
     <a href="/pedidos" class="btn btn-secondary">← Volver</a>
 </div>
 {% endblock %}

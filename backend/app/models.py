@@ -265,3 +265,17 @@ class Contacto(Base):
     contacto_email = Column(String, nullable=False)                  # quien es agregado
     tipo_relacion = Column(String, default="contacto")               # "favorito", "cliente", "proveedor"
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))    
+
+class ValoracionComprador(Base):
+    __tablename__ = "valoraciones_compradores"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    comprador_email = Column(String, nullable=False, index=True)
+    asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
+    pedido_id = Column(String, ForeignKey("pedidos.id"), nullable=False)
+    estrellas = Column(Integer, nullable=False)
+    comentario = Column(Text, default="")
+    fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    asociacion = relationship("Asociacion")
+    pedido = relationship("Pedido")    

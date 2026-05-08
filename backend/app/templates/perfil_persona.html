@@ -1,82 +1,28 @@
 {% extends "base.html" %}
-{% block title %}Mi Perfil{% endblock %}
+{% block title %}Mi perfil{% endblock %}
 {% block content %}
-<div class="container-fluid">
-    <!-- Resumen -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="stat-card stat-card--primary">
-                <div class="stat-card__icon"><span>📨</span></div>
-                <div class="stat-card__info">
-                    <h3>{{ mensajes_pendientes }}</h3>
-                    <p>Mensajes sin leer</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card stat-card--info">
-                <div class="stat-card__icon"><span>📦</span></div>
-                <div class="stat-card__info">
-                    <h3>{{ pedidos_count }}</h3>
-                    <p>Pedidos realizados</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-card stat-card--warning">
-                <div class="stat-card__icon"><span>⭐</span></div>
-                <div class="stat-card__info">
-                    <h3>{{ valoraciones_count }}</h3>
-                    <p>Valoraciones dadas</p>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="modern-section">
+    <h2>👤 {{ persona.nombre }}</h2>
+    <p><strong>Email:</strong> {{ persona.email }}</p>
+    <p><strong>Teléfono:</strong> {{ persona.telefono }}</p>
 
-    <!-- Datos del perfil -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3">👤 Datos personales</h5>
-            <p><strong>Nombre:</strong> {{ persona.nombre }}</p>
-            <p><strong>Email:</strong> {{ persona.email }}</p>
-            <p><strong>Teléfono:</strong> {{ persona.telefono or 'No registrado' }}</p>
-            {% if persona.hoja_vida_url %}<p><a href="{{ persona.hoja_vida_url }}" target="_blank" class="btn btn-sm btn-outline-primary">📄 Ver hoja de vida</a></p>{% endif %}
-            <button class="btn btn-outline-success btn-sm" data-bs-toggle="collapse" data-bs-target="#formActualizar">Editar datos</button>
-            <div class="collapse mt-3" id="formActualizar">
-                <form action="/perfil/actualizar" method="post" enctype="multipart/form-data">
-                    <input type="text" name="nombre" class="form-control mb-2" value="{{ persona.nombre }}" required>
-                    <input type="text" name="telefono" class="form-control mb-2" value="{{ persona.telefono }}">
-                    <label>Nueva hoja de vida (PDF)</label>
-                    <input type="file" name="hoja_vida" class="form-control mb-2" accept=".pdf">
-                    <button type="submit" class="btn btn-success">Guardar cambios</button>
-                </form>
+    <h4 class="mt-4">⭐ Reputación como comprador</h4>
+    {% if valoraciones %}
+    <div class="row">
+        {% for v in valoraciones %}
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-warning mb-1">{{ "⭐" * v.estrellas }}</div>
+                    <p class="mb-1">{{ v.comentario or "Sin comentario" }}</p>
+                    <small class="text-muted">{{ v.fecha.strftime('%d/%m/%Y') if v.fecha else '' }}</small>
+                </div>
             </div>
         </div>
+        {% endfor %}
     </div>
-
-    <!-- Actividad reciente -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white border-bottom-0">
-            <h5 class="mb-0 fw-semibold">📰 Actividad reciente</h5>
-        </div>
-        <div class="card-body p-0">
-            {% if actividades %}
-            <ul class="list-group list-group-flush">
-                {% for act in actividades %}
-                <li class="list-group-item d-flex align-items-center">
-                    <span class="me-3 fs-5">{{ act.icono }}</span>
-                    <div class="flex-grow-1">
-                        <p class="mb-0">{{ act.texto }}</p>
-                        <small class="text-muted">{{ act.fecha.strftime('%d/%m/%Y %H:%M') if act.fecha else '' }}</small>
-                    </div>
-                    {% if act.url %}<a href="{{ act.url }}" class="btn btn-sm btn-outline-success">Ver</a>{% endif %}
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-muted p-3 mb-0">No hay actividad reciente.</p>
-            {% endif %}
-        </div>
-    </div>
+    {% else %}
+    <p class="text-muted">Aún no tienes valoraciones como comprador.</p>
+    {% endif %}
 </div>
 {% endblock %}
