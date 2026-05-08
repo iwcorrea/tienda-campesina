@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
 from app.models import Mensaje, Pedido
 from sqlalchemy import desc
+from app.utils import utc_to_colombia
 
 router = APIRouter()
 
@@ -18,7 +19,6 @@ def listar_notificaciones(
     notificaciones = []
     email = current_user["email"]
 
-    # 1. Mensajes no leídos
     mensajes = (
         db.query(Mensaje)
         .filter(Mensaje.destinatario_email == email, Mensaje.leido == "0")
@@ -27,15 +27,15 @@ def listar_notificaciones(
         .all()
     )
     for m in mensajes:
+        fecha = utc_to_colombia(m.fecha_envio)
         notificaciones.append({
             "tipo": "mensaje",
             "icono": "💬",
             "texto": f"Mensaje de {m.remitente_email}: {m.texto[:60]}{'...' if len(m.texto)>60 else ''}",
-            "fecha": m.fecha_envio.strftime("%d/%m %H:%M") if m.fecha_envio else "",
+            "fecha": fecha.strftime("%d/%m %H:%M") if fecha else "",
             "url": f"/mensajes/{m.id}"
         })
 
-    # 2. Pedidos aceptados del usuario
     pedidos_aceptados = (
         db.query(Pedido)
         .filter(Pedido.comprador_email == email, Pedido.estado == "aceptado")
@@ -44,11 +44,12 @@ def listar_notificaciones(
         .all()
     )
     for p in pedidos_aceptados:
+        fecha = utc_to_colombia(p.fecha_creacion)
         notificaciones.append({
             "tipo": "pedido_aceptado",
             "icono": "🤝",
             "texto": f"Tu pedido #{p.id[:8]} fue aceptado",
-            "fecha": p.fecha_creacion.strftime("%d/%m %H:%M") if p.fecha_creacion else "",
+            "fecha": fecha.strftime("%d/%m %H:%M") if fecha else "",
             "url": f"/pedidos/{p.id}"
         })
 

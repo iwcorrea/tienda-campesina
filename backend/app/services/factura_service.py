@@ -1,8 +1,10 @@
 import datetime
 import io
 import uuid
+from datetime import timezone
 from fastapi import UploadFile
 from app.services.upload_service import upload_raw
+from app.utils import utc_to_colombia
 
 
 def generar_factura_html(
@@ -13,8 +15,7 @@ def generar_factura_html(
     items: list,
     total: int,
 ) -> str:
-    """Genera un HTML simple con los datos de la factura."""
-    fecha_actual = datetime.date.today().strftime("%d/%m/%Y")
+    fecha_actual = utc_to_colombia(datetime.datetime.now(timezone.utc)).strftime("%d/%m/%Y")
     lineas = ""
     for item in items:
         lineas += f"<tr><td>{item['producto_nombre']}</td><td>{item['cantidad']}</td><td>${item['precio_unitario']}</td><td>${item['subtotal']}</td></tr>"
@@ -51,12 +52,10 @@ def generar_factura_html(
 
 
 def generar_numero_factura() -> str:
-    """Genera un número de factura único basado en fecha y UUID."""
     return f"FAC-{datetime.date.today().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
 
 
 def subir_factura(html: str, filename: str) -> str:
-    """Sube el HTML de la factura a Cloudinary como archivo raw."""
     file_bytes = io.BytesIO(html.encode("utf-8"))
     file = UploadFile(filename=filename, file=file_bytes, headers={"content-type": "text/html"})
     return upload_raw(file, folder="facturas")

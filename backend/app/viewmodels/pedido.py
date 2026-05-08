@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
 from app.models import Pedido, ItemPedido
-
+from app.utils import utc_to_colombia
 
 @dataclass
 class DetallePedidoViewModel:
@@ -24,7 +24,7 @@ class DetallePedidoViewModel:
                 "mensaje": r.mensaje,
                 "contrato_url": r.contrato_url,
                 "factura_url": r.factura_url,
-                "fecha_respuesta": r.fecha_respuesta.isoformat() if r.fecha_respuesta else None
+                "fecha_respuesta": utc_to_colombia(r.fecha_respuesta).isoformat() if r.fecha_respuesta else None
             })
         subtotal = round(detalle.cantidad * detalle.precio_unitario_inicial, 2)
         return cls(
@@ -34,7 +34,6 @@ class DetallePedidoViewModel:
             subtotal=subtotal,
             respuestas=respuestas_vm
         )
-
 
 @dataclass
 class PedidoViewModel:
@@ -51,7 +50,7 @@ class PedidoViewModel:
         total = sum(item.subtotal for item in items_vm)
         return cls(
             id=pedido.id,
-            fecha=pedido.fecha_creacion,
+            fecha=utc_to_colombia(pedido.fecha_creacion),
             estado=pedido.estado,
             total=total,
             comprador_email=pedido.comprador_email,

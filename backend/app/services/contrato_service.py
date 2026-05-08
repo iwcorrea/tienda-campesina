@@ -1,7 +1,9 @@
 import datetime
 import io
+from datetime import timezone
 from fastapi import UploadFile
 from app.services.upload_service import upload_raw
+from app.utils import utc_to_colombia
 
 
 def generar_contrato_html(
@@ -14,7 +16,7 @@ def generar_contrato_html(
     precio_total: int,
     fecha_entrega: str = "",
 ) -> str:
-    fecha_actual = datetime.date.today().strftime("%d/%m/%Y")
+    fecha_actual = utc_to_colombia(datetime.datetime.now(timezone.utc)).strftime("%d/%m/%Y")
     html = f"""<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><title>Contrato de compraventa</title>

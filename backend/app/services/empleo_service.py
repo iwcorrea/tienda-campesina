@@ -1,11 +1,14 @@
 import uuid
-from datetime import datetime, timedelta
+import io
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from app.models import Vacante, Aplicacion, Persona
 from app.services.upload_service import upload_raw
 from app.cloudinary_utils import delete_cloudinary_asset
+from app.utils import utc_to_colombia
+
 
 def listar_vacantes_publicas(db: Session) -> List[Vacante]:
     return (
@@ -121,11 +124,10 @@ def obtener_postulantes(db: Session, vacante_id: str, email_asociacion: str):
             "telefono": persona.telefono if persona else "",
             "hoja_vida_url": persona.hoja_vida_url if persona else "",
             "mensaje": a.mensaje,
-            "fecha": a.fecha_aplicacion.strftime("%d/%m/%Y") if a.fecha_aplicacion else "",
+            "fecha": utc_to_colombia(a.fecha_aplicacion).strftime("%d/%m/%Y") if a.fecha_aplicacion else "",
         })
     return vacante, postulantes
 
-# ─── SELECCIÓN DE CANDIDATO ──────────────────────
 
 def seleccionar_candidato(
     db: Session,
@@ -133,7 +135,6 @@ def seleccionar_candidato(
     email_asociacion: str,
     persona_seleccionada_email: str,
 ) -> Optional[Vacante]:
-    """Marca la vacante como cubierta, asigna a la persona y genera un documento de contratación."""
     vacante = db.query(Vacante).filter(
         Vacante.id == vacante_id,
         Vacante.asociacion_email == email_asociacion,
@@ -141,7 +142,6 @@ def seleccionar_candidato(
     if not vacante:
         return None
 
-    # Verificar que la persona haya aplicado
     aplicacion = db.query(Aplicacion).filter(
         Aplicacion.vacante_id == vacante_id,
         Aplicacion.persona_email == persona_seleccionada_email
@@ -152,11 +152,10 @@ def seleccionar_candidato(
     vacante.estado = "cubierta"
     vacante.persona_seleccionada_email = persona_seleccionada_email
 
-    # Generar documento HTML de contratación
     persona = db.query(Persona).filter(Persona.email == persona_seleccionada_email).first()
     nombre_persona = persona.nombre if persona else persona_seleccionada_email
     html = generar_contrato_trabajo_html(
-        asociacion_nombre=email_asociacion,  # Idealmente obtener el nombre real
+        asociacion_nombre=email_asociacion,
         persona_nombre=nombre_persona,
         cargo=vacante.cargo,
         salario=vacante.salario,
@@ -184,7 +183,7 @@ def generar_contrato_trabajo_html(
     jornada: str,
     ubicacion: str,
 ) -> str:
-    fecha_actual = datetime.now().strftime("%d/%m/%Y")
+    fecha_actual = utc_to_colombia(datetime.now(timezone.utc)).strftime("%d/%m/%Y")
     return f"""<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><title>Contrato de trabajo</title>
@@ -217,8 +216,6 @@ def generar_contrato_trabajo_html(
 
 
 def upload_raw_contrato(html: str, filename: str) -> str:
-    import io
-    from fastapi import UploadFile
     file_bytes = io.BytesIO(html.encode("utf-8"))
     file = UploadFile(filename=filename, file=file_bytes, headers={"content-type": "text/html"})
     return upload_raw(file, folder="contratos_trabajo")
