@@ -306,3 +306,46 @@ class NotificacionSistema(Base):
     leido = Column(String, default="0")
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     url = Column(Text, default="")    
+class Pago(Base):
+    """
+    Representa un pago realizado por un comprador para un pedido específico.
+    Se registra cuando el comprador inicia el checkout y se actualiza
+    cuando Wompi confirma la transacción.
+    """
+    __tablename__ = "pagos"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    pedido_id = Column(String, ForeignKey("pedidos.id"), nullable=False)
+    comprador_email = Column(String, nullable=False)
+    monto_total = Column(Integer, nullable=False)               # en COP
+    comision_plataforma = Column(Integer, nullable=False)        # en COP
+    monto_vendedor = Column(Integer, nullable=False)             # en COP
+    estado = Column(String, default="pendiente")                 # pendiente, completado, fallido, reembolsado
+    wompi_transaccion_id = Column(String, nullable=True)         # ID de transacción en Wompi
+    wompi_referencia = Column(String, nullable=True)             # Referencia externa
+    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    fecha_confirmacion = Column(DateTime(timezone=True), nullable=True)
+
+    pedido = relationship("Pedido", backref="pagos")
+
+
+class Comision(Base):
+    """
+    Registro histórico de todas las comisiones generadas por la plataforma.
+    Se crea automáticamente cuando un pago es confirmado por Wompi.
+    """
+    __tablename__ = "comisiones"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    pago_id = Column(String, ForeignKey("pagos.id"), nullable=False)
+    pedido_id = Column(String, ForeignKey("pedidos.id"), nullable=False)
+    asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
+    comprador_email = Column(String, nullable=False)
+    monto_venta = Column(Integer, nullable=False)
+    porcentaje_comision = Column(Integer, nullable=False)           # e.g., 8 para 8%
+    monto_comision = Column(Integer, nullable=False)
+    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    pago = relationship("Pago", backref="comisiones")
+    asociacion = relationship("Asociacion")
+    pedido = relationship("Pedido")    

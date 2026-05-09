@@ -35,7 +35,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if (pedido.estado == "aceptado" or pedido.estado == "entregado") and request.session.get("tipo_usuario") == "persona" %}
+                    {% if (pedido.estado == "aceptado" or pedido.estado == "pagado" or pedido.estado == "entregado") and request.session.get("tipo_usuario") == "persona" %}
                     <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#valorarModal{{ item.producto_id }}">⭐ Valorar</button>
 
                     <div class="modal fade" id="valorarModal{{ item.producto_id }}" tabindex="-1" aria-hidden="true">
@@ -77,7 +77,7 @@
     </table>
 
     <!-- Valoración del comprador (visible para la asociación) -->
-    {% if (pedido.estado == "aceptado" or pedido.estado == "entregado") and request.session.get("tipo_usuario") == "asociacion" %}
+    {% if (pedido.estado == "aceptado" or pedido.estado == "pagado" or pedido.estado == "entregado") and request.session.get("tipo_usuario") == "asociacion" %}
     <hr>
     <h5>Valorar al comprador</h5>
     <form method="post" action="/valoraciones/comprador/{{ pedido.id }}" class="row g-3">
@@ -98,6 +98,15 @@
             <button type="submit" class="btn btn-outline-warning">Valorar comprador</button>
         </div>
     </form>
+    {% endif %}
+
+    <!-- Botón de pago (visible solo cuando el pedido está aceptado) -->
+    {% if pedido.estado == "aceptado" and request.session.get("tipo_usuario") == "persona" %}
+    <div class="text-end mt-3">
+        <a href="/pagos/checkout/{{ pedido.id }}" class="btn btn-success rounded-pill px-4 fw-bold">
+            💳 Pagar ahora
+        </a>
+    </div>
     {% endif %}
 
     <p class="fw-bold text-end mt-3">Total: ${{ pedido.total }}</p>

@@ -25,6 +25,7 @@ from app.routers import noticias
 from app.routers import notificaciones
 from app.routers import contactos
 from app.routers import transportista_envios   # nuevo
+from app.routers import pagos    # Nuevo
 
 logging.basicConfig(level=logging.INFO)
 
@@ -97,6 +98,7 @@ app.include_router(noticias.router)
 app.include_router(notificaciones.router)
 app.include_router(contactos.router)
 app.include_router(transportista_envios.router)   # nuevo
+app.include_router(pagos.router)     # Nuevo
 
 
 @app.on_event("startup")
@@ -245,6 +247,37 @@ def on_startup():
                 leido VARCHAR DEFAULT '0',
                 fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 url TEXT DEFAULT ''
+            )
+        """))
+                # Pagos (nueva tabla)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS pagos (
+                id VARCHAR PRIMARY KEY,
+                pedido_id VARCHAR NOT NULL REFERENCES pedidos(id),
+                comprador_email VARCHAR NOT NULL,
+                monto_total INTEGER NOT NULL,
+                comision_plataforma INTEGER NOT NULL,
+                monto_vendedor INTEGER NOT NULL,
+                estado VARCHAR DEFAULT 'pendiente',
+                wompi_transaccion_id VARCHAR,
+                wompi_referencia VARCHAR,
+                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                fecha_confirmacion TIMESTAMP WITH TIME ZONE
+            )
+        """))
+
+        # Comisiones (nueva tabla)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS comisiones (
+                id VARCHAR PRIMARY KEY,
+                pago_id VARCHAR NOT NULL REFERENCES pagos(id),
+                pedido_id VARCHAR NOT NULL REFERENCES pedidos(id),
+                asociacion_email VARCHAR NOT NULL REFERENCES asociaciones(email),
+                comprador_email VARCHAR NOT NULL,
+                monto_venta INTEGER NOT NULL,
+                porcentaje_comision INTEGER NOT NULL,
+                monto_comision INTEGER NOT NULL,
+                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
         """))
         conn.commit()

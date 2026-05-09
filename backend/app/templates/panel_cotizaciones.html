@@ -9,7 +9,14 @@
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
-                        <tr><th>Producto</th><th>Pedido</th><th>Cant.</th><th>Precio suger.</th><th>Comprador</th><th>Acción</th></tr>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Pedido</th>
+                            <th>Cant.</th>
+                            <th>Precio suger.</th>
+                            <th>Comprador</th>
+                            <th>Acción</th>
+                        </tr>
                     </thead>
                     <tbody>
                         {% for item in items %}
@@ -27,6 +34,11 @@
                                     <a href="{{ item.respuesta_aceptada.factura_url }}" target="_blank" class="btn btn-sm btn-outline-info ms-1">Factura</a>
                                     {% endif %}
                                     <a href="/panel/asignar-transportista/{{ item.pedido.id }}" class="btn btn-sm btn-outline-warning ms-1">Transportista</a>
+                                    {% if item.pedido.estado == "pagado" %}
+                                    <span class="badge bg-info ms-1">Pagado</span>
+                                    {% else %}
+                                    <a href="/pagos/checkout/{{ item.pedido.id }}" class="btn btn-sm btn-outline-success ms-1">💳 Cobrar</a>
+                                    {% endif %}
                                 {% else %}
                                     <a href="/panel/cotizacion/responder/{{ item.id }}" class="btn btn-sm btn-outline-success">Responder</a>
                                 {% endif %}
