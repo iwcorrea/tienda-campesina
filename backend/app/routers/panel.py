@@ -213,19 +213,35 @@ def procesar_respuesta_cotizacion(
 
 
 # ─── ASIGNAR TRANSPORTISTA A PEDIDO ─────────────
-@router.get("/panel/asignar-transportista/{pedido_id}", response_class=HTMLResponse)
-def asignar_transportista_form(
+@router.post("/panel/asignar-transportista/{pedido_id}")
+def asignar_transportista_procesar(
     request: Request,
     pedido_id: str,
+    transportista_id: str = Form(...),
+    costo_envio: int = Form(0),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
-    if not pedido:
-        return RedirectResponse(url="/panel/cotizaciones", status_code=303)
+    resultado = asignar_transportista_a_pedido(
+        db, pedido_id, transportista_id, current_user["email"], costo_envio
+    )
+    if not resultado:
+        return RedirectResponse(url="/panel/cotizaciones?error=asignacion", status_code=303)
+
+    # Notificar al transportista
+    transportista = db.query(Transportista).filter(Transportista.id == transportista_id).first()
+    if transportista:
+        crear_notificacion(
+            db,
+            destinatario_email=transportista.email,
+            remitente_email=current_user["email"],
+            texto=f"Se te ha asignado un nuevo envío (Pedido #{pedido_id[:8]}). Costo de envío: ${costo_envio:,}.",
+        )
+
+    return RedirectResponse(url="/panel/cotizaciones?transportista_asignado=1", status_code=303)
 
     # Obtener transportistas activos
     transportistas = db.query(Transportista).filter(Transportista.activo == "1").all()

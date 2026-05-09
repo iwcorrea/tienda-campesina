@@ -183,6 +183,13 @@ def on_startup():
             if col_name not in existing_ped:
                 sql = f'ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))
+        # Pedidos (nueva columna costo_envio)
+        existing_ped2 = set()
+        rows_ped2 = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='pedidos'"))
+        for row in rows_ped2:
+            existing_ped2.add(row[0])
+        if "costo_envio" not in existing_ped2:
+            conn.execute(text("ALTER TABLE pedidos ADD COLUMN costo_envio INTEGER DEFAULT 0"))        
 
         # Contactos (por si acaso)
         conn.execute(text("""

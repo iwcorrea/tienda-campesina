@@ -1,16 +1,4 @@
-"""
-Servicio de Pagos – Tienda Campesina
-=====================================
-Integración con Wompi API de Pagos a Terceros para procesar pagos
-con comisión automática de la plataforma (8% por defecto).
-
-Flujo:
-  1. Comprador inicia el pago → se crea registro Pago (estado: pendiente)
-  2. Comprador completa checkout en ventana de Wompi
-  3. Wompi envía webhook → se confirma el Pago, se crea Comision
-  4. Pedido pasa a estado "pagado"
-  5. Wompi dispersa los fondos a la cuenta de la asociación (vía API Pagos a Terceros)
-"""
+# app/services/pago_service.py
 
 import uuid
 import hashlib
@@ -20,73 +8,55 @@ from datetime import datetime, timezone
 from typing import Optional, Tuple
 import httpx
 from sqlalchemy.orm import Session
-from app.models import Pago, Comision, Pedido, ItemPedido, Asociacion
+from app.models import Pago, Comision, Pedido, ItemPedido, Asociacion, Transportista
 from app.services.notificacion_service import crear_notificacion
 
-# ─── CONSTANTES ────────────────────────────────────────────────
-COMISION_PLATAFORMA = 8          # Porcentaje de comisión (8%)
-WOMPI_API_URL = "https://api.wompi.sv"                         # Sandbox
-# WOMPI_API_URL = "https://api.wompi.co"                        # Producción
+COMISION_PLATAFORMA = 8
+WOMPI_API_URL = "https://api.wompi.sv"
 WOMPI_API_KEY = os.getenv("WOMPI_API_KEY", "")
 WOMPI_SECRET_KEY = os.getenv("WOMPI_SECRET_KEY", "")
 
 
-# ─── CHECKOUT ──────────────────────────────────────────────────
 def generar_referencia_unica() -> str:
-    """Genera una referencia única de 12 caracteres para identificar la transacción."""
     return uuid.uuid4().hex[:12].upper()
 
 
 def calcular_comision(monto_total: int, porcentaje: int = COMISION_PLATAFORMA) -> Tuple[int, int]:
-    """
-    Calcula la comisión de la plataforma y el monto neto para el vendedor.
-
-    Args:
-        monto_total: Monto total del pedido en COP
-        porcentaje: Porcentaje de comisión (default: 8)
-
-    Returns:
-        Tuple[int, int]: (monto_comision, monto_vendedor)
-    """
     monto_comision = int(monto_total * porcentaje / 100)
     monto_vendedor = monto_total - monto_comision
     return monto_comision, monto_vendedor
 
 
-def calcular_total_pedido(db: Session, pedido_id: str) -> Tuple[int, str, str]:
+def calcular_total_pedido(db: Session, pedido_id: str) -> Tuple[int, str, str, int]:
     """
-    Calcula el total real del pedido sumando todos los ítems.
-    Retorna (total, asociacion_email, comprador_email).
+    Calcula el total del pedido incluyendo productos y costo de envío.
+    Retorna (total, asociacion_email, comprador_email, costo_envio).
     """
     pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
     if not pedido:
-        return 0, "", ""
+        return 0, "", "", 0
 
-    total = 0
+    total_productos = 0
     asociacion_email = ""
     comprador_email = pedido.comprador_email
 
     for item in pedido.items:
         precio_unit = item.precio_unitario_inicial
-        # Si hay respuesta aceptada con contraoferta, usar ese precio
         for r in item.respuestas:
-            if r.aceptado == "aceptado":
-                if r.precio_contraoferta > 0:
-                    precio_unit = r.precio_contraoferta
+            if r.aceptado == "aceptado" and r.precio_contraoferta > 0:
+                precio_unit = r.precio_contraoferta
                 break
-        total += item.cantidad * precio_unit
+        total_productos += item.cantidad * precio_unit
         if item.producto:
             asociacion_email = item.producto.asociacion_email
 
-    return total, asociacion_email, comprador_email
+    costo_envio = pedido.costo_envio or 0
+    total = total_productos + costo_envio
+    return total, asociacion_email, comprador_email, costo_envio
 
 
 def crear_pago(db: Session, pedido_id: str, comprador_email: str) -> Optional[Pago]:
-    """
-    Crea un registro de pago y lo retorna.
-    El estado inicial es 'pendiente'.
-    """
-    total, asociacion_email, _ = calcular_total_pedido(db, pedido_id)
+    total, asociacion_email, _, costo_envio = calcular_total_pedido(db, pedido_id)
     if total <= 0:
         return None
 
@@ -109,11 +79,7 @@ def crear_pago(db: Session, pedido_id: str, comprador_email: str) -> Optional[Pa
     return pago
 
 
-# ─── VERIFICACIÓN DE WEBHOOK ──────────────────────────────────
 def verificar_firma_webhook(payload: bytes, firma: str) -> bool:
-    """
-    Verifica que el webhook recibido sea legítimo según la firma HMAC-SHA256 de Wompi.
-    """
     if not WOMPI_SECRET_KEY:
         return False
     hash_calculado = hmac.new(
@@ -124,15 +90,7 @@ def verificar_firma_webhook(payload: bytes, firma: str) -> bool:
     return hmac.compare_digest(hash_calculado, firma)
 
 
-# ─── CONFIRMACIÓN DE PAGO ────────────────────────────────────
 def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str) -> Optional[Pago]:
-    """
-    Confirma un pago cuando Wompi notifica que la transacción fue exitosa.
-    - Actualiza el estado del Pago a 'completado'
-    - Crea el registro de Comision
-    - Actualiza el estado del Pedido a 'pagado'
-    - Notifica a la asociación y al comprador
-    """
     pago = db.query(Pago).filter(
         Pago.wompi_referencia == wompi_referencia,
         Pago.estado == "pendiente"
@@ -145,7 +103,6 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
     pago.estado = "completado"
     pago.fecha_confirmacion = datetime.now(timezone.utc)
 
-    # Obtener la asociación del pedido
     pedido = db.query(Pedido).filter(Pedido.id == pago.pedido_id).first()
     asociacion_email = ""
     if pedido:
@@ -154,7 +111,7 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
                 asociacion_email = item.producto.asociacion_email
                 break
 
-    # Crear registro de comisión
+    # Crear registro de comisión para la asociación
     comision = Comision(
         id=str(uuid.uuid4()),
         pago_id=pago.id,
@@ -185,23 +142,28 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
             texto=f"✅ Pago confirmado por ${pago.monto_total:,} para el pedido #{pago.pedido_id[:8]}.",
         )
 
+    # Notificar al transportista si hay uno asignado
+    if pedido and pedido.transportista:
+        transportista = db.query(Transportista).filter(Transportista.id == pedido.transportista_id).first()
+        if transportista and pedido.costo_envio > 0:
+            comision_envio = int(pedido.costo_envio * COMISION_PLATAFORMA / 100)
+            monto_transportista = pedido.costo_envio - comision_envio
+            crear_notificacion(
+                db,
+                destinatario_email=transportista.email,
+                remitente_email="sistema",
+                texto=f"El envío del pedido #{pago.pedido_id[:8]} ha sido pagado. Recibirás ${monto_transportista:,} (costo de envío menos comisión).",
+            )
+
     db.commit()
     return pago
 
 
-# ─── DISPERSIÓN DE FONDOS (WOMPI API PAGOS A TERCEROS) ────────
 async def dispersar_fondos_vendedor(db: Session, pago_id: str) -> bool:
-    """
-    Una vez confirmado el pago, dispersa los fondos (monto_vendedor) a la cuenta
-    bancaria de la asociación utilizando la API de Pagos a Terceros de Wompi.
-
-    Nota: Requiere que la asociación tenga registrada su información bancaria.
-    """
     pago = db.query(Pago).filter(Pago.id == pago_id, Pago.estado == "completado").first()
     if not pago:
         return False
 
-    # Obtener datos bancarios de la asociación
     pedido = db.query(Pedido).filter(Pedido.id == pago.pedido_id).first()
     if not pedido:
         return False
@@ -215,8 +177,6 @@ async def dispersar_fondos_vendedor(db: Session, pago_id: str) -> bool:
     if not asociacion:
         return False
 
-    # TODO: En producción, obtener datos bancarios reales de la asociación
-    # (requiere agregar campos bancarios al modelo Asociacion)
     payload = {
         "payment": {
             "reference": f"PAGO-{pago.wompi_referencia}",
@@ -229,7 +189,7 @@ async def dispersar_fondos_vendedor(db: Session, pago_id: str) -> bool:
                 "name": asociacion.nombre,
                 "email": asociacion.email,
                 "document_type": "CC",
-                "document_number": "",     # Requeriría nuevo campo en modelo
+                "document_number": "",
             }
         }
     }

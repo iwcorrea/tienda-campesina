@@ -213,6 +213,7 @@ class Pedido(Base):
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     transportista_id = Column(String, ForeignKey("transportistas.id"), nullable=True)
     estado_envio = Column(String, default="pendiente")   # pendiente, en_transito, entregado
+    costo_envio = Column(Integer, default=0)             # en COP, lo define la asociación al asigna
 
     items = relationship("ItemPedido", back_populates="pedido", cascade="all, delete-orphan")
     transportista = relationship("Transportista")

@@ -17,12 +17,16 @@ def listar_envios_transportista(db: Session, transportista_email: str) -> List[d
     for p in pedidos:
         items = p.items
         productos = []
-        total = 0
+        total_productos = 0
         for item in items:
             nombre_producto = item.producto.nombre if item.producto else "Producto eliminado"
             subtotal = item.cantidad * item.precio_unitario_inicial
-            total += subtotal
+            total_productos += subtotal
             productos.append({"nombre": nombre_producto, "cantidad": item.cantidad})
+
+        # Calcular cuánto le corresponde al transportista (costo de envío menos comisión del 8%)
+        comision_envio = int(p.costo_envio * 0.08) if p.costo_envio else 0
+        monto_transportista = p.costo_envio - comision_envio if p.costo_envio else 0
 
         resultado.append({
             "pedido_id": p.id,
@@ -30,7 +34,10 @@ def listar_envios_transportista(db: Session, transportista_email: str) -> List[d
             "estado_pedido": p.estado,
             "estado_envio": p.estado_envio or "pendiente",
             "productos": productos,
-            "total": total,
+            "total_productos": total_productos,
+            "costo_envio": p.costo_envio or 0,
+            "comision_plataforma_envio": comision_envio,
+            "monto_transportista": monto_transportista,
             "fecha": p.fecha_creacion
         })
     return resultado
@@ -48,7 +55,17 @@ def actualizar_estado_envio(db: Session, pedido_id: str, transportista_id: str, 
     db.commit()
     return True
 
-def asignar_transportista_a_pedido(db: Session, pedido_id: str, transportista_id: str, email_asociacion: str) -> Optional[Pedido]:
+def asignar_transportista_a_pedido(
+    db: Session,
+    pedido_id: str,
+    transportista_id: str,
+    email_asociacion: str,
+    costo_envio: int = 0
+) -> Optional[Pedido]:
+    """
+    Asigna un transportista al pedido y establece el costo de envío.
+    Verifica que la asociación sea dueña de los productos.
+    """
     pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
     if not pedido:
         return None
@@ -62,5 +79,6 @@ def asignar_transportista_a_pedido(db: Session, pedido_id: str, transportista_id
 
     pedido.transportista_id = transportista_id
     pedido.estado_envio = "pendiente"
+    pedido.costo_envio = costo_envio
     db.commit()
     return pedido

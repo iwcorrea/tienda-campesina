@@ -52,6 +52,13 @@
             </div>
             {% endfor %}
 
+            {% if costo_envio > 0 %}
+            <div class="total-row">
+                <span>Costo de envío</span>
+                <span>${{ costo_envio | int }}</span>
+            </div>
+            {% endif %}
+
             <div class="total-row final">
                 <span>Total del pedido</span>
                 <span>${{ total | int }}</span>
