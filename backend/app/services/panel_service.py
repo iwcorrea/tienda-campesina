@@ -8,7 +8,6 @@ from app.services.contrato_service import generar_contrato_html, subir_contrato
 from app.services.factura_service import generar_factura_html, generar_numero_factura, subir_factura
 from app.services.notificacion_service import crear_notificacion
 from app.services.pedido_service import actualizar_estado_pedido_si_aplica
-from app.services.contacto_service import agregar_contacto
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
@@ -293,9 +292,5 @@ def guardar_respuesta_cotizacion(
 
     # 4. Actualizar estado del pedido si todos los ítems están aceptados
     actualizar_estado_pedido_si_aplica(db, item.pedido_id)
-
-    # 5. Agregar contacto mutuo automáticamente
-    agregar_contacto(db, comprador_email, email_asociacion, "proveedor")
-    agregar_contacto(db, email_asociacion, comprador_email, "cliente")
 
     return nueva
