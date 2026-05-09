@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}¡Pago exitoso!{% endblock %}
+{% block content %}
+<div class="modern-section text-center" style="max-width:500px;margin:0 auto;">
+    <div class="mt-4 mb-3" style="font-size:4rem;">✅</div>
+    <h2 class="fw-bold text-success">¡Pago exitoso!</h2>
+    <p>Tu pedido #{{ pago.pedido_id[:8] }} ha sido pagado correctamente.</p>
+
+    <div class="card border-0 shadow-sm my-4" style="border-radius:16px;">
+        <div class="card-body">
+            <div class="d-flex justify-content-between"><span>Referencia:</span><strong>{{ pago.wompi_referencia }}</strong></div>
+            <div class="d-flex justify-content-between"><span>Total pagado:</span><strong>${{ pago.monto_total | int }} COP</strong></div>
+            <div class="d-flex justify-content-between"><span>Comisión plataforma:</span><strong>${{ pago.comision_plataforma | int }} COP</strong></div>
+            <hr>
+            <div class="d-flex justify-content-between"><span>Recibe la asociación:</span><strong>${{ pago.monto_vendedor | int }} COP</strong></div>
+        </div>
+    </div>
+
+    <div class="d-grid gap-2">
+        <a href="/pedidos/{{ pago.pedido_id }}" class="btn btn-success rounded-pill py-2">Ver pedido</a>
+        <a href="/catalogo" class="btn btn-outline-success rounded-pill py-2">Seguir comprando</a>
+    </div>
+</div>
+{% endblock %}
