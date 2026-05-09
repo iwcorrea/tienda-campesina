@@ -3,7 +3,11 @@
 {% block content %}
 <div class="modern-section">
     <h2>{{ vacante.cargo }}</h2>
-    <p><strong>Asociación:</strong> {{ vacante.asociacion.nombre if vacante.asociacion else vacante.asociacion_email }}</p>
+    <p><strong>Asociación:</strong> 
+        <a href="/perfil/{{ vacante.asociacion_email }}" class="text-decoration-none">
+            {{ vacante.asociacion.nombre if vacante.asociacion else vacante.asociacion_email }}
+        </a>
+    </p>
     <p><strong>Ubicación:</strong> {{ vacante.ubicacion }}</p>
     <p><strong>Salario:</strong> {% if vacante.salario > 0 %}${{ vacante.salario }}{% else %}A convenir{% endif %}</p>
     <p><strong>Tipo de contrato:</strong> {{ vacante.tipo_contrato | replace('_', ' ') | capitalize }}</p>
@@ -13,11 +17,11 @@
     <p><strong>Estado:</strong> <span class="badge bg-{{ 'success' if vacante.estado == 'cubierta' else 'warning' }}">{{ vacante.estado }}</span></p>
     <p><strong>Descripción:</strong> {{ vacante.descripcion }}</p>
     {% if vacante.terminos_url %}
-    <a href="{{ vacante.terminos_url }}" target="_blank" class="btn btn-outline-secondary">Términos de referencia</a>
+    <a href="{{ vacante.terminos_url }}" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill">Términos de referencia</a>
     {% endif %}
 
     {% if vacante.contrato_trabajo_url %}
-    <a href="{{ vacante.contrato_trabajo_url }}" target="_blank" class="btn btn-outline-success ms-2">Ver contrato de trabajo</a>
+    <a href="{{ vacante.contrato_trabajo_url }}" target="_blank" class="btn btn-outline-success btn-sm rounded-pill ms-2">Ver contrato de trabajo</a>
     {% endif %}
 
     <div class="mt-4 d-flex gap-2">
@@ -25,9 +29,9 @@
             {% if not aplicado %}
             <form method="post" action="/aplicar/{{ vacante.id }}">
                 <div class="mb-2">
-                    <textarea name="mensaje" class="form-control" rows="2" placeholder="Mensaje opcional"></textarea>
+                    <textarea name="mensaje" class="form-control" rows="2" placeholder="Mensaje opcional" style="border-radius:12px;"></textarea>
                 </div>
-                <button type="submit" class="btn btn-success">Aplicar</button>
+                <button type="submit" class="btn btn-success rounded-pill">Aplicar</button>
             </form>
             {% else %}
             <span class="text-success">✔ Ya aplicaste a esta vacante</span>
@@ -35,10 +39,9 @@
         {% endif %}
 
         {% if request.session.get("usuario") %}
-        <form method="post" action="/contactos/agregar">
+        <form method="post" action="/contactos/solicitar">
             <input type="hidden" name="contacto_email" value="{{ vacante.asociacion_email }}">
-            <input type="hidden" name="tipo_relacion" value="proveedor">
-            <button type="submit" class="btn btn-outline-primary">➕ Agregar asociación a contactos</button>
+            <button type="submit" class="btn btn-outline-primary rounded-pill">➕ Agregar asociación a contactos</button>
         </form>
         {% endif %}
     </div>

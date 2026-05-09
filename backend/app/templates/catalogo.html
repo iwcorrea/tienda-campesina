@@ -128,12 +128,14 @@
                     <small class="text-warning">⭐ {{ producto.estrellas }} ({{ producto.num_valoraciones }})</small>
                     {% endif %}
                 </div>
-                <small class="text-muted mt-1">{{ producto.asociacion_nombre }}</small>
+                <small class="text-muted mt-1">
+                    <a href="/perfil/{{ producto.asociacion_email }}" class="text-muted text-decoration-none">{{ producto.asociacion_nombre }}</a>
+                </small>
             </div>
             <div class="product-footer">
                 <span class="price-tag">${{ producto.precio }}</span>
                 <div class="d-flex gap-1">
-                    <a href="/asociacion/{{ producto.asociacion_email }}" class="btn btn-sm btn-outline-secondary rounded-pill" title="Ver productor">🏢</a>
+                    <a href="/perfil/{{ producto.asociacion_email }}" class="btn btn-sm btn-outline-secondary rounded-pill" title="Ver productor">🏢</a>
                     {% if request.session.get("usuario") %}
                         {% if producto.tipo == 'producto' %}
                         <form method="post" action="/carrito/agregar/{{ producto.id }}" class="d-inline">

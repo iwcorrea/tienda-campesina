@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
 from app.templates import templates
-from app.models import Asociacion, Persona, Transportista, ValoracionComprador, Producto
+from app.models import Asociacion, Persona, Transportista, ValoracionComprador, Producto, Contacto, SolicitudContacto
 
 router = APIRouter()
 
@@ -35,7 +35,36 @@ def mi_perfil(request: Request, db: Session = Depends(get_db), current_user: dic
 def perfil_publico(request: Request, email: str, db: Session = Depends(get_db)):
     """
     Muestra el perfil público de cualquier usuario (asociación, persona, transportista).
+    Incluye lógica para saber si el usuario actual ya está vinculado.
     """
+    current_email = request.session.get("usuario")
+    es_contacto = False
+    solicitud_pendiente = False
+
+    if current_email:
+        # Verificar si ya son contactos
+        contacto_existente = db.query(Contacto).filter(
+            Contacto.usuario_email == current_email,
+            Contacto.contacto_email == email
+        ).first()
+        if contacto_existente:
+            es_contacto = True
+        
+        # Verificar solicitud pendiente (yo envié a esa persona)
+        solicitud_enviada = db.query(SolicitudContacto).filter(
+            SolicitudContacto.solicitante_email == current_email,
+            SolicitudContacto.receptor_email == email,
+            SolicitudContacto.estado == "pendiente"
+        ).first()
+        # O si esa persona me envió a mí
+        solicitud_recibida = db.query(SolicitudContacto).filter(
+            SolicitudContacto.solicitante_email == email,
+            SolicitudContacto.receptor_email == current_email,
+            SolicitudContacto.estado == "pendiente"
+        ).first()
+        if solicitud_enviada or solicitud_recibida:
+            solicitud_pendiente = True
+
     # Intentar encontrar en cada tipo
     asociacion = db.query(Asociacion).filter(Asociacion.email == email, Asociacion.verificado == "1").first()
     if asociacion:
@@ -52,7 +81,9 @@ def perfil_publico(request: Request, email: str, db: Session = Depends(get_db)):
                 "logo_url": asociacion.logo_url,
                 "show_whatsapp": asociacion.show_whatsapp,
                 "productos": productos
-            }
+            },
+            "es_contacto": es_contacto,
+            "solicitud_pendiente": solicitud_pendiente
         })
 
     persona = db.query(Persona).filter(Persona.email == email).first()
@@ -67,7 +98,9 @@ def perfil_publico(request: Request, email: str, db: Session = Depends(get_db)):
                 "telefono": persona.telefono,
                 "hoja_vida_url": persona.hoja_vida_url,
                 "valoraciones": valoraciones
-            }
+            },
+            "es_contacto": es_contacto,
+            "solicitud_pendiente": solicitud_pendiente
         })
 
     transportista = db.query(Transportista).filter(Transportista.email == email).first()
@@ -85,7 +118,9 @@ def perfil_publico(request: Request, email: str, db: Session = Depends(get_db)):
                 "tarifa_base": transportista.tarifa_base,
                 "costo_km": transportista.costo_km,
                 "documento_url": transportista.documento_url
-            }
+            },
+            "es_contacto": es_contacto,
+            "solicitud_pendiente": solicitud_pendiente
         })
 
     # No encontrado

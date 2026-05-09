@@ -18,7 +18,7 @@
             {% if usuario.telefono %}<p><strong>Teléfono:</strong> {{ usuario.telefono }}</p>{% endif %}
 
             {% if usuario.tipo == "asociacion" and usuario.show_whatsapp == "1" %}
-            <a href="https://wa.me/{{ usuario.telefono }}" class="btn btn-success mb-2">Contactar por WhatsApp</a>
+            <a href="https://wa.me/{{ usuario.telefono }}" class="btn btn-success rounded-pill mb-2">Contactar por WhatsApp</a>
             {% endif %}
 
             {% if usuario.tipo == "transportista" %}
@@ -28,15 +28,22 @@
                 <p><strong>Zona:</strong> {{ usuario.zona_cobertura }}</p>
                 <p><strong>Tarifa base:</strong> ${{ usuario.tarifa_base }}</p>
                 <p><strong>Costo/km:</strong> ${{ usuario.costo_km }}</p>
-                {% if usuario.documento_url %}<a href="{{ usuario.documento_url }}" target="_blank" class="btn btn-outline-secondary btn-sm">Ver documento</a>{% endif %}
+                {% if usuario.documento_url %}<a href="{{ usuario.documento_url }}" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill">Ver documento</a>{% endif %}
             </div>
             {% endif %}
 
+            <!-- Botón de contacto inteligente -->
             {% if request.session.get("usuario") and request.session.get("usuario") != usuario.email %}
-            <form method="post" action="/contactos/solicitar" class="mt-3">
-                <input type="hidden" name="contacto_email" value="{{ usuario.email }}">
-                <button type="submit" class="btn btn-outline-primary rounded-pill px-4">➕ Solicitar contacto</button>
-            </form>
+                {% if es_contacto %}
+                    <span class="badge bg-success rounded-pill px-3 py-2 mt-3">✓ En tu red</span>
+                {% elif solicitud_pendiente %}
+                    <span class="badge bg-warning text-dark rounded-pill px-3 py-2 mt-3">⏳ Solicitud enviada</span>
+                {% else %}
+                    <form method="post" action="/contactos/solicitar" class="mt-3">
+                        <input type="hidden" name="contacto_email" value="{{ usuario.email }}">
+                        <button type="submit" class="btn btn-outline-primary rounded-pill px-4">➕ Solicitar contacto</button>
+                    </form>
+                {% endif %}
             {% endif %}
         </div>
 

@@ -12,24 +12,23 @@
             <tbody>
                 {% for p in postulantes %}
                 <tr>
-                    <td>{{ p.nombre }}</td>
+                    <td><a href="/perfil/{{ p.email }}" class="text-decoration-none">{{ p.nombre }}</a></td>
                     <td>{{ p.email }}</td>
                     <td>{{ p.telefono }}</td>
                     <td>{% if p.hoja_vida_url %}<a href="{{ p.hoja_vida_url }}" target="_blank">Ver</a>{% else %}-{% endif %}</td>
                     <td>{{ p.mensaje }}</td>
                     <td>{{ p.fecha }}</td>
                     <td>
-                        <form method="post" action="/contactos/agregar">
+                        <form method="post" action="/contactos/solicitar">
                             <input type="hidden" name="contacto_email" value="{{ p.email }}">
-                            <input type="hidden" name="tipo_relacion" value="mano_obra">
-                            <button type="submit" class="btn btn-sm btn-outline-primary">➕ Agregar</button>
+                            <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill">➕ Agregar</button>
                         </form>
                     </td>
                     <td>
                         {% if vacante.estado == "activa" %}
                         <form method="post" action="/panel/vacantes/{{ vacante.id }}/seleccionar">
                             <input type="hidden" name="persona_email" value="{{ p.email }}">
-                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('¿Seleccionar a {{ p.nombre }} para esta vacante? Se generará un documento de contratación.')">Seleccionar</button>
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill" onclick="return confirm('¿Seleccionar a {{ p.nombre }} para esta vacante?')">Seleccionar</button>
                         </form>
                         {% endif %}
                     </td>
@@ -42,6 +41,6 @@
     <p class="text-muted">No hay postulantes todavía.</p>
     {% endif %}
 
-    <a href="/panel/vacantes" class="btn btn-secondary mt-3">← Volver a vacantes</a>
+    <a href="/panel/vacantes" class="btn btn-secondary rounded-pill mt-3">← Volver a vacantes</a>
 </div>
 {% endblock %}
