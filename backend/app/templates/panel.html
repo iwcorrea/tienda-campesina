@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Panel de asociación{% endblock %}
+{% block title %}Mis productos/servicios{% endblock %}
 {% block content %}
 <div class="modern-section">
-    <h2 class="fw-bold mb-4">📋 Panel de {{ usuario }}</h2>
-    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#nuevoProductoModal">
+    <h2 class="fw-bold mb-4">📋 Mis productos/servicios – {{ usuario }}</h2>
+    <button class="btn btn-success rounded-pill mb-3" data-bs-toggle="modal" data-bs-target="#nuevoProductoModal">
         + Nuevo producto
     </button>
 
@@ -22,9 +22,9 @@
                     <small>{{ p.tipo }} · {{ p.tipo_precio }}</small>
                 </div>
                 <div class="card-footer bg-white border-0 d-flex justify-content-between">
-                    <a href="/panel/producto/editar/{{ p.id }}" class="btn btn-sm btn-outline-primary">✏️</a>
+                    <a href="/panel/producto/editar/{{ p.id }}" class="btn btn-sm btn-outline-primary rounded-pill">✏️</a>
                     <form method="post" action="/panel/producto/eliminar/{{ p.id }}" onsubmit="return confirm('¿Eliminar este producto?');">
-                        <button class="btn btn-sm btn-outline-danger">🗑️</button>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill">🗑️</button>
                     </form>
                 </div>
             </div>
@@ -36,32 +36,32 @@
     {% endif %}
 </div>
 
-<!-- ─── MODAL NUEVO PRODUCTO ──────────────────────── -->
+<!-- Modal nuevo producto -->
 <div class="modal fade" id="nuevoProductoModal" tabindex="-1" aria-labelledby="nuevoProductoLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:20px;">
       <form method="post" action="/panel/producto" enctype="multipart/form-data">
-        <div class="modal-header">
-          <h5 class="modal-title" id="nuevoProductoLabel">Nuevo producto</h5>
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold" id="nuevoProductoLabel">Nuevo producto</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
             <label for="nombre" class="form-label">Nombre del producto *</label>
-            <input type="text" class="form-control" id="nombre" name="nombre" required>
+            <input type="text" class="form-control rounded-pill" id="nombre" name="nombre" required>
           </div>
           <div class="mb-3">
             <label for="descripcion" class="form-label">Descripción</label>
-            <textarea class="form-control" id="descripcion" name="descripcion" rows="3"></textarea>
+            <textarea class="form-control" id="descripcion" name="descripcion" rows="3" style="border-radius:16px;"></textarea>
           </div>
           <div class="row">
             <div class="col-md-6 mb-3">
               <label for="precio" class="form-label">Precio *</label>
-              <input type="number" class="form-control" id="precio" name="precio" min="0" required>
+              <input type="number" class="form-control rounded-pill" id="precio" name="precio" min="0" required>
             </div>
             <div class="col-md-6 mb-3">
               <label for="tipo" class="form-label">Tipo</label>
-              <select class="form-select" id="tipo" name="tipo">
+              <select class="form-select rounded-pill" id="tipo" name="tipo">
                 <option value="producto">Producto</option>
                 <option value="servicio">Servicio</option>
               </select>
@@ -69,20 +69,20 @@
           </div>
           <div class="mb-3">
             <label for="tipo_precio" class="form-label">Modalidad de precio</label>
-            <select class="form-select" id="tipo_precio" name="tipo_precio">
+            <select class="form-select rounded-pill" id="tipo_precio" name="tipo_precio">
               <option value="fijo">Fijo</option>
               <option value="negociable">Negociable</option>
             </select>
           </div>
           <div class="mb-3">
             <label for="imagen" class="form-label">Imagen del producto</label>
-            <input class="form-control" type="file" id="imagen" name="imagen" accept="image/*" onchange="previewImage(event)">
-            <img id="preview" src="#" alt="Vista previa" class="img-thumbnail mt-2" style="max-height: 200px; display: none;">
+            <input class="form-control rounded-pill" type="file" id="imagen" name="imagen" accept="image/*" onchange="previewImage(event)">
+            <img id="preview" src="#" alt="Vista previa" class="img-thumbnail mt-2" style="max-height: 200px; display: none; border-radius:12px;">
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-success">Crear producto</button>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success rounded-pill">Crear producto</button>
         </div>
       </form>
     </div>

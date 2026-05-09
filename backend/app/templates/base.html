@@ -154,8 +154,8 @@
                     {% if request.session.get("usuario") %}
                         <li class="nav-item"><span class="sidebar-section-title">Principal</span></li>
                         {% if request.session.get("tipo_usuario") == "asociacion" %}
-                            <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" href="/panel"><i class="bi bi-grid me-2"></i> Panel productos</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2 me-2"></i> Panel de Control</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/panel"><i class="bi bi-grid me-2"></i> Mis productos/servicios</a></li>
                             <li class="nav-item"><a class="nav-link" href="/pedidos"><i class="bi bi-box-seam me-2"></i> Mis pedidos</a></li>
                             <li class="nav-item"><a class="nav-link" href="/contactos"><i class="bi bi-people me-2"></i> Contactos</a></li>
                             <li class="nav-item"><hr class="dropdown-divider my-2"></li>
@@ -305,5 +305,7 @@
             }
         });
     </script>
+</body>
+</html>
 </body>
 </html>
