@@ -39,7 +39,6 @@ def nuevo_mensaje(
 ):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
-
     return templates.TemplateResponse("mensaje_nuevo.html", {
         "request": request,
         "destinatario_email": destinatario_email,

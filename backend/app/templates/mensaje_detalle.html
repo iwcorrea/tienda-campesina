@@ -5,14 +5,14 @@
     <div class="d-flex align-items-center mb-3">
         <a href="/mensajes" class="btn btn-outline-secondary me-2">←</a>
         <h4 class="mb-0">{{ contacto_nombre }}</h4>
-        <form method="post" action="/contactos/agregar" class="ms-auto">
+        <!-- Botón para solicitar contacto si no es contacto ya -->
+        <form method="post" action="/contactos/solicitar" class="ms-auto">
             <input type="hidden" name="contacto_email" value="{{ contacto_email }}">
-            <input type="hidden" name="tipo_relacion" value="contacto">
-            <button type="submit" class="btn btn-sm btn-outline-primary">➕ Agregar contacto</button>
+            <button type="submit" class="btn btn-sm btn-outline-primary">➕ Solicitar contacto</button>
         </form>
     </div>
 
-    <!-- Mensajes -->
+    <!-- Burbujas de mensajes -->
     <div class="flex-grow-1 overflow-auto mb-3 bg-light rounded p-3" id="chat-box">
         {% for m in hilo %}
         <div class="d-flex mb-3 {% if m.remitente_email == request.session.get('usuario') %}justify-content-end{% else %}justify-content-start{% endif %}">
@@ -29,7 +29,7 @@
         {% endfor %}
     </div>
 
-    <!-- Responder -->
+    <!-- Formulario de respuesta -->
     <form method="post" action="/mensajes/enviar" class="d-flex gap-2">
         <input type="hidden" name="destinatario_email" value="{{ contacto_email }}">
         <textarea name="texto" class="form-control" rows="1" placeholder="Escribe un mensaje..." required></textarea>

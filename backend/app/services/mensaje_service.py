@@ -5,6 +5,7 @@ from sqlalchemy import func, or_, and_, desc
 from app.models import Mensaje, Asociacion, Persona, Transportista
 
 def obtener_conversaciones(db: Session, email: str) -> List[dict]:
+    """Lista de conversaciones únicas, mostrando el último mensaje de cada contacto."""
     mensajes = (
         db.query(Mensaje)
         .filter(
@@ -18,7 +19,7 @@ def obtener_conversaciones(db: Session, email: str) -> List[dict]:
     for m in mensajes:
         otro = m.remitente_email if m.destinatario_email == email else m.destinatario_email
         if otro not in conversaciones:
-            conversaciones[otro] = m
+            conversaciones[otro] = m  # solo nos quedamos con el más reciente
 
     resultado = []
     for otro, ultimo in conversaciones.items():
@@ -32,11 +33,13 @@ def obtener_conversaciones(db: Session, email: str) -> List[dict]:
             "producto_id": ultimo.producto_id,
             "mensaje_id": ultimo.id
         })
-    
+
+    # Ordenar por fecha descendente
     resultado.sort(key=lambda x: x["fecha"], reverse=True)
     return resultado
 
 def obtener_hilo_con_contacto(db: Session, email: str, contacto_email: str) -> List[Mensaje]:
+    """Todos los mensajes entre dos usuarios, en orden cronológico."""
     return (
         db.query(Mensaje)
         .filter(
@@ -50,6 +53,7 @@ def obtener_hilo_con_contacto(db: Session, email: str, contacto_email: str) -> L
     )
 
 def marcar_conversacion_leida(db: Session, email: str, contacto_email: str):
+    """Marca como leídos todos los mensajes recibidos de un contacto."""
     db.query(Mensaje).filter(
         Mensaje.destinatario_email == email,
         Mensaje.remitente_email == contacto_email,
@@ -64,6 +68,7 @@ def enviar_mensaje(
     texto: str,
     producto_id: Optional[str] = None,
 ) -> Mensaje:
+    """Envía un mensaje y lo persiste."""
     nuevo = Mensaje(
         id=str(uuid.uuid4()),
         remitente_email=email_remitente,
@@ -77,6 +82,7 @@ def enviar_mensaje(
     return nuevo
 
 def contar_no_leidos(db: Session, email: str) -> int:
+    """Cantidad de mensajes no leídos para la campanita."""
     return (
         db.query(func.count(Mensaje.id))
         .filter(Mensaje.destinatario_email == email, Mensaje.leido == "0")
@@ -84,6 +90,7 @@ def contar_no_leidos(db: Session, email: str) -> int:
     )
 
 def obtener_nombre_usuario(db: Session, email: str) -> str:
+    """Nombre público del usuario (asociación, persona o transportista)."""
     a = db.query(Asociacion).filter(Asociacion.email == email).first()
     if a:
         return a.nombre or email

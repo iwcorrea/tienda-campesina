@@ -3,6 +3,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from app.models import Contacto, SolicitudContacto, Asociacion, Persona, Transportista
 
+# ─── Solicitudes ───
+
 def enviar_solicitud_contacto(db: Session, solicitante_email: str, receptor_email: str) -> Optional[SolicitudContacto]:
     existente = db.query(SolicitudContacto).filter(
         SolicitudContacto.solicitante_email == solicitante_email,
@@ -35,12 +37,12 @@ def aceptar_solicitud(db: Session, solicitud_id: str, email: str) -> bool:
     ).first()
     if not solicitud:
         return False
-    
+
     solicitud.estado = "aceptada"
-    
+
+    # Crear contactos mutuos
     agregar_contacto_directo(db, solicitud.solicitante_email, solicitud.receptor_email, "contacto")
     agregar_contacto_directo(db, solicitud.receptor_email, solicitud.solicitante_email, "contacto")
-    
     db.commit()
     return True
 
@@ -55,6 +57,8 @@ def rechazar_solicitud(db: Session, solicitud_id: str, email: str) -> bool:
     solicitud.estado = "rechazada"
     db.commit()
     return True
+
+# ─── Contactos directos ───
 
 def agregar_contacto_directo(db: Session, usuario_email: str, contacto_email: str, tipo_relacion: str = "contacto") -> Contacto:
     existe = db.query(Contacto).filter(
