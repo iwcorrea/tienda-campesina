@@ -227,4 +227,14 @@ def on_startup():
                 fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
         """))
+        # Bloqueos (nueva tabla)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS bloqueos (
+                id VARCHAR PRIMARY KEY,
+                bloqueador_email VARCHAR NOT NULL,
+                bloqueado_email VARCHAR NOT NULL,
+                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+        """))
+        
         conn.commit()

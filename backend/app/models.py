@@ -288,3 +288,11 @@ class SolicitudContacto(Base):
     receptor_email = Column(String, nullable=False)
     estado = Column(String, default="pendiente")  # pendiente, aceptada, rechazada
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+class Bloqueo(Base):
+    __tablename__ = "bloqueos"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    bloqueador_email = Column(String, nullable=False, index=True)
+    bloqueado_email = Column(String, nullable=False)
+    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))    

@@ -1,36 +1,85 @@
 {% extends "base.html" %}
-{% block title %}Mis contactos{% endblock %}
+{% block title %}Contactos{% endblock %}
 {% block content %}
 <div class="modern-section">
     <h2 class="fw-bold mb-4">👥 Contactos</h2>
 
-    {% if solicitudes %}
-    <h4>Solicitudes pendientes</h4>
-    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
-        {% for s in solicitudes %}
-        <div class="col">
-            <div class="card shadow-sm border-0">
-                <div class="card-body text-center">
-                    <h6>{{ s.nombre }}</h6>
-                    <small class="text-muted">{{ s.tipo }}</small>
-                    <div class="mt-2">
-                        <form method="post" action="/contactos/aceptar" class="d-inline">
-                            <input type="hidden" name="solicitud_id" value="{{ s.id }}">
-                            <button type="submit" class="btn btn-sm btn-success">Aceptar</button>
-                        </form>
-                        <form method="post" action="/contactos/rechazar" class="d-inline">
-                            <input type="hidden" name="solicitud_id" value="{{ s.id }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Rechazar</button>
-                        </form>
+    <!-- Pestañas de filtro -->
+    <ul class="nav nav-pills mb-4" id="filtroContactos">
+        <li class="nav-item"><a class="nav-link active" href="#" data-tipo="todos">Todos</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-tipo="asociacion">Asociaciones</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-tipo="persona">Personas</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-tipo="transportista">Transportistas</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-tipo="pendientes">Pendientes ({{ solicitudes | length }})</a></li>
+    </ul>
+
+    <input type="text" class="form-control mb-4" placeholder="🔍 Buscar contacto..." id="buscadorContactos">
+
+    <!-- Todos los contactos -->
+    <div id="todos-cont" class="fila-contactos">
+        {% if contactos %}
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for c in contactos %}
+            <div class="col contacto-item" data-tipo="{{ c.tipo }}" data-nombre="{{ c.nombre }}">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body text-center">
+                        {% if c.logo %}
+                        <img src="{{ c.logo }}" class="rounded-circle mb-2" width="60" height="60">
+                        {% else %}
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-2" style="width:60px; height:60px;">
+                            <span class="fs-3">{{ c.nombre[0] }}</span>
+                        </div>
+                        {% endif %}
+                        <h6>{{ c.nombre }}</h6>
+                        <small class="text-muted">{{ c.tipo }} · {{ c.relacion }}</small>
+                        <div class="mt-2">
+                            <a href="/mensajes/chat/{{ c.email }}" class="btn btn-sm btn-outline-primary me-1">Mensaje</a>
+                            <form method="post" action="/contactos/eliminar" class="d-inline">
+                                <input type="hidden" name="contacto_email" value="{{ c.email }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        {% else %}
+        <p class="text-muted">No tienes contactos todavía.</p>
+        {% endif %}
     </div>
-    {% endif %}
 
-    <form method="post" action="/contactos/solicitar" class="row g-3 mb-4">
+    <!-- Pendientes -->
+    <div id="pendientes-cont" class="fila-contactos" style="display:none;">
+        {% if solicitudes %}
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% for s in solicitudes %}
+            <div class="col" data-tipo="pendientes">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <h6>{{ s.nombre }}</h6>
+                        <small class="text-muted">{{ s.tipo }}</small>
+                        <div class="mt-2">
+                            <form method="post" action="/contactos/aceptar" class="d-inline">
+                                <input type="hidden" name="solicitud_id" value="{{ s.id }}">
+                                <button type="submit" class="btn btn-sm btn-success">Aceptar</button>
+                            </form>
+                            <form method="post" action="/contactos/rechazar" class="d-inline">
+                                <input type="hidden" name="solicitud_id" value="{{ s.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Rechazar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">No tienes solicitudes pendientes.</p>
+        {% endif %}
+    </div>
+
+    <form method="post" action="/contactos/solicitar" class="row g-3 mt-4">
         <div class="col-md-8">
             <input type="email" name="contacto_email" class="form-control" placeholder="Email de la persona, asociación o transportista" required>
         </div>
@@ -38,37 +87,59 @@
             <button type="submit" class="btn btn-success w-100">Enviar solicitud</button>
         </div>
     </form>
-
-    {% if contactos %}
-    <h4>Conectados</h4>
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        {% for c in contactos %}
-        <div class="col">
-            <div class="card shadow-sm border-0">
-                <div class="card-body text-center">
-                    {% if c.logo %}
-                    <img src="{{ c.logo }}" class="rounded-circle mb-2" width="60" height="60">
-                    {% else %}
-                    <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-2" style="width:60px; height:60px;">
-                        <span class="fs-3">{{ c.nombre[0] }}</span>
-                    </div>
-                    {% endif %}
-                    <h6>{{ c.nombre }}</h6>
-                    <small class="text-muted">{{ c.tipo }} · {{ c.relacion }}</small>
-                    <div class="mt-2">
-                        <a href="/mensajes/chat/{{ c.email }}" class="btn btn-sm btn-outline-primary me-1">Mensaje</a>
-                        <form method="post" action="/contactos/eliminar" class="d-inline">
-                            <input type="hidden" name="contacto_email" value="{{ c.email }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <p class="text-muted">No tienes contactos todavía. Busca y envía solicitudes para conectarte.</p>
-    {% endif %}
+    <small class="text-muted">No puedes enviarte una solicitud a ti mismo.</small>
 </div>
+
+<script>
+    // Validar auto-solicitud
+    document.querySelector('form[action="/contactos/solicitar"]').addEventListener('submit', function(e){
+        var emailUsuario = "{{ request.session.get('usuario') }}";
+        var input = this.querySelector('input[name="contacto_email"]');
+        if (input.value.trim() === emailUsuario) {
+            e.preventDefault();
+            alert('No puedes enviarte una solicitud a ti mismo.');
+        }
+    });
+
+    // Filtro por pestañas
+    document.querySelectorAll('#filtroContactos a').forEach(function(tab){
+        tab.addEventListener('click', function(e){
+            e.preventDefault();
+            document.querySelectorAll('#filtroContactos a').forEach(a => a.classList.remove('active'));
+            this.classList.add('active');
+            var tipo = this.getAttribute('data-tipo');
+
+            // Ocultar todos los contenedores
+            document.querySelectorAll('.fila-contactos').forEach(div => div.style.display = 'none');
+
+            if (tipo === 'todos') {
+                document.getElementById('todos-cont').style.display = '';
+                document.querySelectorAll('.contacto-item').forEach(item => item.style.display = '');
+            } else if (tipo === 'pendientes') {
+                document.getElementById('pendientes-cont').style.display = '';
+            } else {
+                // Mostrar solo contactos del tipo seleccionado
+                document.getElementById('todos-cont').style.display = '';
+                document.querySelectorAll('.contacto-item').forEach(function(item){
+                    item.style.display = item.getAttribute('data-tipo') === tipo ? '' : 'none';
+                });
+            }
+        });
+    });
+
+    // Búsqueda local
+    document.getElementById('buscadorContactos').addEventListener('keyup', function(){
+        var filtro = this.value.toUpperCase();
+        // Si no hay ninguna pestaña activa, mostrar Todos
+        var algunaVisible = Array.from(document.querySelectorAll('.fila-contactos')).some(div => div.style.display !== 'none');
+        if (!algunaVisible) {
+            document.getElementById('todos-cont').style.display = '';
+            document.querySelectorAll('.contacto-item').forEach(item => item.style.display = '');
+        }
+        document.querySelectorAll('.contacto-item, #pendientes-cont .col').forEach(function(item){
+            var nombre = item.getAttribute('data-nombre') || item.querySelector('h6')?.textContent.toUpperCase() || '';
+            item.style.display = nombre.indexOf(filtro) > -1 ? '' : 'none';
+        });
+    });
+</script>
 {% endblock %}

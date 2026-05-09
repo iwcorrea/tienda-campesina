@@ -5,18 +5,28 @@
     <div class="d-flex align-items-center mb-3">
         <a href="/mensajes" class="btn btn-outline-secondary me-2">←</a>
         <h4 class="mb-0">{{ contacto_nombre }}</h4>
-        <!-- Botón para solicitar contacto si no es contacto ya -->
-        <form method="post" action="/contactos/solicitar" class="ms-auto">
-            <input type="hidden" name="contacto_email" value="{{ contacto_email }}">
-            <button type="submit" class="btn btn-sm btn-outline-primary">➕ Solicitar contacto</button>
-        </form>
+
+        <div class="dropdown ms-auto">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                ⋮
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#eliminarConversacionModal">🗑️ Eliminar conversación</a></li>
+                {% if not bloqueado %}
+                <li><form method="post" action="/mensajes/bloquear/{{ contacto_email }}" class="d-inline"><button type="submit" class="dropdown-item">🚫 Bloquear</button></form></li>
+                {% else %}
+                <li><form method="post" action="/mensajes/desbloquear/{{ contacto_email }}" class="d-inline"><button type="submit" class="dropdown-item">✅ Desbloquear</button></form></li>
+                {% endif %}
+                <li><form method="post" action="/contactos/solicitar" class="d-inline"><input type="hidden" name="contacto_email" value="{{ contacto_email }}"><button type="submit" class="dropdown-item">➕ Solicitar contacto</button></form></li>
+            </ul>
+        </div>
     </div>
 
-    <!-- Burbujas de mensajes -->
+    <!-- Burbujas -->
     <div class="flex-grow-1 overflow-auto mb-3 bg-light rounded p-3" id="chat-box">
         {% for m in hilo %}
         <div class="d-flex mb-3 {% if m.remitente_email == request.session.get('usuario') %}justify-content-end{% else %}justify-content-start{% endif %}">
-            <div class="p-3 rounded-3 {% if m.remitente_email == request.session.get('usuario') %}bg-success text-white{% else %}bg-white border{% endif %}" style="max-width: 70%;">
+            <div class="p-3 rounded-3 {% if m.remitente_email == request.session.get('usuario') %}bg-success text-white{% else %}bg-white border{% endif %}" style="max-width: 70%; position: relative;">
                 <div class="small {% if m.remitente_email == request.session.get('usuario') %}text-white-50{% else %}text-muted{% endif %}">
                     {{ m.remitente_nombre or m.remitente_email }} · {{ m.fecha_envio.strftime('%d/%m/%Y %H:%M') if m.fecha_envio else '' }}
                 </div>
@@ -24,16 +34,77 @@
                 {% if m.producto_id %}
                 <a href="/catalogo?q={{ m.producto_id }}" class="btn btn-sm btn-outline-light mt-1">Ver producto</a>
                 {% endif %}
+                <!-- Indicador de leído -->
+                {% if m.remitente_email == request.session.get('usuario') %}
+                <span class="text-end small d-block">{{ '✓✓' if m.leido == '0' else '✓✓ leído' }}</span>
+                {% endif %}
+
+                <!-- Botones de acción -->
+                <div class="btn-group btn-group-sm position-absolute top-0 end-0 m-1" role="group" style="display:none;">
+                    <button class="btn btn-light btn-sm" onclick="copiarMensaje('{{ m.texto | e }}')"><i class="bi bi-clipboard"></i></button>
+                    {% if m.remitente_email == request.session.get('usuario') %}
+                    <form method="post" action="/mensajes/eliminar/{{ m.id }}" class="d-inline" onsubmit="return confirm('¿Eliminar este mensaje?');">
+                        <button type="submit" class="btn btn-light btn-sm"><i class="bi bi-trash"></i></button>
+                    </form>
+                    {% endif %}
+                </div>
             </div>
         </div>
         {% endfor %}
     </div>
 
     <!-- Formulario de respuesta -->
+    {% if not bloqueado %}
     <form method="post" action="/mensajes/enviar" class="d-flex gap-2">
         <input type="hidden" name="destinatario_email" value="{{ contacto_email }}">
         <textarea name="texto" class="form-control" rows="1" placeholder="Escribe un mensaje..." required></textarea>
         <button type="submit" class="btn btn-success">Enviar</button>
     </form>
+    {% else %}
+    <div class="alert alert-warning text-center">Has bloqueado a este usuario. Desbloquéalo para enviar mensajes.</div>
+    {% endif %}
 </div>
+
+<!-- Modal eliminar conversación -->
+<div class="modal fade" id="eliminarConversacionModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Eliminar conversación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de eliminar toda la conversación con {{ contacto_nombre }}? Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" action="/mensajes/eliminar-conversacion/{{ contacto_email }}">
+          <button type="submit" class="btn btn-danger">Eliminar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function copiarMensaje(texto) {
+    navigator.clipboard.writeText(texto).then(function() {
+        alert('Mensaje copiado');
+    });
+}
+// Mostrar botones de acción al pasar el ratón (en móvil con toque largo)
+document.querySelectorAll('.p-3.rounded-3').forEach(function(burbuja) {
+    burbuja.addEventListener('mouseenter', function(){
+        this.querySelector('.btn-group').style.display = 'block';
+    });
+    burbuja.addEventListener('mouseleave', function(){
+        this.querySelector('.btn-group').style.display = 'none';
+    });
+    // En móvil, mostrar con toque
+    burbuja.addEventListener('click', function(){
+        var grupo = this.querySelector('.btn-group');
+        grupo.style.display = grupo.style.display === 'block' ? 'none' : 'block';
+    });
+});
+</script>
 {% endblock %}
