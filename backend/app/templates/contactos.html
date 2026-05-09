@@ -2,150 +2,266 @@
 {% block title %}Contactos{% endblock %}
 {% block head %}
 <style>
+    .contact-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.25rem;
+    }
     .contact-card {
-        transition: transform 0.15s, box-shadow 0.15s;
+        background: #fff;
         border-radius: 16px;
-        border: none;
+        padding: 1.5rem 1rem;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        transition: all 0.2s ease;
+        position: relative;
+        border: 1px solid #f0f0f0;
     }
     .contact-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+        border-color: #d4e6dc;
     }
-    .avatar-circle {
-        width: 56px;
-        height: 56px;
+    .contact-avatar {
+        width: 64px;
+        height: 64px;
         border-radius: 50%;
+        object-fit: cover;
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 1.3rem;
-        background: #e9ecef;
+        font-size: 1.6rem;
         color: #2d6a4f;
+        margin: 0 auto 0.75rem;
+        box-shadow: 0 2px 8px rgba(45,106,79,0.15);
     }
-    .nav-pills .nav-link {
+    .contact-name {
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 0.2rem;
+        color: #1a1a1a;
+    }
+    .contact-type {
+        display: inline-block;
+        padding: 2px 10px;
         border-radius: 20px;
-        padding: 8px 18px;
-        font-size: 0.85rem;
-        color: #495057;
-        transition: all 0.2s;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        margin-bottom: 0.5rem;
     }
-    .nav-pills .nav-link.active {
+    .type-asociacion { background: #e8f5e9; color: #2d6a4f; }
+    .type-persona { background: #e3f2fd; color: #1565c0; }
+    .type-transportista { background: #fff3e0; color: #e65100; }
+    .contact-actions {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        margin-top: 0.75rem;
+    }
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dee2e6;
+        background: #fff;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-size: 1rem;
+    }
+    .btn-icon:hover {
+        background: #f8faf5;
+        border-color: #2d6a4f;
+    }
+    .btn-icon.delete:hover {
+        background: #fff5f5;
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+    .pending-badge {
+        background: #ffc107;
+        color: #000;
+        font-weight: 600;
+        font-size: 0.65rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        margin-left: 6px;
+    }
+    .filter-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 1.5rem;
+    }
+    .filter-pill {
+        padding: 8px 18px;
+        border-radius: 24px;
+        border: 1px solid #dee2e6;
+        background: #fff;
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .filter-pill.active {
         background: #2d6a4f;
         color: #fff;
+        border-color: #2d6a4f;
     }
-    .search-input {
-        border-radius: 24px;
-        padding: 10px 20px;
-        border: 1px solid #dee2e6;
+    .filter-pill:hover:not(.active) {
+        background: #f8faf5;
+    }
+    .search-box {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    .search-box input {
+        border-radius: 28px;
+        padding: 12px 20px 12px 44px;
+        border: 1px solid #e9ecef;
+        width: 100%;
+        font-size: 0.9rem;
         transition: all 0.2s;
     }
-    .search-input:focus {
+    .search-box input:focus {
+        outline: none;
         border-color: #2d6a4f;
-        box-shadow: 0 0 0 3px rgba(45,106,79,0.08);
+        box-shadow: 0 0 0 4px rgba(45,106,79,0.06);
+    }
+    .search-box i {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    .empty-state .icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.7;
     }
 </style>
 {% endblock %}
 {% block content %}
 <div class="modern-section">
-    <h2 class="fw-bold mb-4" style="font-size:1.5rem;">👥 Contactos</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold" style="font-size:1.5rem;">👥 Contactos</h2>
+        <button class="btn btn-success rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#nuevaSolicitudModal">
+            + Agregar
+        </button>
+    </div>
 
-    <!-- Pestañas -->
-    <ul class="nav nav-pills mb-4 gap-2" id="filtroContactos" style="flex-wrap:wrap;">
-        <li class="nav-item"><a class="nav-link active" href="#" data-tipo="todos">Todos</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" data-tipo="asociacion">Asociaciones</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" data-tipo="persona">Personas</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" data-tipo="transportista">Transportistas</a></li>
-        <li class="nav-item"><a class="nav-link d-flex align-items-center gap-1" href="#" data-tipo="pendientes">Pendientes <span class="badge bg-danger rounded-pill" style="font-size:0.65rem;">{{ solicitudes | length }}</span></a></li>
-    </ul>
+    <!-- Filtros -->
+    <div class="filter-pills" id="filtroContactos">
+        <span class="filter-pill active" data-tipo="todos">Todos</span>
+        <span class="filter-pill" data-tipo="asociacion">Asociaciones</span>
+        <span class="filter-pill" data-tipo="persona">Personas</span>
+        <span class="filter-pill" data-tipo="transportista">Transportistas</span>
+        <span class="filter-pill d-flex align-items-center gap-1" data-tipo="pendientes">
+            Pendientes
+            <span class="pending-badge">{{ solicitudes | length }}</span>
+        </span>
+    </div>
 
-    <input type="text" class="search-input form-control mb-4" placeholder="🔍 Buscar contacto..." id="buscadorContactos">
+    <!-- Búsqueda -->
+    <div class="search-box">
+        <i class="bi bi-search"></i>
+        <input type="text" id="buscadorContactos" placeholder="Buscar por nombre...">
+    </div>
 
-    <!-- Contenedor de contactos -->
-    <div id="todos-cont" class="fila-contactos">
-        {% if contactos %}
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
-            {% for c in contactos %}
-            <div class="col contacto-item" data-tipo="{{ c.tipo }}" data-nombre="{{ c.nombre }}">
-                <div class="card contact-card shadow-sm h-100">
-                    <div class="card-body text-center py-4">
-                        {% if c.logo %}
-                        <img src="{{ c.logo }}" class="mb-3" style="width:56px; height:56px; border-radius:50%; object-fit:cover;">
-                        {% else %}
-                        <div class="avatar-circle mx-auto mb-3">{{ c.nombre[0].upper() }}</div>
-                        {% endif %}
-                        <h6 class="fw-bold mb-1">{{ c.nombre }}</h6>
-                        <small class="text-muted">{{ c.tipo | capitalize }} · {{ c.relacion }}</small>
-                        <div class="mt-3 d-flex gap-2 justify-content-center">
-                            <a href="/mensajes/chat/{{ c.email }}" class="btn btn-sm btn-outline-success rounded-pill px-3">💬</a>
-                            <form method="post" action="/contactos/eliminar" onsubmit="return confirm('¿Eliminar a {{ c.nombre }} de tus contactos? Esta acción es mutua.');" class="d-inline">
-                                <input type="hidden" name="contacto_email" value="{{ c.email }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">✕</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+    <!-- Contactos -->
+    <div id="contactos-container" class="contact-grid">
+        {% for c in contactos %}
+        <div class="contact-card contacto-item" data-tipo="{{ c.tipo }}" data-nombre="{{ c.nombre }}">
+            {% if c.logo %}
+            <img src="{{ c.logo }}" class="contact-avatar" alt="{{ c.nombre }}">
+            {% else %}
+            <div class="contact-avatar">{{ c.nombre[0].upper() }}</div>
+            {% endif %}
+            <div class="contact-name">{{ c.nombre }}</div>
+            <span class="contact-type type-{{ c.tipo }}">{{ c.tipo | capitalize }}</span>
+            <div class="contact-actions">
+                <a href="/mensajes/chat/{{ c.email }}" class="btn-icon" title="Enviar mensaje">💬</a>
+                <a href="/perfil/{{ c.email }}" class="btn-icon" title="Ver perfil">👤</a>
+                <form method="post" action="/contactos/eliminar" onsubmit="return confirm('¿Eliminar a {{ c.nombre }} de tus contactos? Esta acción es mutua.');" class="d-inline">
+                    <input type="hidden" name="contacto_email" value="{{ c.email }}">
+                    <button type="submit" class="btn-icon delete" title="Eliminar contacto">✕</button>
+                </form>
             </div>
-            {% endfor %}
         </div>
-        {% else %}
-        <div class="text-center py-5">
-            <div style="font-size:3rem;">🤝</div>
-            <p class="text-muted mt-3">No tienes contactos todavía.</p>
+        {% endfor %}
+        {% if not contactos %}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="icon">🤝</div>
+            <p class="text-muted">No tienes contactos todavía.</p>
         </div>
         {% endif %}
     </div>
 
-    <!-- Pendientes -->
-    <div id="pendientes-cont" class="fila-contactos" style="display:none;">
-        {% if solicitudes %}
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
-            {% for s in solicitudes %}
-            <div class="col" data-tipo="pendientes" data-nombre="{{ s.nombre }}">
-                <div class="card contact-card shadow-sm h-100">
-                    <div class="card-body text-center py-4">
-                        <div class="avatar-circle mx-auto mb-3">{{ s.nombre[0].upper() }}</div>
-                        <h6 class="fw-bold mb-1">{{ s.nombre }}</h6>
-                        <small class="text-muted">{{ s.tipo | capitalize }}</small>
-                        <div class="mt-3 d-flex gap-2 justify-content-center">
-                            <form method="post" action="/contactos/aceptar" class="d-inline">
-                                <input type="hidden" name="solicitud_id" value="{{ s.id }}">
-                                <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">✓ Aceptar</button>
-                            </form>
-                            <form method="post" action="/contactos/rechazar" class="d-inline">
-                                <input type="hidden" name="solicitud_id" value="{{ s.id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3">✕ Rechazar</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+    <!-- Pendientes (contenedor separado para filtrar) -->
+    <div id="pendientes-container" class="contact-grid" style="display:none;">
+        {% for s in solicitudes %}
+        <div class="contact-card contacto-item" data-tipo="pendientes" data-nombre="{{ s.nombre }}">
+            <div class="contact-avatar">{{ s.nombre[0].upper() }}</div>
+            <div class="contact-name">{{ s.nombre }}</div>
+            <span class="contact-type type-{{ s.tipo }}">{{ s.tipo | capitalize }}</span>
+            <div class="contact-actions">
+                <form method="post" action="/contactos/aceptar" class="d-inline">
+                    <input type="hidden" name="solicitud_id" value="{{ s.id }}">
+                    <button type="submit" class="btn-icon" title="Aceptar" style="color:#2d6a4f;">✓</button>
+                </form>
+                <form method="post" action="/contactos/rechazar" class="d-inline">
+                    <input type="hidden" name="solicitud_id" value="{{ s.id }}">
+                    <button type="submit" class="btn-icon delete" title="Rechazar">✕</button>
+                </form>
             </div>
-            {% endfor %}
         </div>
-        {% else %}
-        <div class="text-center py-5">
-            <div style="font-size:3rem;">📋</div>
-            <p class="text-muted mt-3">No tienes solicitudes pendientes.</p>
+        {% endfor %}
+        {% if not solicitudes %}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="icon">📋</div>
+            <p class="text-muted">No tienes solicitudes pendientes.</p>
         </div>
         {% endif %}
     </div>
+</div>
 
-    <!-- Formulario nueva solicitud -->
-    <form method="post" action="/contactos/solicitar" class="row g-3 mt-4 align-items-end">
-        <div class="col-md-8">
-            <label class="form-label small fw-semibold text-muted">Nueva solicitud</label>
-            <input type="email" name="contacto_email" class="form-control search-input" placeholder="Email de la persona, asociación o transportista" required>
+<!-- Modal nueva solicitud -->
+<div class="modal fade" id="nuevaSolicitudModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:20px;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">Nueva solicitud de contacto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/contactos/solicitar" id="formSolicitud">
+        <div class="modal-body">
+          <label class="form-label small text-muted fw-semibold">Email del usuario</label>
+          <input type="email" name="contacto_email" class="form-control rounded-pill" placeholder="ejemplo@correo.com" required>
+          <small class="text-muted">No puedes enviarte una solicitud a ti mismo.</small>
         </div>
-        <div class="col-md-4">
-            <button type="submit" class="btn btn-success rounded-pill w-100">Enviar solicitud</button>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success rounded-pill px-4">Enviar</button>
         </div>
-    </form>
-    <small class="text-muted mt-2 d-block">No puedes enviarte una solicitud a ti mismo.</small>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
     // Validar auto-solicitud
-    document.querySelector('form[action="/contactos/solicitar"]').addEventListener('submit', function(e){
+    document.getElementById('formSolicitud').addEventListener('submit', function(e){
         var emailUsuario = "{{ request.session.get('usuario') }}";
         var input = this.querySelector('input[name="contacto_email"]');
         if (input.value.trim().toLowerCase() === emailUsuario.toLowerCase()) {
@@ -154,25 +270,28 @@
         }
     });
 
-    // Filtro por pestañas
-    document.querySelectorAll('#filtroContactos a').forEach(function(tab){
-        tab.addEventListener('click', function(e){
-            e.preventDefault();
-            document.querySelectorAll('#filtroContactos a').forEach(a => a.classList.remove('active'));
+    // Filtro por píldoras
+    document.querySelectorAll('.filter-pill').forEach(function(pill){
+        pill.addEventListener('click', function(){
+            document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
             this.classList.add('active');
             var tipo = this.getAttribute('data-tipo');
 
-            document.querySelectorAll('.fila-contactos').forEach(div => div.style.display = 'none');
+            var contactosContainer = document.getElementById('contactos-container');
+            var pendientesContainer = document.getElementById('pendientes-container');
 
-            if (tipo === 'todos') {
-                document.getElementById('todos-cont').style.display = '';
-                document.querySelectorAll('.contacto-item').forEach(item => item.style.display = '');
-            } else if (tipo === 'pendientes') {
-                document.getElementById('pendientes-cont').style.display = '';
+            if (tipo === 'pendientes') {
+                contactosContainer.style.display = 'none';
+                pendientesContainer.style.display = 'grid';
             } else {
-                document.getElementById('todos-cont').style.display = '';
-                document.querySelectorAll('.contacto-item').forEach(function(item){
-                    item.style.display = item.getAttribute('data-tipo') === tipo ? '' : 'none';
+                contactosContainer.style.display = 'grid';
+                pendientesContainer.style.display = 'none';
+                document.querySelectorAll('#contactos-container .contacto-item').forEach(function(item){
+                    if (tipo === 'todos' || item.getAttribute('data-tipo') === tipo) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
                 });
             }
         });
@@ -181,10 +300,28 @@
     // Búsqueda
     document.getElementById('buscadorContactos').addEventListener('keyup', function(){
         var filtro = this.value.toUpperCase();
-        document.querySelectorAll('.contacto-item, #pendientes-cont .col').forEach(function(item){
-            var nombre = item.getAttribute('data-nombre') || item.querySelector('h6')?.textContent.toUpperCase() || '';
-            item.style.display = nombre.indexOf(filtro) > -1 ? '' : 'none';
+        var allItems = document.querySelectorAll('.contacto-item');
+        var anyVisible = false;
+        allItems.forEach(function(item){
+            var nombre = item.getAttribute('data-nombre').toUpperCase();
+            if (nombre.indexOf(filtro) > -1) {
+                item.style.display = '';
+                anyVisible = true;
+            } else {
+                item.style.display = 'none';
+            }
         });
+        // Mostrar mensaje de vacío si no hay resultados en el contenedor activo
+        var contactosContainer = document.getElementById('contactos-container');
+        var pendientesContainer = document.getElementById('pendientes-container');
+        var emptyContactos = contactosContainer.querySelector('.empty-state');
+        var emptyPendientes = pendientesContainer.querySelector('.empty-state');
+        if (contactosContainer.style.display !== 'none' && emptyContactos) {
+            emptyContactos.style.display = anyVisible ? 'none' : '';
+        }
+        if (pendientesContainer.style.display !== 'none' && emptyPendientes) {
+            emptyPendientes.style.display = anyVisible ? 'none' : '';
+        }
     });
 </script>
 {% endblock %}
