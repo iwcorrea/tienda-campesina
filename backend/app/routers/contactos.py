@@ -12,6 +12,7 @@ from app.services.contacto_service import (
     rechazar_solicitud
 )
 from app.services.notificacion_service import crear_notificacion
+from app.services.historial_service import obtener_historial_con_contacto
 from app.templates import templates
 
 router = APIRouter(prefix="/contactos", tags=["contactos"])
@@ -25,7 +26,6 @@ def panel_contactos(
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    # Contactos ya establecidos
     contactos_orm = listar_contactos(db, current_user["email"])
     contactos = []
     for c in contactos_orm:
@@ -38,7 +38,6 @@ def panel_contactos(
             "relacion": c.tipo_relacion
         })
 
-    # Solicitudes recibidas pendientes
     solicitudes = listar_solicitudes_pendientes(db, current_user["email"])
     solicitudes_info = []
     for s in solicitudes:
@@ -67,14 +66,12 @@ def solicitar_contacto(
         return RedirectResponse(url="/auth/login", status_code=303)
 
     enviar_solicitud_contacto(db, current_user["email"], contacto_email)
-
     crear_notificacion(
         db,
         destinatario_email=contacto_email,
         remitente_email=current_user["email"],
         texto=f"{current_user['email']} te ha enviado una solicitud de contacto."
     )
-
     return RedirectResponse(url="/contactos?enviada=1", status_code=303)
 
 @router.post("/aceptar")
@@ -86,7 +83,6 @@ def aceptar_solicitud_post(
 ):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
-
     aceptar_solicitud(db, solicitud_id, current_user["email"])
     return RedirectResponse(url="/contactos?aceptada=1", status_code=303)
 
@@ -99,7 +95,6 @@ def rechazar_solicitud_post(
 ):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
-
     rechazar_solicitud(db, solicitud_id, current_user["email"])
     return RedirectResponse(url="/contactos?rechazada=1", status_code=303)
 
@@ -112,6 +107,26 @@ def eliminar(
 ):
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
-
     eliminar_contacto(db, current_user["email"], contacto_email)
     return RedirectResponse(url="/contactos?eliminado=1", status_code=303)
+
+@router.get("/historial/{contacto_email}", response_class=HTMLResponse)
+def historial_contacto(
+    request: Request,
+    contacto_email: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    if not current_user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    eventos = obtener_historial_con_contacto(db, current_user["email"], contacto_email)
+    info = obtener_info_contacto(db, contacto_email)
+    contacto_nombre = info["nombre"] if info else contacto_email
+
+    return templates.TemplateResponse("historial_contacto.html", {
+        "request": request,
+        "eventos": eventos,
+        "contacto_email": contacto_email,
+        "contacto_nombre": contacto_nombre
+    })

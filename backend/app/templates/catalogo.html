@@ -1,57 +1,151 @@
 {% extends "base.html" %}
-{% block title %}Catálogo de productos y servicios{% endblock %}
+{% block title %}Catálogo – {{ config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
+{% block head %}
+<style>
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1.5rem;
+    }
+    .product-card {
+        background: #fff;
+        border-radius: 20px;
+        overflow: hidden;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid #f0f0f0;
+        display: flex;
+        flex-direction: column;
+    }
+    .product-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 16px 32px rgba(0,0,0,0.08);
+        border-color: #d4e6dc;
+    }
+    .product-img {
+        height: 180px;
+        object-fit: cover;
+        width: 100%;
+        background: #f8faf5;
+    }
+    .product-body {
+        padding: 1.25rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .product-title {
+        font-weight: 700;
+        font-size: 1.05rem;
+        margin-bottom: 0.5rem;
+        color: #1a1a1a;
+    }
+    .product-desc {
+        font-size: 0.85rem;
+        color: #6c757d;
+        flex: 1;
+    }
+    .product-footer {
+        padding: 0 1.25rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .price-tag {
+        font-weight: 800;
+        font-size: 1.3rem;
+        color: #2d6a4f;
+    }
+    .type-badge {
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+    .badge-producto { background: #e8f5e9; color: #2d6a4f; }
+    .badge-servicio { background: #e3f2fd; color: #1565c0; }
+    .pagination .page-link {
+        border-radius: 12px;
+        margin: 0 4px;
+        color: #2d6a4f;
+        border: none;
+        background: #f8faf5;
+    }
+    .pagination .page-item.active .page-link {
+        background: #2d6a4f;
+        color: #fff;
+    }
+    .search-bar {
+        border-radius: 30px;
+        padding: 12px 24px;
+        border: 1px solid #e9ecef;
+        transition: all 0.2s;
+    }
+    .search-bar:focus {
+        border-color: #2d6a4f;
+        box-shadow: 0 0 0 4px rgba(45,106,79,0.06);
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="modern-section">
-    <h2 class="fw-bold mb-4">🌱 Nuestros productos y servicios</h2>
-    {% if q %}<p class="text-muted">Buscando: "{{ q }}"</p>{% endif %}
+    <h2 class="fw-bold mb-4" style="font-size:1.8rem;">🌱 Catálogo</h2>
 
-    <!-- PESTAÑAS DE FILTRO -->
-    <ul class="nav nav-pills mb-4">
-        <li class="nav-item">
-            <a class="nav-link {% if tipo != 'producto' and tipo != 'servicio' %}active{% endif %}" href="{{ url_for('catalogo') }}?q={{ q }}&tipo_precio={{ tipo_precio }}">Todos</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {% if tipo == 'producto' %}active{% endif %}" href="{{ url_for('catalogo') }}?tipo=producto&q={{ q }}&tipo_precio={{ tipo_precio }}">Productos</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {% if tipo == 'servicio' %}active{% endif %}" href="{{ url_for('catalogo') }}?tipo=servicio&q={{ q }}&tipo_precio={{ tipo_precio }}">Servicios</a>
-        </li>
-    </ul>
+    <!-- Filtros y búsqueda -->
+    <div class="row g-3 align-items-end mb-5">
+        <div class="col-md-6">
+            <form action="/catalogo" method="get" class="d-flex gap-2">
+                <input type="text" name="q" class="form-control search-bar" placeholder="Buscar productos o servicios..." value="{{ q }}">
+                <input type="hidden" name="tipo" value="{{ tipo }}">
+                <button type="submit" class="btn btn-success rounded-pill px-4">Buscar</button>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex gap-2 justify-content-md-end flex-wrap">
+                <a href="/catalogo?q={{ q }}&tipo_precio={{ tipo_precio }}" 
+                   class="btn btn-sm rounded-pill {% if not tipo %}btn-success text-white{% else %}btn-outline-success{% endif %}">Todos</a>
+                <a href="/catalogo?tipo=producto&q={{ q }}&tipo_precio={{ tipo_precio }}" 
+                   class="btn btn-sm rounded-pill {% if tipo == 'producto' %}btn-success text-white{% else %}btn-outline-success{% endif %}">Productos</a>
+                <a href="/catalogo?tipo=servicio&q={{ q }}&tipo_precio={{ tipo_precio }}" 
+                   class="btn btn-sm rounded-pill {% if tipo == 'servicio' %}btn-success text-white{% else %}btn-outline-success{% endif %}">Servicios</a>
+            </div>
+        </div>
+    </div>
 
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+    <!-- Resultados -->
+    {% if productos %}
+    <div class="product-grid">
         {% for producto in productos %}
-        <div class="col">
-            <div class="card shadow-sm border-0 h-100">
-                <img src="{{ producto.imagen }}" class="card-img-top" alt="{{ producto.nombre }}" style="height:180px; object-fit:cover;">
-                <div class="card-body">
-                    <h5 class="card-title">{{ producto.nombre }}</h5>
-                    <p class="card-text small text-muted">{{ producto.descripcion[:80] }}...</p>
-                    <p class="fw-bold text-success mb-1">${{ producto.precio }}</p>
-                    <small>{{ producto.asociacion_nombre }}</small>
+        <div class="product-card">
+            <img src="{{ producto.imagen }}" class="product-img" alt="{{ producto.nombre }}">
+            <div class="product-body">
+                <div class="product-title">{{ producto.nombre }}</div>
+                <p class="product-desc">{{ producto.descripcion[:100] }}{% if producto.descripcion|length > 100 %}...{% endif %}</p>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                    <span class="type-badge badge-{{ 'producto' if producto.tipo == 'producto' else 'servicio' }}">{{ producto.tipo | capitalize }}</span>
                     {% if producto.estrellas > 0 %}
-                    <div class="text-warning">⭐ {{ producto.estrellas }} ({{ producto.num_valoraciones }})</div>
+                    <small class="text-warning">⭐ {{ producto.estrellas }} ({{ producto.num_valoraciones }})</small>
                     {% endif %}
-                    <div class="mt-1">
-                        <span class="badge bg-{{ 'primary' if producto.tipo == 'producto' else 'info' }}">{{ producto.tipo | capitalize }}</span>
-                    </div>
                 </div>
-                <div class="card-footer bg-white border-0">
-                    <a href="/asociacion/{{ producto.asociacion_email }}" class="btn btn-sm btn-outline-success w-100 mb-1">Ver productor</a>
+                <small class="text-muted mt-1">{{ producto.asociacion_nombre }}</small>
+            </div>
+            <div class="product-footer">
+                <span class="price-tag">${{ producto.precio }}</span>
+                <div class="d-flex gap-1">
+                    <a href="/asociacion/{{ producto.asociacion_email }}" class="btn btn-sm btn-outline-secondary rounded-pill" title="Ver productor">🏢</a>
                     {% if request.session.get("usuario") %}
                         {% if producto.tipo == 'producto' %}
-                            <!-- Agregar al carrito solo para productos -->
-                            <form method="post" action="/carrito/agregar/{{ producto.id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-primary w-100">+ Agregar al carrito</button>
-                            </form>
+                        <form method="post" action="/carrito/agregar/{{ producto.id }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill">🛒</button>
+                        </form>
                         {% else %}
-                            <!-- Solicitar cotización para servicios -->
-                            <form method="post" action="/pedidos/cotizar-servicio/{{ producto.id }}">
-                                <input type="hidden" name="cantidad" value="1">
-                                <button type="submit" class="btn btn-sm btn-outline-warning w-100">📋 Solicitar cotización</button>
-                            </form>
+                        <form method="post" action="/pedidos/cotizar-servicio/{{ producto.id }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-warning rounded-pill">📋</button>
+                        </form>
                         {% endif %}
                     {% else %}
-                        <a href="/auth/login" class="btn btn-sm btn-outline-secondary w-100">Iniciar sesión para comprar</a>
+                        <a href="/auth/login" class="btn btn-sm btn-outline-success rounded-pill">Iniciar sesión</a>
                     {% endif %}
                 </div>
             </div>
@@ -59,12 +153,12 @@
         {% endfor %}
     </div>
 
-    <!-- PAGINACIÓN -->
+    <!-- Paginación -->
     {% if total_pages > 1 %}
-    <nav aria-label="Paginación del catálogo" class="mt-4">
+    <nav class="mt-5">
         <ul class="pagination justify-content-center">
             <li class="page-item {% if page == 1 %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page-1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">Anterior</a>
+                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page-1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">‹</a>
             </li>
             {% set start = [1, page - 2] | max %}
             {% set end = [total_pages, page + 2] | min %}
@@ -80,10 +174,17 @@
                 <li class="page-item disabled"><span class="page-link">…</span></li>
             {% endif %}
             <li class="page-item {% if page == total_pages %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page+1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">Siguiente</a>
+                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page+1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">›</a>
             </li>
         </ul>
     </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+        <div style="font-size:3rem;">🔍</div>
+        <p class="text-muted mt-3">No se encontraron productos con esos filtros.</p>
+    </div>
     {% endif %}
 </div>
 {% endblock %}

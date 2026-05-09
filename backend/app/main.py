@@ -236,5 +236,15 @@ def on_startup():
                 fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
         """))
-        
+                # NotificacionesSistema (nueva tabla)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS notificaciones_sistema (
+                id VARCHAR PRIMARY KEY,
+                destinatario_email VARCHAR NOT NULL,
+                texto TEXT NOT NULL,
+                leido VARCHAR DEFAULT '0',
+                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                url TEXT DEFAULT ''
+            )
+        """))
         conn.commit()

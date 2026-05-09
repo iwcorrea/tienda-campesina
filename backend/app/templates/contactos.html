@@ -193,6 +193,7 @@
             <div class="contact-actions">
                 <a href="/mensajes/chat/{{ c.email }}" class="btn-icon" title="Enviar mensaje">💬</a>
                 <a href="/perfil/{{ c.email }}" class="btn-icon" title="Ver perfil">👤</a>
+                <a href="/contactos/historial/{{ c.email }}" class="btn-icon" title="Ver historial">📜</a>
                 <form method="post" action="/contactos/eliminar" onsubmit="return confirm('¿Eliminar a {{ c.nombre }} de tus contactos? Esta acción es mutua.');" class="d-inline">
                     <input type="hidden" name="contacto_email" value="{{ c.email }}">
                     <button type="submit" class="btn-icon delete" title="Eliminar contacto">✕</button>
@@ -301,27 +302,10 @@
     document.getElementById('buscadorContactos').addEventListener('keyup', function(){
         var filtro = this.value.toUpperCase();
         var allItems = document.querySelectorAll('.contacto-item');
-        var anyVisible = false;
         allItems.forEach(function(item){
             var nombre = item.getAttribute('data-nombre').toUpperCase();
-            if (nombre.indexOf(filtro) > -1) {
-                item.style.display = '';
-                anyVisible = true;
-            } else {
-                item.style.display = 'none';
-            }
+            item.style.display = nombre.indexOf(filtro) > -1 ? '' : 'none';
         });
-        // Mostrar mensaje de vacío si no hay resultados en el contenedor activo
-        var contactosContainer = document.getElementById('contactos-container');
-        var pendientesContainer = document.getElementById('pendientes-container');
-        var emptyContactos = contactosContainer.querySelector('.empty-state');
-        var emptyPendientes = pendientesContainer.querySelector('.empty-state');
-        if (contactosContainer.style.display !== 'none' && emptyContactos) {
-            emptyContactos.style.display = anyVisible ? 'none' : '';
-        }
-        if (pendientesContainer.style.display !== 'none' && emptyPendientes) {
-            emptyPendientes.style.display = anyVisible ? 'none' : '';
-        }
     });
 </script>
 {% endblock %}

@@ -1,7 +1,6 @@
 import uuid
 from sqlalchemy.orm import Session
-from app.models import Mensaje
-
+from app.models import NotificacionSistema
 
 def crear_notificacion(
     db: Session,
@@ -9,16 +8,17 @@ def crear_notificacion(
     remitente_email: str,
     texto: str,
     producto_id: str = None,
-) -> Mensaje:
-    """Crea un mensaje interno como notificación automática del sistema."""
-    mensaje = Mensaje(
+):
+    """
+    Crea una notificación del sistema (no interfiere con la mensajería personal).
+    Se mantiene la firma anterior para no tocar los lugares que la invocan.
+    """
+    notif = NotificacionSistema(
         id=str(uuid.uuid4()),
-        remitente_email=remitente_email,
         destinatario_email=destinatario_email,
-        producto_id=producto_id,
         texto=texto,
-        leido="0"
+        url=f"/mensajes/{uuid.uuid4()}"  # URL genérica; luego podemos personalizar
     )
-    db.add(mensaje)
+    db.add(notif)
     db.commit()
-    return mensaje
+    return notif

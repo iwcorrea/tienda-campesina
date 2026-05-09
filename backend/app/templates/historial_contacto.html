@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Historial con {{ contacto_nombre }}{% endblock %}
+{% block head %}
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 12px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    .timeline-icon {
+        position: absolute;
+        left: -2rem;
+        background: #fff;
+        border: 2px solid #e9ecef;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+    .timeline-content {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        border: 1px solid #f0f0f0;
+    }
+    .timeline-date {
+        font-size: 0.7rem;
+        color: #adb5bd;
+        margin-bottom: 0.25rem;
+    }
+    .event-type {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #2d6a4f;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <div class="d-flex align-items-center mb-4">
+        <a href="/contactos" class="btn btn-link text-dark me-3 p-0" style="font-size:1.3rem;">←</a>
+        <h2 class="fw-bold mb-0" style="font-size:1.4rem;">📜 Historial con {{ contacto_nombre }}</h2>
+    </div>
+
+    {% if eventos %}
+    <div class="timeline">
+        {% for evento in eventos %}
+        <div class="timeline-item">
+            <div class="timeline-icon">{{ evento.icono }}</div>
+            <div class="timeline-content">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="event-type">{{ evento.tipo }}</span>
+                    <small class="timeline-date">{{ evento.fecha.strftime('%d/%m/%Y %I:%M %p') if evento.fecha else '' }}</small>
+                </div>
+                <h6 class="mt-2 mb-1">{{ evento.texto }}</h6>
+                <p class="text-muted small mb-2">{{ evento.descripcion }}</p>
+                {% if evento.url and evento.url != '#' %}
+                <a href="{{ evento.url }}" class="btn btn-sm btn-outline-success rounded-pill" target="_blank">Ver detalle</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div style="font-size:3rem;">📭</div>
+        <p class="text-muted mt-3">No hay historial con este contacto todavía.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
