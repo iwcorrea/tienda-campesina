@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
-from app.models import Pedido, ItemPedido
+from app.models import Pedido, ItemPedido, RespuestaCotizacion
 from app.utils import utc_to_colombia
 
 @dataclass
@@ -35,6 +35,7 @@ class DetallePedidoViewModel:
             respuestas=respuestas_vm
         )
 
+
 @dataclass
 class PedidoViewModel:
     id: str
@@ -55,4 +56,58 @@ class PedidoViewModel:
             total=total,
             comprador_email=pedido.comprador_email,
             items=items_vm,
+        )
+
+
+@dataclass
+class CotizacionEnviadaViewModel:
+    """Vista detallada de un ítem solicitado por el comprador."""
+    id: str
+    producto_nombre: str
+    producto_tipo: str
+    asociacion_nombre: str
+    asociacion_email: str
+    pedido_id: str
+    cantidad: int
+    precio_unitario: float
+    subtotal: float
+    estado: str                         # pendiente, aceptada, pagada
+    contrato_url: Optional[str]
+    factura_url: Optional[str]
+    fecha: datetime
+
+    @classmethod
+    def from_orm(cls, item: ItemPedido) -> "CotizacionEnviadaViewModel":
+        # Determinar estado
+        resp_aceptada = None
+        for r in item.respuestas:
+            if r.aceptado == "aceptado":
+                resp_aceptada = r
+                break
+
+        if item.pedido and item.pedido.estado == "pagado":
+            estado = "pagada"
+        elif resp_aceptada:
+            estado = "aceptada"
+        else:
+            estado = "pendiente"
+
+        producto = item.producto
+        asociacion = producto.asociacion if producto else None
+        subtotal = item.cantidad * item.precio_unitario_inicial
+
+        return cls(
+            id=item.id,
+            producto_nombre=producto.nombre if producto else "Producto eliminado",
+            producto_tipo=producto.tipo if producto else "",
+            asociacion_nombre=asociacion.nombre if asociacion else "",
+            asociacion_email=asociacion.email if asociacion else "",
+            pedido_id=item.pedido.id if item.pedido else "",
+            cantidad=item.cantidad,
+            precio_unitario=float(item.precio_unitario_inicial),
+            subtotal=float(subtotal),
+            estado=estado,
+            contrato_url=resp_aceptada.contrato_url if resp_aceptada else None,
+            factura_url=resp_aceptada.factura_url if resp_aceptada else None,
+            fecha=utc_to_colombia(item.pedido.fecha_creacion) if item.pedido and item.pedido.fecha_creacion else None,
         )

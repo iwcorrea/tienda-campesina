@@ -4,8 +4,12 @@ from fastapi import APIRouter, Request, Form, Query, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
-from app.services.pedido_service import listar_pedidos, obtener_pedido_por_id
-from app.viewmodels.pedido import PedidoViewModel
+from app.services.pedido_service import (
+    listar_pedidos,
+    obtener_pedido_por_id,
+    listar_cotizaciones_enviadas,
+)
+from app.viewmodels.pedido import PedidoViewModel, CotizacionEnviadaViewModel
 from app.templates import templates
 from app.models import Producto, Pedido, ItemPedido
 from app.services.notificacion_service import crear_notificacion
@@ -50,6 +54,41 @@ def listar(
     })
 
 
+@router.get("/cotizaciones-enviadas", response_class=HTMLResponse)
+def cotizaciones_enviadas(
+    request: Request,
+    pagina: int = Query(1, ge=1),
+    por_pagina: int = Query(15, ge=1, le=50),
+    estado: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_current_user),
+):
+    if not current_user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    comprador_email = current_user.get("email")
+    items, total = listar_cotizaciones_enviadas(
+        db,
+        comprador_email=comprador_email,
+        pagina=pagina,
+        por_pagina=por_pagina,
+        estado=estado,
+    )
+
+    items_vm = [CotizacionEnviadaViewModel.from_orm(item) for item in items]
+    total_paginas = math.ceil(total / por_pagina) if total else 1
+
+    return templates.TemplateResponse("pedidos/cotizaciones_enviadas.html", {
+        "request": request,
+        "items": items_vm,
+        "pagina_actual": pagina,
+        "total_paginas": total_paginas,
+        "por_pagina": por_pagina,
+        "estado_actual": estado or "",
+        "total_items": total,
+    })
+
+
 @router.get("/{pedido_id}", response_class=HTMLResponse)
 def detalle(
     request: Request,
@@ -64,8 +103,15 @@ def detalle(
     if not pedido:
         return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
+    # Permitir ver el pedido al comprador o a la asociación dueña de los productos
     if current_user.get("email") != pedido.comprador_email:
-        return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
+        # Verificar si la asociación actual es dueña de algún producto en el pedido
+        pertenece = any(
+            item.producto and item.producto.asociacion_email == current_user.get("email")
+            for item in pedido.items
+        )
+        if not pertenece:
+            return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
 
     pedido_vm = PedidoViewModel.from_orm(pedido)
     return templates.TemplateResponse("pedidos/detalle.html", {

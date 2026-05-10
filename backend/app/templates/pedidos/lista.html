@@ -2,30 +2,73 @@
 {% block title %}Mis pedidos{% endblock %}
 {% block content %}
 <div class="modern-section">
-    <h2 class="fw-bold mb-4">📦 Mis pedidos</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">📦 Mis pedidos</h2>
+        <a href="/pedidos/cotizaciones-enviadas" class="btn btn-outline-success rounded-pill">
+            📋 Ver cotizaciones enviadas
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="d-flex gap-2 mb-4 flex-wrap">
+        <a href="/pedidos" class="btn btn-sm rounded-pill {% if not estado_actual %}btn-success text-white{% else %}btn-outline-success{% endif %}">Todos</a>
+        <a href="/pedidos?estado=pendiente" class="btn btn-sm rounded-pill {% if estado_actual == 'pendiente' %}btn-warning text-dark{% else %}btn-outline-warning{% endif %}">Pendientes</a>
+        <a href="/pedidos?estado=aceptado" class="btn btn-sm rounded-pill {% if estado_actual == 'aceptado' %}btn-info text-white{% else %}btn-outline-info{% endif %}">Aceptados</a>
+        <a href="/pedidos?estado=pagado" class="btn btn-sm rounded-pill {% if estado_actual == 'pagado' %}btn-success text-white{% else %}btn-outline-success{% endif %}">Pagados</a>
+        <a href="/pedidos?estado=entregado" class="btn btn-sm rounded-pill {% if estado_actual == 'entregado' %}btn-success text-white{% else %}btn-outline-success{% endif %}">Entregados</a>
+    </div>
+
     {% if pedidos %}
     <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <tr><th>Pedido #</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Acción</th></tr>
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Pedido</th>
+                    <th>Fecha</th>
+                    <th>Productos</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
             </thead>
             <tbody>
                 {% for pedido in pedidos %}
                 <tr>
                     <td>#{{ pedido.id[:8] }}</td>
-                    <td>{{ pedido.fecha.strftime('%d/%m/%Y') }}</td>
-                    <td><span class="badge bg-{% if pedido.estado == 'pendiente' %}warning{% else %}success{% endif %}">{{ pedido.estado }}</span></td>
+                    <td>{{ pedido.fecha.strftime('%d/%m/%Y') if pedido.fecha else '' }}</td>
+                    <td>
+                        {% for item in pedido.items %}
+                        {{ item.producto_nombre }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
                     <td>${{ pedido.total }}</td>
-                    <td><a href="/pedidos/{{ pedido.id }}" class="btn btn-sm btn-outline-primary">Ver</a></td>
+                    <td>
+                        {% if pedido.estado == 'pendiente' %}
+                        <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% elif pedido.estado == 'aceptado' %}
+                        <span class="badge bg-info">Aceptado</span>
+                        {% elif pedido.estado == 'pagado' %}
+                        <span class="badge bg-primary">Pagado</span>
+                        {% elif pedido.estado == 'entregado' %}
+                        <span class="badge bg-success">Entregado</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ pedido.estado }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/pedidos/{{ pedido.id }}" class="btn btn-sm btn-outline-primary rounded-pill">
+                            Ver detalle
+                        </a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <!-- PAGINACIÓN -->
+    <!-- Paginación -->
     {% if total_paginas > 1 %}
-    <nav class="mt-3">
+    <nav class="mt-4">
         <ul class="pagination justify-content-center">
             <li class="page-item {% if pagina_actual == 1 %}disabled{% endif %}">
                 <a class="page-link" href="{{ url_for('listar') }}?pagina={{ pagina_actual-1 }}&por_pagina={{ por_pagina }}&estado={{ estado_actual }}">Anterior</a>
@@ -49,8 +92,13 @@
         </ul>
     </nav>
     {% endif %}
+
     {% else %}
-    <p class="text-muted">No tienes pedidos.</p>
+    <div class="text-center py-5">
+        <div style="font-size:3rem;">📭</div>
+        <p class="text-muted mt-3">No tienes pedidos con ese estado.</p>
+        <a href="/catalogo" class="btn btn-success rounded-pill mt-2">Ir al catálogo</a>
+    </div>
     {% endif %}
 </div>
 {% endblock %}
