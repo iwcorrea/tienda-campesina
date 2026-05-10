@@ -8,7 +8,7 @@ from app.services.contrato_service import generar_contrato_html, subir_contrato
 from app.services.factura_service import generar_factura_html, generar_numero_factura, subir_factura
 from app.services.notificacion_service import crear_notificacion
 from app.services.pedido_service import actualizar_estado_pedido_si_aplica
-from app.services.inventario_service import inicializar_stock, reservar_stock_por_cotizacion
+from app.services.inventario_service import inicializar_stock, reservar_stock_por_cotizacion, cancelar_reserva_pedido
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
@@ -187,14 +187,16 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
             "pedido": {
                 "id": item.pedido.id if item.pedido else "",
                 "comprador_email": item.pedido.comprador_email if item.pedido else "",
-                "fecha_creacion": item.pedido.fecha_creacion if item.pedido else None
+                "fecha_creacion": item.pedido.fecha_creacion if item.pedido else None,
+                "estado": item.pedido.estado if item.pedido else ""
             },
             "cantidad": item.cantidad,
             "precio_unitario_inicial": item.precio_unitario_inicial,
             "respuesta_aceptada": {
                 "contrato_url": resp_aceptada.contrato_url if resp_aceptada else "",
                 "factura_url": resp_aceptada.factura_url if resp_aceptada else ""
-            } if resp_aceptada else None
+            } if resp_aceptada else None,
+            "pedido_estado": item.pedido.estado if item.pedido else ""
         })
     return resultado
 
@@ -250,7 +252,6 @@ def guardar_respuesta_cotizacion(
         precio_total = cantidad_final * precio_unit
         asociacion_nombre = item.producto.asociacion.nombre if item.producto.asociacion else email_asociacion
 
-        # 1. Contrato
         html_contrato = generar_contrato_html(
             comprador_email=comprador_email,
             asociacion_nombre=asociacion_nombre,
@@ -268,7 +269,6 @@ def guardar_respuesta_cotizacion(
         except Exception:
             pass
 
-        # 2. Factura
         numero_factura = generar_numero_factura()
         items_factura = [{
             "producto_nombre": producto.nombre,
@@ -291,7 +291,6 @@ def guardar_respuesta_cotizacion(
         except Exception:
             pass
 
-        # 3. Notificación al comprador
         crear_notificacion(
             db,
             destinatario_email=comprador_email,
@@ -303,11 +302,60 @@ def guardar_respuesta_cotizacion(
     db.add(nueva)
     db.commit()
 
-    # 4. Actualizar estado del pedido si todos los ítems están aceptados
     actualizar_estado_pedido_si_aplica(db, item.pedido_id)
 
-    # 5. Reservar stock SOLO si es un producto físico
     if aceptado == "aceptado" and item.producto and item.producto.tipo == "producto":
         reservar_stock_por_cotizacion(db, item_id)
 
     return nueva
+
+
+# ─── CANCELAR COTIZACIÓN ACEPTADA ─────────────────
+def cancelar_cotizacion_aceptada(db: Session, item_id: str, email_asociacion: str) -> bool:
+    item = db.query(ItemPedido).join(Producto).filter(
+        ItemPedido.id == item_id,
+        Producto.asociacion_email == email_asociacion
+    ).first()
+    if not item:
+        return False
+
+    if item.pedido and item.pedido.estado == "pagado":
+        return False
+
+    for r in item.respuestas:
+        db.delete(r)
+
+    if item.producto and item.producto.tipo == "producto":
+        cancelar_reserva_pedido(db, item.pedido.id if item.pedido else "")
+
+    pedido = item.pedido
+    db.delete(item)
+    db.commit()
+
+    if pedido and len(pedido.items) == 0:
+        db.delete(pedido)
+        db.commit()
+
+    return True
+
+
+def reenviar_enlace_pago(db: Session, pedido_id: str, email_asociacion: str) -> bool:
+    from app.models import Pedido
+    pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
+    if not pedido:
+        return False
+
+    pertenece = any(
+        item.producto and item.producto.asociacion_email == email_asociacion
+        for item in pedido.items
+    )
+    if not pertenece:
+        return False
+
+    crear_notificacion(
+        db,
+        destinatario_email=pedido.comprador_email,
+        remitente_email=email_asociacion,
+        texto=f"Recordatorio: tu pedido #{pedido_id[:8]} está pendiente de pago. Puedes pagar aquí: /pagos/checkout/{pedido_id}",
+    )
+    return True

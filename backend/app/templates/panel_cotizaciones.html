@@ -3,6 +3,15 @@
 {% block content %}
 <div class="modern-section">
     <h2 class="fw-bold mb-4">📦 Cotizaciones recibidas</h2>
+
+    <!-- Filtros -->
+    <div class="d-flex gap-2 mb-4 flex-wrap">
+        <a href="/panel/cotizaciones" class="btn btn-sm rounded-pill {% if not estado_actual %}btn-success text-white{% else %}btn-outline-success{% endif %}">Todas</a>
+        <a href="/panel/cotizaciones?estado=pendiente" class="btn btn-sm rounded-pill {% if estado_actual == 'pendiente' %}btn-warning text-dark{% else %}btn-outline-warning{% endif %}">Pendientes</a>
+        <a href="/panel/cotizaciones?estado=aceptada" class="btn btn-sm rounded-pill {% if estado_actual == 'aceptada' %}btn-info text-white{% else %}btn-outline-info{% endif %}">Aceptadas</a>
+        <a href="/panel/cotizaciones?estado=pagada" class="btn btn-sm rounded-pill {% if estado_actual == 'pagada' %}btn-success text-white{% else %}btn-outline-success{% endif %}">Pagadas</a>
+    </div>
+
     {% if items %}
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
@@ -16,39 +25,62 @@
                             <th>Precio suger.</th>
                             <th>Comprador</th>
                             <th>Fecha</th>
+                            <th>Estado</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in items %}
+                        {% set reputacion = reputaciones.get(item.pedido.comprador_email) %}
                         <tr>
                             <td>
                                 {{ item.producto.nombre }}
                                 <br><small class="text-muted">{{ item.producto.tipo | capitalize }}</small>
                             </td>
-                            <td>#{{ item.pedido.id[:8] }}</td>
+                            <td>
+                                <a href="/pedidos/{{ item.pedido.id }}" title="Ver historial del pedido">#{{ item.pedido.id[:8] }}</a>
+                            </td>
                             <td>{{ item.cantidad }}</td>
                             <td>${{ item.precio_unitario_inicial }}</td>
                             <td>
                                 <a href="/perfil/{{ item.pedido.comprador_email }}">{{ item.pedido.comprador_email }}</a>
+                                {% if reputacion %}
+                                <br><small class="text-warning">⭐ {{ reputacion }}</small>
+                                {% endif %}
                             </td>
                             <td>{{ item.pedido.fecha_creacion.strftime('%d/%m/%Y') if item.pedido.fecha_creacion else '' }}</td>
                             <td>
+                                {% if item.pedido_estado == "pagado" %}
+                                <span class="badge bg-success">Pagado</span>
+                                {% elif item.respuesta_aceptada %}
+                                <span class="badge bg-info">Aceptada</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td>
                                 {% if item.respuesta_aceptada and item.respuesta_aceptada.contrato_url %}
-                                    <span class="badge bg-success">Aceptada</span>
-                                    <a href="{{ item.respuesta_aceptada.contrato_url }}" target="_blank" class="btn btn-sm btn-outline-success ms-1">Contrato</a>
+                                    <!-- Aceptada -->
+                                    <a href="{{ item.respuesta_aceptada.contrato_url }}" target="_blank" class="btn btn-sm btn-outline-success">Contrato</a>
                                     {% if item.respuesta_aceptada.factura_url %}
-                                    <a href="{{ item.respuesta_aceptada.factura_url }}" target="_blank" class="btn btn-sm btn-outline-info ms-1">Factura</a>
+                                    <a href="{{ item.respuesta_aceptada.factura_url }}" target="_blank" class="btn btn-sm btn-outline-info">Factura</a>
                                     {% endif %}
                                     {% if item.producto.tipo == 'producto' %}
-                                    <a href="/panel/asignar-transportista/{{ item.pedido.id }}" class="btn btn-sm btn-outline-warning ms-1">Transportista</a>
+                                    <a href="/panel/asignar-transportista/{{ item.pedido.id }}" class="btn btn-sm btn-outline-warning">Transportista</a>
                                     {% endif %}
-                                    {% if item.pedido.estado == "pagado" %}
-                                    <span class="badge bg-info ms-1">Pagado</span>
-                                    {% else %}
-                                    <a href="/pagos/checkout/{{ item.pedido.id }}" class="btn btn-sm btn-outline-success ms-1">💳 Cobrar</a>
+                                    {% if item.pedido_estado != "pagado" %}
+                                    <div class="btn-group ms-1">
+                                        <a href="/pagos/checkout/{{ item.pedido.id }}" class="btn btn-sm btn-outline-success">💳 Cobrar</a>
+                                        <form method="post" action="/panel/pedido/reenviar-pago/{{ item.pedido.id }}" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Reenviar enlace de pago">📩</button>
+                                        </form>
+                                    </div>
+                                    <form method="post" action="/panel/cotizacion/cancelar-aceptada/{{ item.id }}" class="d-inline ms-1" onsubmit="return confirm('¿Cancelar esta cotización aceptada? Se liberará el stock reservado.');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">✕</button>
+                                    </form>
                                     {% endif %}
                                 {% else %}
+                                    <!-- Pendiente -->
                                     <a href="/panel/cotizacion/responder/{{ item.id }}" class="btn btn-sm btn-outline-success">Responder</a>
                                     <form method="post" action="/panel/cotizacion/eliminar/{{ item.id }}" class="d-inline" onsubmit="return confirm('¿Eliminar esta cotización?');">
                                         <button type="submit" class="btn btn-sm btn-outline-danger ms-1">🗑️</button>
@@ -63,7 +95,7 @@
         </div>
     </div>
     {% else %}
-    <p class="text-muted">No tienes solicitudes de cotización pendientes.</p>
+    <p class="text-muted">No tienes solicitudes de cotización con ese filtro.</p>
     {% endif %}
 </div>
 {% endblock %}
