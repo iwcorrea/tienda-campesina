@@ -51,7 +51,7 @@
 {% endblock %}
 {% block content %}
 <div class="modern-section">
-    <h2 class="fw-bold mb-4">📦 Inventario</h2>
+    <h2 class="fw-bold mb-4">📦 Inventario de productos</h2>
 
     <!-- Tarjetas de resumen -->
     <div class="row g-3 mb-4">
@@ -104,7 +104,6 @@
                     <thead class="table-light">
                         <tr>
                             <th>Producto</th>
-                            <th>Tipo</th>
                             <th>Precio</th>
                             <th>Stock</th>
                             <th class="text-end">Acción</th>
@@ -118,7 +117,6 @@
                                     {{ p.nombre }}
                                 </a>
                             </td>
-                            <td><span class="badge bg-light text-dark">{{ p.tipo }}</span></td>
                             <td>${{ p.precio | int }}</td>
                             <td>
                                 {% if p.stock_actual > 10 %}

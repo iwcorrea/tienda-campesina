@@ -22,7 +22,10 @@
                     <tbody>
                         {% for item in items %}
                         <tr>
-                            <td>{{ item.producto.nombre }}</td>
+                            <td>
+                                {{ item.producto.nombre }}
+                                <br><small class="text-muted">{{ item.producto.tipo | capitalize }}</small>
+                            </td>
                             <td>#{{ item.pedido.id[:8] }}</td>
                             <td>{{ item.cantidad }}</td>
                             <td>${{ item.precio_unitario_inicial }}</td>
@@ -37,7 +40,9 @@
                                     {% if item.respuesta_aceptada.factura_url %}
                                     <a href="{{ item.respuesta_aceptada.factura_url }}" target="_blank" class="btn btn-sm btn-outline-info ms-1">Factura</a>
                                     {% endif %}
+                                    {% if item.producto.tipo == 'producto' %}
                                     <a href="/panel/asignar-transportista/{{ item.pedido.id }}" class="btn btn-sm btn-outline-warning ms-1">Transportista</a>
+                                    {% endif %}
                                     {% if item.pedido.estado == "pagado" %}
                                     <span class="badge bg-info ms-1">Pagado</span>
                                     {% else %}

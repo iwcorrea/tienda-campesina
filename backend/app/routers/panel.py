@@ -263,6 +263,15 @@ def asignar_transportista_form(
     if not pedido:
         return RedirectResponse(url="/panel/cotizaciones", status_code=303)
 
+    # Verificar que el pedido contenga al menos un producto físico
+    tiene_producto = False
+    for item in pedido.items:
+        if item.producto and item.producto.tipo == "producto":
+            tiene_producto = True
+            break
+    if not tiene_producto:
+        return RedirectResponse(url="/panel/cotizaciones?error=solo_servicios", status_code=303)
+
     transportistas = db.query(Transportista).filter(Transportista.activo == "1").all()
 
     return templates.TemplateResponse("panel_asignar_transportista.html", {
@@ -283,6 +292,16 @@ def asignar_transportista_procesar(
 ):
     if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
+
+    # Verificar nuevamente que sea válido
+    pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
+    tiene_producto = False
+    for item in pedido.items:
+        if item.producto and item.producto.tipo == "producto":
+            tiene_producto = True
+            break
+    if not tiene_producto:
+        return RedirectResponse(url="/panel/cotizaciones?error=solo_servicios", status_code=303)
 
     resultado = asignar_transportista_a_pedido(
         db, pedido_id, transportista_id, current_user["email"], costo_envio
@@ -314,7 +333,10 @@ def panel_inventario(
     if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
 
+    # Solo productos físicos para el inventario
     inventario = listar_inventario_asociacion(db, current_user["email"])
+    inventario = [p for p in inventario if p["tipo"] == "producto"]
+
     movimientos = []
     producto_seleccionado = None
     total_movimientos = 0

@@ -177,9 +177,13 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
             if r.aceptado == "aceptado":
                 resp_aceptada = r
                 break
+        producto = item.producto
         resultado.append({
             "id": item.id,
-            "producto": {"nombre": item.producto.nombre if item.producto else "Producto eliminado"},
+            "producto": {
+                "nombre": producto.nombre if producto else "Producto eliminado",
+                "tipo": producto.tipo if producto else ""
+            },
             "pedido": {
                 "id": item.pedido.id if item.pedido else "",
                 "comprador_email": item.pedido.comprador_email if item.pedido else "",
@@ -302,8 +306,8 @@ def guardar_respuesta_cotizacion(
     # 4. Actualizar estado del pedido si todos los ítems están aceptados
     actualizar_estado_pedido_si_aplica(db, item.pedido_id)
 
-    # 5. Reservar stock cuando se acepta la cotización
-    if aceptado == "aceptado":
+    # 5. Reservar stock SOLO si es un producto físico
+    if aceptado == "aceptado" and item.producto and item.producto.tipo == "producto":
         reservar_stock_por_cotizacion(db, item_id)
 
     return nueva
