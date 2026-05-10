@@ -12,9 +12,8 @@
         border-radius: 16px;
         padding: 1.5rem 1rem;
         text-align: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         transition: all 0.2s ease;
-        position: relative;
         border: 1px solid #f0f0f0;
     }
     .contact-card:hover {
@@ -83,15 +82,6 @@
         border-color: #dc3545;
         color: #dc3545;
     }
-    .pending-badge {
-        background: #ffc107;
-        color: #000;
-        font-weight: 600;
-        font-size: 0.65rem;
-        padding: 2px 8px;
-        border-radius: 20px;
-        margin-left: 6px;
-    }
     .filter-pills {
         display: flex;
         flex-wrap: wrap;
@@ -156,12 +146,9 @@
 <div class="modern-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold" style="font-size:1.5rem;">👥 Contactos</h2>
-        <div class="d-flex gap-2">
-            <a href="/mensajes/nuevo" class="btn btn-outline-success rounded-pill px-4">✉️ Nuevo mensaje</a>
-            <button class="btn btn-success rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#nuevaSolicitudModal">
-                + Agregar
-            </button>
-        </div>
+        <button class="btn btn-success rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#nuevaSolicitudModal">
+            + Agregar
+        </button>
     </div>
 
     <!-- Filtros -->
@@ -171,8 +158,10 @@
         <span class="filter-pill" data-tipo="persona">Personas</span>
         <span class="filter-pill" data-tipo="transportista">Transportistas</span>
         <span class="filter-pill d-flex align-items-center gap-1" data-tipo="pendientes">
-            Pendientes
-            <span class="pending-badge">{{ solicitudes | length }}</span>
+            Recibidas <span class="badge bg-danger rounded-pill" style="font-size:0.65rem;">{{ solicitudes_recibidas | length }}</span>
+        </span>
+        <span class="filter-pill d-flex align-items-center gap-1" data-tipo="enviadas">
+            Enviadas <span class="badge bg-warning text-dark rounded-pill" style="font-size:0.65rem;">{{ solicitudes_enviadas | length }}</span>
         </span>
     </div>
 
@@ -212,9 +201,9 @@
         {% endif %}
     </div>
 
-    <!-- Pendientes (contenedor separado para filtrar) -->
-    <div id="pendientes-container" class="contact-grid" style="display:none;">
-        {% for s in solicitudes %}
+    <!-- Recibidas -->
+    <div id="recibidas-container" class="contact-grid" style="display:none;">
+        {% for s in solicitudes_recibidas %}
         <div class="contact-card contacto-item" data-tipo="pendientes" data-nombre="{{ s.nombre }}">
             <div class="contact-avatar">{{ s.nombre[0].upper() }}</div>
             <div class="contact-name">{{ s.nombre }}</div>
@@ -231,10 +220,33 @@
             </div>
         </div>
         {% endfor %}
-        {% if not solicitudes %}
+        {% if not solicitudes_recibidas %}
         <div class="empty-state" style="grid-column: 1 / -1;">
-            <div class="icon">📋</div>
-            <p class="text-muted">No tienes solicitudes pendientes.</p>
+            <div class="icon">📥</div>
+            <p class="text-muted">No tienes solicitudes recibidas.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Enviadas -->
+    <div id="enviadas-container" class="contact-grid" style="display:none;">
+        {% for s in solicitudes_enviadas %}
+        <div class="contact-card contacto-item" data-tipo="enviadas" data-nombre="{{ s.nombre }}">
+            <div class="contact-avatar">{{ s.nombre[0].upper() }}</div>
+            <div class="contact-name">{{ s.nombre }}</div>
+            <span class="contact-type type-{{ s.tipo }}">{{ s.tipo | capitalize }}</span>
+            <div class="contact-actions">
+                <form method="post" action="/contactos/cancelar" onsubmit="return confirm('¿Cancelar la solicitud a {{ s.nombre }}?');" class="d-inline">
+                    <input type="hidden" name="solicitud_id" value="{{ s.id }}">
+                    <button type="submit" class="btn-icon delete" title="Cancelar solicitud">✕</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+        {% if not solicitudes_enviadas %}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="icon">📤</div>
+            <p class="text-muted">No has enviado solicitudes pendientes.</p>
         </div>
         {% endif %}
     </div>
@@ -282,20 +294,25 @@
             var tipo = this.getAttribute('data-tipo');
 
             var contactosContainer = document.getElementById('contactos-container');
-            var pendientesContainer = document.getElementById('pendientes-container');
+            var recibidasContainer = document.getElementById('recibidas-container');
+            var enviadasContainer = document.getElementById('enviadas-container');
 
-            if (tipo === 'pendientes') {
-                contactosContainer.style.display = 'none';
-                pendientesContainer.style.display = 'grid';
+            // Ocultar todo
+            contactosContainer.style.display = 'none';
+            recibidasContainer.style.display = 'none';
+            enviadasContainer.style.display = 'none';
+
+            if (tipo === 'todos') {
+                contactosContainer.style.display = 'grid';
+                document.querySelectorAll('#contactos-container .contacto-item').forEach(item => item.style.display = '');
+            } else if (tipo === 'pendientes') {
+                recibidasContainer.style.display = 'grid';
+            } else if (tipo === 'enviadas') {
+                enviadasContainer.style.display = 'grid';
             } else {
                 contactosContainer.style.display = 'grid';
-                pendientesContainer.style.display = 'none';
                 document.querySelectorAll('#contactos-container .contacto-item').forEach(function(item){
-                    if (tipo === 'todos' || item.getAttribute('data-tipo') === tipo) {
-                        item.style.display = '';
-                    } else {
-                        item.style.display = 'none';
-                    }
+                    item.style.display = item.getAttribute('data-tipo') === tipo ? '' : 'none';
                 });
             }
         });

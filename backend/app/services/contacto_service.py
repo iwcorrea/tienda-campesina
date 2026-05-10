@@ -3,9 +3,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from app.models import Contacto, SolicitudContacto, Asociacion, Persona, Transportista
 
-# ─── Solicitudes ──────────────────────────────────
+
 def enviar_solicitud_contacto(db: Session, solicitante_email: str, receptor_email: str) -> Optional[SolicitudContacto]:
-    """Envía solicitud de contacto. Retorna None si ya existe una pendiente."""
     if solicitante_email == receptor_email:
         return None
     existente = db.query(SolicitudContacto).filter(
@@ -24,11 +23,33 @@ def enviar_solicitud_contacto(db: Session, solicitante_email: str, receptor_emai
     db.commit()
     return solicitud
 
+
 def listar_solicitudes_pendientes(db: Session, email: str) -> List[SolicitudContacto]:
     return db.query(SolicitudContacto).filter(
         SolicitudContacto.receptor_email == email,
         SolicitudContacto.estado == "pendiente"
     ).all()
+
+
+def listar_solicitudes_enviadas(db: Session, email: str) -> List[SolicitudContacto]:
+    return db.query(SolicitudContacto).filter(
+        SolicitudContacto.solicitante_email == email,
+        SolicitudContacto.estado == "pendiente"
+    ).all()
+
+
+def cancelar_solicitud(db: Session, solicitud_id: str, email: str) -> bool:
+    solicitud = db.query(SolicitudContacto).filter(
+        SolicitudContacto.id == solicitud_id,
+        SolicitudContacto.solicitante_email == email,
+        SolicitudContacto.estado == "pendiente"
+    ).first()
+    if not solicitud:
+        return False
+    db.delete(solicitud)
+    db.commit()
+    return True
+
 
 def aceptar_solicitud(db: Session, solicitud_id: str, email: str) -> bool:
     solicitud = db.query(SolicitudContacto).filter(
@@ -39,11 +60,11 @@ def aceptar_solicitud(db: Session, solicitud_id: str, email: str) -> bool:
     if not solicitud:
         return False
     solicitud.estado = "aceptada"
-    # Crear relación mutua
     agregar_contacto_directo(db, solicitud.solicitante_email, solicitud.receptor_email, "contacto")
     agregar_contacto_directo(db, solicitud.receptor_email, solicitud.solicitante_email, "contacto")
     db.commit()
     return True
+
 
 def rechazar_solicitud(db: Session, solicitud_id: str, email: str) -> bool:
     solicitud = db.query(SolicitudContacto).filter(
@@ -57,7 +78,7 @@ def rechazar_solicitud(db: Session, solicitud_id: str, email: str) -> bool:
     db.commit()
     return True
 
-# ─── Contactos (bidireccionales) ─────────────────
+
 def agregar_contacto_directo(db: Session, usuario_email: str, contacto_email: str, tipo_relacion: str = "contacto") -> Contacto:
     existe = db.query(Contacto).filter(
         Contacto.usuario_email == usuario_email,
@@ -75,13 +96,9 @@ def agregar_contacto_directo(db: Session, usuario_email: str, contacto_email: st
     db.commit()
     return nuevo
 
+
 def eliminar_contacto(db: Session, usuario_email: str, contacto_email: str) -> bool:
-    """
-    Elimina la relación en ambos sentidos (si existe).
-    Retorna True si al menos una de las dos direcciones se eliminó.
-    """
     eliminado = False
-    # Dirección A → B
     c1 = db.query(Contacto).filter(
         Contacto.usuario_email == usuario_email,
         Contacto.contacto_email == contacto_email
@@ -89,7 +106,6 @@ def eliminar_contacto(db: Session, usuario_email: str, contacto_email: str) -> b
     if c1:
         db.delete(c1)
         eliminado = True
-    # Dirección B → A
     c2 = db.query(Contacto).filter(
         Contacto.usuario_email == contacto_email,
         Contacto.contacto_email == usuario_email
@@ -101,8 +117,10 @@ def eliminar_contacto(db: Session, usuario_email: str, contacto_email: str) -> b
         db.commit()
     return eliminado
 
+
 def listar_contactos(db: Session, usuario_email: str) -> List[Contacto]:
     return db.query(Contacto).filter(Contacto.usuario_email == usuario_email).all()
+
 
 def obtener_info_contacto(db: Session, email: str) -> Optional[dict]:
     asociacion = db.query(Asociacion).filter(Asociacion.email == email).first()
