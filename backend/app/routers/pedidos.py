@@ -1,10 +1,8 @@
 import math
 from typing import Optional
-
 from fastapi import APIRouter, Request, Form, Query, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-
 from app.dependencies import get_db, get_current_user
 from app.services.pedido_service import listar_pedidos, obtener_pedido_por_id
 from app.viewmodels.pedido import PedidoViewModel
@@ -110,7 +108,6 @@ def cotizar_servicio(
     ))
     db.commit()
 
-    # Notificar a la asociación dueña del servicio
     crear_notificacion(
         db,
         destinatario_email=producto.asociacion_email,
@@ -119,7 +116,6 @@ def cotizar_servicio(
         producto_id=producto.id
     )
 
-    # Confirmación al comprador
     crear_notificacion(
         db,
         destinatario_email=comprador_email,
