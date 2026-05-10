@@ -1,30 +1,140 @@
 {% extends "base.html" %}
 {% block title %}Inventario{% endblock %}
+{% block head %}
+<style>
+    .stat-card {
+        border-radius: 20px;
+        background: #fff;
+        padding: 1.5rem;
+        border: 1px solid #f0f0f0;
+        transition: all 0.2s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+    .stock-badge {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 4px;
+    }
+    .stock-high { background: #2d6a4f; }
+    .stock-medium { background: #ffc107; }
+    .stock-low { background: #dc3545; }
+    .inventory-table th {
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+    }
+    .product-row {
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+    .product-row:hover {
+        background: #f8faf5;
+    }
+    .pagination .page-link {
+        border-radius: 12px;
+        margin: 0 3px;
+        border: none;
+        color: #2d6a4f;
+    }
+    .pagination .page-item.active .page-link {
+        background: #2d6a4f;
+        color: #fff;
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="modern-section">
     <h2 class="fw-bold mb-4">📦 Inventario</h2>
 
+    <!-- Tarjetas de resumen -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Total productos</small>
+                        <h3 class="mb-0">{{ inventario | length }}</h3>
+                    </div>
+                    <span style="font-size:2rem;">📋</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Stock bajo</small>
+                        <h3 class="mb-0">{{ inventario | selectattr('alerta_bajo', 'equalto', True) | list | length }}</h3>
+                    </div>
+                    <span style="font-size:2rem;">⚠️</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted">Agotados</small>
+                        <h3 class="mb-0">{{ inventario | selectattr('stock_actual', 'equalto', 0) | list | length }}</h3>
+                    </div>
+                    <span style="font-size:2rem;">❌</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-md-6">
-            <h5>Stock actual</h5>
+        <div class="col-lg-7">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Productos</h5>
+                <div class="d-flex gap-2">
+                    <input type="text" id="busquedaInventario" class="form-control form-control-sm rounded-pill" placeholder="Buscar producto..." style="width:200px;">
+                </div>
+            </div>
+
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table align-middle inventory-table">
                     <thead class="table-light">
-                        <tr><th>Producto</th><th>Tipo</th><th>Stock</th><th>Precio</th><th>Ver movimientos</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for p in inventario %}
                         <tr>
-                            <td>{{ p.nombre }}</td>
-                            <td>{{ p.tipo }}</td>
+                            <th>Producto</th>
+                            <th>Tipo</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaInventario">
+                        {% for p in inventario %}
+                        <tr class="product-row" data-nombre="{{ p.nombre }}" data-id="{{ p.id }}">
                             <td>
-                                {{ p.stock_actual }}
-                                {% if p.alerta_bajo %}
-                                <span class="badge bg-danger ms-1">Bajo</span>
+                                <a href="/panel/inventario?producto_id={{ p.id }}" class="text-decoration-none text-dark fw-semibold">
+                                    {{ p.nombre }}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-light text-dark">{{ p.tipo }}</span></td>
+                            <td>${{ p.precio | int }}</td>
+                            <td>
+                                {% if p.stock_actual > 10 %}
+                                <span class="stock-badge stock-high"></span> {{ p.stock_actual }}
+                                {% elif p.stock_actual > 0 %}
+                                <span class="stock-badge stock-medium"></span> {{ p.stock_actual }}
+                                {% else %}
+                                <span class="stock-badge stock-low"></span> 0
                                 {% endif %}
                             </td>
-                            <td>${{ p.precio }}</td>
-                            <td><a href="/panel/inventario?producto_id={{ p.id }}" class="btn btn-sm btn-outline-primary rounded-pill">→</a></td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary rounded-pill" data-bs-toggle="modal" data-bs-target="#ajusteModal" 
+                                        data-id="{{ p.id }}" data-nombre="{{ p.nombre }}" data-stock="{{ p.stock_actual }}">
+                                    Ajustar
+                                </button>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -32,60 +142,55 @@
             </div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-lg-5">
             {% if producto_seleccionado %}
-            <h5>Movimientos de "{{ producto_seleccionado.nombre }}"</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Movimientos: {{ producto_seleccionado.nombre }}</h5>
+                <a href="/panel/inventario" class="btn btn-sm btn-outline-secondary rounded-pill">✕</a>
+            </div>
 
-            <!-- Formulario de ajuste manual -->
+            <!-- Formulario de ajuste rápido -->
             <div class="card border-0 shadow-sm mb-3" style="border-radius:16px;">
                 <div class="card-body">
                     <h6>Ajustar stock</h6>
                     <form method="post" action="/panel/inventario/ajustar" class="row g-2">
                         <input type="hidden" name="producto_id" value="{{ producto_seleccionado.id }}">
-                        <div class="col-md-4">
+                        <div class="col-5">
                             <select class="form-select rounded-pill" name="tipo" required>
                                 <option value="entrada">🟢 Entrada</option>
                                 <option value="salida">🔴 Salida</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <input type="number" class="form-control rounded-pill" name="cantidad" placeholder="Cantidad" min="1" required>
+                        <div class="col-4">
+                            <input type="number" class="form-control rounded-pill" name="cantidad" placeholder="Cant." min="1" required>
                         </div>
-                        <div class="col-md-4">
-                            <button type="submit" class="btn btn-success rounded-pill w-100">Ajustar</button>
+                        <div class="col-3">
+                            <button type="submit" class="btn btn-success rounded-pill w-100">✓</button>
                         </div>
                     </form>
                 </div>
             </div>
 
             {% if movimientos %}
-            <table class="table table-sm table-striped">
-                <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock antes</th><th>Stock después</th><th>Referencia</th></tr></thead>
-                <tbody>
-                    {% for m in movimientos %}
-                    <tr>
-                        <td>{{ m.fecha.strftime('%d/%m/%Y %H:%M') if m.fecha else '' }}</td>
-                        <td>
-                            {% if m.tipo == 'entrada' %}🟢 Entrada
-                            {% elif m.tipo == 'salida' %}🔴 Salida
-                            {% elif m.tipo == 'reserva' %}🟡 Reserva
-                            {% elif m.tipo == 'cancelacion' %}🔄 Cancelación
-                            {% else %}{{ m.tipo }}{% endif %}
-                        </td>
-                        <td>{{ m.cantidad }}</td>
-                        <td>{{ m.stock_anterior }}</td>
-                        <td>{{ m.stock_nuevo }}</td>
-                        <td>
-                            {% if m.referencia != 'creacion' and m.referencia != 'ajuste' and m.referencia != 'ajuste manual' %}
-                            <a href="/pedidos/{{ m.referencia }}">{{ m.referencia[:8] }}</a>
-                            {% else %}
-                            {{ m.referencia }}
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        {% for m in movimientos %}
+                        <tr>
+                            <td style="width:40%;">{{ m.fecha.strftime('%d/%m/%Y %H:%M') if m.fecha else '' }}</td>
+                            <td>
+                                {% if m.tipo == 'entrada' %}🟢 +{{ m.cantidad }}
+                                {% elif m.tipo == 'salida' %}🔴 -{{ m.cantidad }}
+                                {% elif m.tipo == 'reserva' %}🟡 Reserva ({{ m.cantidad }})
+                                {% elif m.tipo == 'cancelacion' %}🔄 Cancel. ({{ m.cantidad }})
+                                {% else %}{{ m.tipo }} ({{ m.cantidad }}){% endif %}
+                            </td>
+                            <td class="text-end text-muted small">{{ m.stock_anterior }} → {{ m.stock_nuevo }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
             {% if total_movimientos > 15 %}
             <nav class="mt-3">
@@ -103,9 +208,70 @@
             <p class="text-muted">Selecciona un producto para ver sus movimientos.</p>
             {% endif %}
             {% else %}
-            <p class="text-muted">Selecciona un producto para ver sus movimientos y ajustar stock.</p>
+            <div class="text-center py-4">
+                <span style="font-size:3rem;">📋</span>
+                <p class="text-muted mt-2">Haz clic en un producto para ver sus movimientos.</p>
+            </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Modal de ajuste rápido (desde la tabla) -->
+<div class="modal fade" id="ajusteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:20px;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title">Ajustar stock</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="/panel/inventario/ajustar">
+        <div class="modal-body">
+          <input type="hidden" name="producto_id" id="ajusteProductoId">
+          <p class="fw-bold" id="ajusteProductoNombre"></p>
+          <p class="text-muted small">Stock actual: <span id="ajusteStockActual"></span></p>
+          <div class="mb-3">
+            <label class="form-label">Tipo</label>
+            <select class="form-select rounded-pill" name="tipo" required>
+              <option value="entrada">🟢 Entrada</option>
+              <option value="salida">🔴 Salida</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Cantidad</label>
+            <input type="number" class="form-control rounded-pill" name="cantidad" min="1" required>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success rounded-pill">Ajustar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    // Búsqueda local
+    document.getElementById('busquedaInventario').addEventListener('keyup', function(){
+        var filtro = this.value.toUpperCase();
+        var filas = document.querySelectorAll('#tablaInventario .product-row');
+        filas.forEach(function(fila){
+            var nombre = fila.getAttribute('data-nombre').toUpperCase();
+            fila.style.display = nombre.indexOf(filtro) > -1 ? '' : 'none';
+        });
+    });
+
+    // Cargar datos en modal de ajuste
+    var ajusteModal = document.getElementById('ajusteModal');
+    ajusteModal.addEventListener('show.bs.modal', function(event) {
+        var button = event.relatedTarget;
+        var id = button.getAttribute('data-id');
+        var nombre = button.getAttribute('data-nombre');
+        var stock = button.getAttribute('data-stock');
+        document.getElementById('ajusteProductoId').value = id;
+        document.getElementById('ajusteProductoNombre').textContent = nombre;
+        document.getElementById('ajusteStockActual').textContent = stock;
+    });
+</script>
 {% endblock %}
