@@ -494,4 +494,4 @@ def calcular_envio(
             "costo_estimado": round(costo),
             "tipo": "transportista",
         })
-    return resultados 1
+    return resultados
