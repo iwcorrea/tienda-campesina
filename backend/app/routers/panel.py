@@ -231,12 +231,10 @@ def eliminar_cotizacion(
     if not item:
         return RedirectResponse(url="/panel/cotizaciones", status_code=303)
 
-    # Eliminar el item
     pedido = item.pedido
     db.delete(item)
     db.commit()
 
-    # Si el pedido queda sin ítems, eliminarlo también
     if pedido and len(pedido.items) == 0:
         db.delete(pedido)
         db.commit()
@@ -296,6 +294,35 @@ def asignar_transportista_procesar(
         )
 
     return RedirectResponse(url="/panel/cotizaciones?transportista_asignado=1", status_code=303)
+
+
+# ─── INVENTARIO ────────────────────────────────────
+@router.get("/panel/inventario", response_class=HTMLResponse)
+def panel_inventario(
+    request: Request,
+    producto_id: str = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    from app.services.inventario_service import listar_inventario_asociacion, obtener_movimientos_producto
+
+    inventario = listar_inventario_asociacion(db, current_user["email"])
+    movimientos = []
+    producto_seleccionado = None
+
+    if producto_id:
+        movimientos = obtener_movimientos_producto(db, producto_id, current_user["email"])
+        producto_seleccionado = db.query(Producto).filter(Producto.id == producto_id).first()
+
+    return templates.TemplateResponse("panel_inventario.html", {
+        "request": request,
+        "inventario": inventario,
+        "movimientos": movimientos,
+        "producto_seleccionado": producto_seleccionado,
+    })
 
 
 # ─── TRANSPORTISTAS FAVORITOS ──────────────────────

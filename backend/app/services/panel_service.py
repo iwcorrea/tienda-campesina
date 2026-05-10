@@ -8,6 +8,7 @@ from app.services.contrato_service import generar_contrato_html, subir_contrato
 from app.services.factura_service import generar_factura_html, generar_numero_factura, subir_factura
 from app.services.notificacion_service import crear_notificacion
 from app.services.pedido_service import actualizar_estado_pedido_si_aplica
+from app.services.inventario_service import inicializar_stock
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
@@ -48,9 +49,16 @@ def crear_producto(
         imagen_url=imagen_url,
         tipo=tipo,
         tipo_precio=tipo_precio,
+        stock=0,
     )
     db.add(nuevo)
     db.commit()
+    db.refresh(nuevo)
+
+    # Inicializar stock (solo para productos físicos, no servicios)
+    if tipo == "producto":
+        inicializar_stock(db, nuevo, 100, "creacion")
+
     return nuevo
 
 
@@ -174,7 +182,8 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
             "producto": {"nombre": item.producto.nombre if item.producto else "Producto eliminado"},
             "pedido": {
                 "id": item.pedido.id if item.pedido else "",
-                "comprador_email": item.pedido.comprador_email if item.pedido else ""
+                "comprador_email": item.pedido.comprador_email if item.pedido else "",
+                "fecha_creacion": item.pedido.fecha_creacion if item.pedido else None
             },
             "cantidad": item.cantidad,
             "precio_unitario_inicial": item.precio_unitario_inicial,

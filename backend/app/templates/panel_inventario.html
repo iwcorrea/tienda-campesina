@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Inventario{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">📦 Inventario</h2>
+
+    <div class="row">
+        <div class="col-md-6">
+            <h5>Stock actual</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr><th>Producto</th><th>Tipo</th><th>Stock</th><th>Precio</th><th>Ver movimientos</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in inventario %}
+                        <tr>
+                            <td>{{ p.nombre }}</td>
+                            <td>{{ p.tipo }}</td>
+                            <td>{{ p.stock_actual }}</td>
+                            <td>${{ p.precio }}</td>
+                            <td><a href="/panel/inventario?producto_id={{ p.id }}" class="btn btn-sm btn-outline-primary rounded-pill">→</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h5>{% if producto_seleccionado %}Movimientos de "{{ producto_seleccionado.nombre }}"{% else %}Selecciona un producto{% endif %}</h5>
+            {% if movimientos %}
+            <table class="table table-sm table-striped">
+                <thead><tr><th>Fecha</th><th>Tipo</th><th>Cantidad</th><th>Stock antes</th><th>Stock después</th><th>Referencia</th></tr></thead>
+                <tbody>
+                    {% for m in movimientos %}
+                    <tr>
+                        <td>{{ m.fecha.strftime('%d/%m/%Y %H:%M') if m.fecha else '' }}</td>
+                        <td>
+                            {% if m.tipo == 'entrada' %}🟢 Entrada
+                            {% elif m.tipo == 'salida' %}🔴 Salida
+                            {% elif m.tipo == 'reserva' %}🟡 Reserva
+                            {% else %}{{ m.tipo }}{% endif %}
+                        </td>
+                        <td>{{ m.cantidad }}</td>
+                        <td>{{ m.stock_anterior }}</td>
+                        <td>{{ m.stock_nuevo }}</td>
+                        <td>{% if m.referencia != 'creacion' and m.referencia != 'ajuste' %}<a href="/pedidos/{{ m.referencia }}">{{ m.referencia[:8] }}</a>{% else %}{{ m.referencia }}{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">Selecciona un producto para ver sus movimientos.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

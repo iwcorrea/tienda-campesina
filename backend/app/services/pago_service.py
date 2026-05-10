@@ -1,5 +1,3 @@
-# app/services/pago_service.py
-
 import uuid
 import hashlib
 import hmac
@@ -10,6 +8,7 @@ import httpx
 from sqlalchemy.orm import Session
 from app.models import Pago, Comision, Pedido, ItemPedido, Asociacion, Transportista
 from app.services.notificacion_service import crear_notificacion
+from app.services.inventario_service import salida_stock_por_pedido
 
 COMISION_PLATAFORMA = 8
 WOMPI_API_URL = "https://api.wompi.sv"
@@ -111,7 +110,7 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
                 asociacion_email = item.producto.asociacion_email
                 break
 
-    # Crear registro de comisión para la asociación
+    # Crear registro de comisión
     comision = Comision(
         id=str(uuid.uuid4()),
         pago_id=pago.id,
@@ -127,6 +126,10 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
     # Actualizar estado del pedido
     if pedido:
         pedido.estado = "pagado"
+
+        # Registrar salida de inventario
+        salida_stock_por_pedido(db, pago.pedido_id)
+
         # Notificar a la asociación
         crear_notificacion(
             db,

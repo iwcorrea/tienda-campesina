@@ -287,4 +287,18 @@ def on_startup():
                 fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
         """))
+             # MovimientosInventario (nueva tabla)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS movimientos_inventario (
+                id VARCHAR PRIMARY KEY,
+                producto_id VARCHAR NOT NULL REFERENCES productos(id),
+                asociacion_email VARCHAR NOT NULL REFERENCES asociaciones(email),
+                tipo VARCHAR NOT NULL,
+                cantidad INTEGER NOT NULL,
+                stock_anterior INTEGER DEFAULT 0,
+                stock_nuevo INTEGER DEFAULT 0,
+                referencia VARCHAR DEFAULT '',
+                fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+        """))   
         conn.commit()
