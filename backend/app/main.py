@@ -287,7 +287,7 @@ def on_startup():
                 fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
         """))
-             # MovimientosInventario (nueva tabla)
+                # MovimientosInventario (nueva tabla)
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS movimientos_inventario (
                 id VARCHAR PRIMARY KEY,
@@ -300,5 +300,5 @@ def on_startup():
                 referencia VARCHAR DEFAULT '',
                 fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
-        """))   
+        """))
         conn.commit()

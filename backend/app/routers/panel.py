@@ -20,6 +20,12 @@ from app.services.notificacion_service import crear_notificacion
 from app.viewmodels.panel import PanelViewModel, ProductoPanelViewModel
 from app.templates import templates
 from app.models import Producto, Pedido, Transportista, ItemPedido
+from app.services.inventario_service import (
+    listar_inventario_asociacion,
+    obtener_movimientos_producto,
+    entrada_stock,
+    salida_stock_manual,
+)
 
 router = APIRouter()
 
@@ -50,6 +56,7 @@ def crear_producto_post(
     tipo: str = Form("producto"),
     tipo_precio: str = Form("fijo"),
     imagen: UploadFile = File(None),
+    stock_inicial: int = Form(0),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -65,6 +72,7 @@ def crear_producto_post(
         tipo=tipo,
         tipo_precio=tipo_precio,
         imagen_file=imagen,
+        stock_inicial=stock_inicial,
     )
     return RedirectResponse(url="/panel", status_code=303)
 
@@ -212,7 +220,6 @@ def procesar_respuesta_cotizacion(
     return RedirectResponse(url="/panel/cotizaciones?respondida=1", status_code=303)
 
 
-# ─── ELIMINAR COTIZACIÓN ─────────────────────────
 @router.post("/panel/cotizacion/eliminar/{item_id}")
 def eliminar_cotizacion(
     request: Request,
@@ -242,7 +249,6 @@ def eliminar_cotizacion(
     return RedirectResponse(url="/panel/cotizaciones?eliminada=1", status_code=303)
 
 
-# ─── ASIGNAR TRANSPORTISTA ────────────────────────
 @router.get("/panel/asignar-transportista/{pedido_id}", response_class=HTMLResponse)
 def asignar_transportista_form(
     request: Request,
@@ -301,20 +307,22 @@ def asignar_transportista_procesar(
 def panel_inventario(
     request: Request,
     producto_id: str = None,
+    pagina: int = Query(1, ge=1),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
 
-    from app.services.inventario_service import listar_inventario_asociacion, obtener_movimientos_producto
-
     inventario = listar_inventario_asociacion(db, current_user["email"])
     movimientos = []
     producto_seleccionado = None
+    total_movimientos = 0
 
     if producto_id:
-        movimientos = obtener_movimientos_producto(db, producto_id, current_user["email"])
+        movimientos, total_movimientos = obtener_movimientos_producto(
+            db, producto_id, current_user["email"], pagina
+        )
         producto_seleccionado = db.query(Producto).filter(Producto.id == producto_id).first()
 
     return templates.TemplateResponse("panel_inventario.html", {
@@ -322,7 +330,30 @@ def panel_inventario(
         "inventario": inventario,
         "movimientos": movimientos,
         "producto_seleccionado": producto_seleccionado,
+        "total_movimientos": total_movimientos,
+        "pagina_actual": pagina,
     })
+
+
+@router.post("/panel/inventario/ajustar")
+def ajustar_inventario(
+    request: Request,
+    producto_id: str = Form(...),
+    tipo: str = Form(...),
+    cantidad: int = Form(...),
+    referencia: str = Form("ajuste manual"),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user or current_user.get("tipo") != "asociacion":
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    if tipo == "entrada":
+        entrada_stock(db, producto_id, cantidad, referencia, current_user["email"])
+    elif tipo == "salida":
+        salida_stock_manual(db, producto_id, cantidad, referencia, current_user["email"])
+
+    return RedirectResponse(url=f"/panel/inventario?producto_id={producto_id}", status_code=303)
 
 
 # ─── TRANSPORTISTAS FAVORITOS ──────────────────────

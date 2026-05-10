@@ -352,22 +352,17 @@ class Comision(Base):
     pedido = relationship("Pedido")
 
 class MovimientoInventario(Base):
-    """
-    Registro de cada movimiento de inventario.
-    tipo puede ser: 'entrada' (al crear producto), 'salida' (al pagar pedido),
-    'reserva' (al aceptar cotización), 'cancelacion' (al eliminar pedido no pagado)
-    """
     __tablename__ = "movimientos_inventario"
 
     id = Column(String, primary_key=True, default=generate_uuid)
     producto_id = Column(String, ForeignKey("productos.id"), nullable=False)
     asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
-    tipo = Column(String, nullable=False)                     # entrada, salida, reserva, cancelacion
+    tipo = Column(String, nullable=False)
     cantidad = Column(Integer, nullable=False)
     stock_anterior = Column(Integer, default=0)
     stock_nuevo = Column(Integer, default=0)
-    referencia = Column(String, default="")                   # ID del pedido, "creacion", etc.
+    referencia = Column(String, default="")
     fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     producto = relationship("Producto", backref="movimientos")
-    asociacion = relationship("Asociacion")    
+    asociacion = relationship("Asociacion")

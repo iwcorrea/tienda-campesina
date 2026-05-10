@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Optional, Tuple
 import httpx
 from sqlalchemy.orm import Session
-from app.models import Pago, Comision, Pedido, ItemPedido, Asociacion, Transportista
+from app.models import Pago, Comision, Pedido, Transportista
 from app.services.notificacion_service import crear_notificacion
 from app.services.inventario_service import salida_stock_por_pedido
 
@@ -27,10 +27,6 @@ def calcular_comision(monto_total: int, porcentaje: int = COMISION_PLATAFORMA) -
 
 
 def calcular_total_pedido(db: Session, pedido_id: str) -> Tuple[int, str, str, int]:
-    """
-    Calcula el total del pedido incluyendo productos y costo de envío.
-    Retorna (total, asociacion_email, comprador_email, costo_envio).
-    """
     pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
     if not pedido:
         return 0, "", "", 0
@@ -110,7 +106,6 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
                 asociacion_email = item.producto.asociacion_email
                 break
 
-    # Crear registro de comisión
     comision = Comision(
         id=str(uuid.uuid4()),
         pago_id=pago.id,
@@ -123,21 +118,18 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
     )
     db.add(comision)
 
-    # Actualizar estado del pedido
     if pedido:
         pedido.estado = "pagado"
 
-        # Registrar salida de inventario
+        # Registrar salida de inventario (convierte reserva en salida real)
         salida_stock_por_pedido(db, pago.pedido_id)
 
-        # Notificar a la asociación
         crear_notificacion(
             db,
             destinatario_email=asociacion_email,
             remitente_email=pago.comprador_email,
             texto=f"Pago recibido por ${pago.monto_total:,} para el pedido #{pago.pedido_id[:8]}. Comisión: ${pago.comision_plataforma:,}.",
         )
-        # Notificar al comprador
         crear_notificacion(
             db,
             destinatario_email=pago.comprador_email,
@@ -145,7 +137,6 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
             texto=f"✅ Pago confirmado por ${pago.monto_total:,} para el pedido #{pago.pedido_id[:8]}.",
         )
 
-    # Notificar al transportista si hay uno asignado
     if pedido and pedido.transportista:
         transportista = db.query(Transportista).filter(Transportista.id == pedido.transportista_id).first()
         if transportista and pedido.costo_envio > 0:
@@ -155,7 +146,7 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
                 db,
                 destinatario_email=transportista.email,
                 remitente_email="sistema",
-                texto=f"El envío del pedido #{pago.pedido_id[:8]} ha sido pagado. Recibirás ${monto_transportista:,} (costo de envío menos comisión).",
+                texto=f"El envío del pedido #{pago.pedido_id[:8]} ha sido pagado. Recibirás ${monto_transportista:,}.",
             )
 
     db.commit()

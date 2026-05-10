@@ -55,16 +55,20 @@
             <textarea class="form-control" id="descripcion" name="descripcion" rows="3" style="border-radius:16px;"></textarea>
           </div>
           <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
               <label for="precio" class="form-label">Precio *</label>
               <input type="number" class="form-control rounded-pill" id="precio" name="precio" min="0" required>
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
               <label for="tipo" class="form-label">Tipo</label>
-              <select class="form-select rounded-pill" id="tipo" name="tipo">
+              <select class="form-select rounded-pill" id="tipo" name="tipo" onchange="toggleStockField()">
                 <option value="producto">Producto</option>
                 <option value="servicio">Servicio</option>
               </select>
+            </div>
+            <div class="col-md-4 mb-3" id="stockInicialContainer">
+              <label for="stock_inicial" class="form-label">Stock inicial</label>
+              <input type="number" class="form-control rounded-pill" id="stock_inicial" name="stock_inicial" min="0" value="0">
             </div>
           </div>
           <div class="mb-3">
@@ -98,6 +102,17 @@ function previewImage(event) {
         preview.style.display = 'block';
     }
     reader.readAsDataURL(event.target.files[0]);
+}
+
+function toggleStockField() {
+    var tipo = document.getElementById('tipo').value;
+    var container = document.getElementById('stockInicialContainer');
+    if (tipo === 'servicio') {
+        container.style.display = 'none';
+        document.getElementById('stock_inicial').value = 0;
+    } else {
+        container.style.display = 'block';
+    }
 }
 </script>
 {% endblock %}
