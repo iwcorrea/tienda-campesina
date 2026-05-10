@@ -8,6 +8,7 @@ from app.services.pedido_service import (
     listar_pedidos,
     obtener_pedido_por_id,
     listar_cotizaciones_enviadas,
+    cancelar_pedido,
 )
 from app.viewmodels.pedido import PedidoViewModel, CotizacionEnviadaViewModel
 from app.templates import templates
@@ -24,6 +25,7 @@ def listar(
     pagina: int = Query(1, ge=1),
     por_pagina: int = Query(10, ge=1, le=50),
     estado: Optional[str] = None,
+    orden: str = Query("fecha"),
     db: Session = Depends(get_db),
     current_user: Optional[dict] = Depends(get_current_user),
 ):
@@ -38,6 +40,7 @@ def listar(
         por_pagina=por_pagina,
         comprador_email=comprador_email,
         estado=estado,
+        orden=orden,
     )
 
     pedidos_vm = [PedidoViewModel.from_orm(p) for p in pedidos_orm]
@@ -50,6 +53,7 @@ def listar(
         "total_paginas": total_paginas,
         "por_pagina": por_pagina,
         "estado_actual": estado,
+        "orden_actual": orden,
         "total_pedidos": total,
     })
 
@@ -60,6 +64,7 @@ def cotizaciones_enviadas(
     pagina: int = Query(1, ge=1),
     por_pagina: int = Query(15, ge=1, le=50),
     estado: Optional[str] = None,
+    orden: str = Query("fecha"),
     db: Session = Depends(get_db),
     current_user: Optional[dict] = Depends(get_current_user),
 ):
@@ -73,6 +78,7 @@ def cotizaciones_enviadas(
         pagina=pagina,
         por_pagina=por_pagina,
         estado=estado,
+        orden=orden,
     )
 
     items_vm = [CotizacionEnviadaViewModel.from_orm(item) for item in items]
@@ -85,6 +91,7 @@ def cotizaciones_enviadas(
         "total_paginas": total_paginas,
         "por_pagina": por_pagina,
         "estado_actual": estado or "",
+        "orden_actual": orden,
         "total_items": total,
     })
 
@@ -105,7 +112,6 @@ def detalle(
 
     # Permitir ver el pedido al comprador o a la asociación dueña de los productos
     if current_user.get("email") != pedido.comprador_email:
-        # Verificar si la asociación actual es dueña de algún producto en el pedido
         pertenece = any(
             item.producto and item.producto.asociacion_email == current_user.get("email")
             for item in pedido.items
@@ -118,6 +124,25 @@ def detalle(
         "request": request,
         "pedido": pedido_vm,
     })
+
+
+@router.post("/cancelar/{pedido_id}")
+def cancelar_pedido_post(
+    request: Request,
+    pedido_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    if not current_user:
+        return RedirectResponse(url="/auth/login", status_code=303)
+
+    resultado = cancelar_pedido(db, pedido_id, current_user["email"])
+    if resultado == "pagado":
+        return RedirectResponse(url="/pedidos?error=pagado", status_code=303)
+    elif not resultado:
+        return RedirectResponse(url="/pedidos?error=no_encontrado", status_code=303)
+
+    return RedirectResponse(url="/pedidos?cancelado=1", status_code=303)
 
 
 @router.post("/cotizar-servicio/{producto_id}")
