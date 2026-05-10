@@ -10,6 +10,7 @@
                 <tr>
                     <th>Pedido</th>
                     <th>Comprador</th>
+                    <th>Asociación</th>
                     <th>Productos</th>
                     <th>Total prod.</th>
                     <th>Costo envío</th>
@@ -23,7 +24,14 @@
                 {% for envio in envios %}
                 <tr>
                     <td><a href="/pedidos/{{ envio.pedido_id }}">#{{ envio.pedido_id[:8] }}</a></td>
-                    <td>{{ envio.comprador_email }}</td>
+                    <td><a href="/perfil/{{ envio.comprador_email }}">{{ envio.comprador_email }}</a></td>
+                    <td>
+                        {% if envio.asociacion_email %}
+                        <a href="/perfil/{{ envio.asociacion_email }}">{{ envio.asociacion_email }}</a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
                     <td>
                         {% for p in envio.productos %}
                         {{ p.nombre }} ({{ p.cantidad }})<br>

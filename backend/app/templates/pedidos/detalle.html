@@ -109,6 +109,15 @@
     </div>
     {% endif %}
 
+    <!-- Enlace al perfil de la asociación y chat -->
+    {% set asociacion_email = pedido.items[0].producto.asociacion_email if pedido.items and pedido.items[0].producto else '' %}
+    {% if asociacion_email %}
+    <div class="mt-3 d-flex gap-2">
+        <a href="/perfil/{{ asociacion_email }}" class="btn btn-sm btn-outline-secondary rounded-pill">🏢 Ver perfil del vendedor</a>
+        <a href="/mensajes/chat/{{ asociacion_email }}" class="btn btn-sm btn-outline-success rounded-pill">💬 Contactar vendedor</a>
+    </div>
+    {% endif %}
+
     <p class="fw-bold text-end mt-3">Total: ${{ pedido.total }}</p>
     <a href="/pedidos" class="btn btn-secondary">← Volver</a>
 </div>

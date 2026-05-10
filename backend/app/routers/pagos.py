@@ -8,6 +8,7 @@ from app.services.pago_service import (
     verificar_firma_webhook,
     calcular_total_pedido,
     COMISION_PLATAFORMA,
+    calcular_comision,
 )
 from app.viewmodels.pago import PagoViewModel
 from app.templates import templates
@@ -23,9 +24,6 @@ def checkout(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """
-    Muestra la página de checkout con el resumen del pedido y el detalle de comisión.
-    """
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
@@ -33,10 +31,8 @@ def checkout(
     if not pedido or pedido.comprador_email != current_user["email"]:
         return RedirectResponse(url="/pedidos", status_code=303)
 
-    total, asociacion_email, _ = calcular_total_pedido(db, pedido_id)
+    total, asociacion_email, _, costo_envio = calcular_total_pedido(db, pedido_id)
     monto_comision, monto_vendedor = calcular_comision(total)
-
-    from app.services.pago_service import calcular_comision
 
     return templates.TemplateResponse("pago_checkout.html", {
         "request": request,
@@ -45,7 +41,7 @@ def checkout(
         "comision_plataforma": monto_comision,
         "monto_vendedor": monto_vendedor,
         "porcentaje_comision": COMISION_PLATAFORMA,
-        "wompi_api_key": "",  # Se completa con la variable de entorno real
+        "costo_envio": costo_envio,
     })
 
 
@@ -56,10 +52,6 @@ def iniciar_pago(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """
-    Crea el registro de pago y redirige a la confirmación.
-    En producción, aquí se redirigiría al checkout de Wompi.
-    """
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
@@ -67,10 +59,7 @@ def iniciar_pago(
     if not pago:
         return RedirectResponse(url="/pedidos?error=pago", status_code=303)
 
-    return RedirectResponse(
-        url=f"/pagos/procesar/{pago.id}",
-        status_code=303
-    )
+    return RedirectResponse(url=f"/pagos/procesar/{pago.id}", status_code=303)
 
 
 @router.get("/procesar/{pago_id}", response_class=HTMLResponse)
@@ -80,9 +69,6 @@ def procesar_pago(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """
-    Muestra la página de procesamiento de pago (simulación de Wompi).
-    """
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
@@ -104,10 +90,6 @@ def confirmar_pago_post(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """
-    Simula la confirmación del pago (como si Wompi enviara el webhook).
-    En producción, esta lógica estaría en el endpoint del webhook.
-    """
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
@@ -115,9 +97,7 @@ def confirmar_pago_post(
     if not pago:
         return RedirectResponse(url="/pedidos?error=pago_estado", status_code=303)
 
-    # Simular webhook de Wompi
     confirmar_pago(db, "SIMULADO-" + pago_id, pago.wompi_referencia)
-
     return RedirectResponse(url=f"/pagos/exito/{pago.id}", status_code=303)
 
 
@@ -128,7 +108,6 @@ def pago_exitoso(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    """Página de confirmación después del pago exitoso."""
     if not current_user:
         return RedirectResponse(url="/auth/login", status_code=303)
 
@@ -145,14 +124,9 @@ def pago_exitoso(
 
 @router.post("/webhook")
 async def webhook_wompi(request: Request, db: Session = Depends(get_db)):
-    """
-    Endpoint que recibe las notificaciones de Wompi cuando una transacción
-    cambia de estado. Verifica la firma HMAC-SHA256 para seguridad.
-    """
     body = await request.body()
     firma = request.headers.get("X-Wompi-Signature", "")
 
-    # Verificar firma (opcional en sandbox, obligatorio en producción)
     if firma and not verificar_firma_webhook(body, firma):
         return JSONResponse({"error": "Firma inválida"}, status_code=403)
 

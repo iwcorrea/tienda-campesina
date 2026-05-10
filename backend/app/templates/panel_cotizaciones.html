@@ -15,6 +15,7 @@
                             <th>Cant.</th>
                             <th>Precio suger.</th>
                             <th>Comprador</th>
+                            <th>Fecha</th>
                             <th>Acción</th>
                         </tr>
                     </thead>
@@ -25,7 +26,10 @@
                             <td>#{{ item.pedido.id[:8] }}</td>
                             <td>{{ item.cantidad }}</td>
                             <td>${{ item.precio_unitario_inicial }}</td>
-                            <td>{{ item.pedido.comprador_email }}</td>
+                            <td>
+                                <a href="/perfil/{{ item.pedido.comprador_email }}">{{ item.pedido.comprador_email }}</a>
+                            </td>
+                            <td>{{ item.pedido.fecha_creacion.strftime('%d/%m/%Y') if item.pedido.fecha_creacion else '' }}</td>
                             <td>
                                 {% if item.respuesta_aceptada and item.respuesta_aceptada.contrato_url %}
                                     <span class="badge bg-success">Aceptada</span>
@@ -41,6 +45,9 @@
                                     {% endif %}
                                 {% else %}
                                     <a href="/panel/cotizacion/responder/{{ item.id }}" class="btn btn-sm btn-outline-success">Responder</a>
+                                    <form method="post" action="/panel/cotizacion/eliminar/{{ item.id }}" class="d-inline" onsubmit="return confirm('¿Eliminar esta cotización?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1">🗑️</button>
+                                    </form>
                                 {% endif %}
                             </td>
                         </tr>
