@@ -358,4 +358,4 @@ def reenviar_enlace_pago(db: Session, pedido_id: str, email_asociacion: str) -> 
         remitente_email=email_asociacion,
         texto=f"Recordatorio: tu pedido #{pedido_id[:8]} está pendiente de pago. Puedes pagar aquí: /pagos/checkout/{pedido_id}",
     )
-    return True
+    return True 1
