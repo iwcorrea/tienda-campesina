@@ -301,4 +301,11 @@ def on_startup():
                 fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
         """))
+                # Productos (nueva columna stock)
+        existing_prod = set()
+        rows_prod = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='productos'"))
+        for row in rows_prod:
+            existing_prod.add(row[0])
+        if "stock" not in existing_prod:
+            conn.execute(text("ALTER TABLE productos ADD COLUMN stock INTEGER DEFAULT 0"))
         conn.commit()

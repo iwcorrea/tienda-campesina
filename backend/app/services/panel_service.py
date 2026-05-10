@@ -8,9 +8,12 @@ from app.services.contrato_service import generar_contrato_html, subir_contrato
 from app.services.factura_service import generar_factura_html, generar_numero_factura, subir_factura
 from app.services.notificacion_service import crear_notificacion
 from app.services.pedido_service import actualizar_estado_pedido_si_aplica
+from app.services.inventario_service import inicializar_stock, reservar_stock_por_cotizacion
+
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
     return db.query(Asociacion).filter(Asociacion.email == email).first()
+
 
 def crear_producto(
     db: Session,
@@ -54,10 +57,10 @@ def crear_producto(
     db.refresh(nuevo)
 
     if tipo == "producto" and stock_inicial > 0:
-        from app.services.inventario_service import inicializar_stock
         inicializar_stock(db, nuevo, stock_inicial, "creacion")
 
     return nuevo
+
 
 def actualizar_producto(
     db: Session,
@@ -101,6 +104,7 @@ def actualizar_producto(
     db.commit()
     return producto
 
+
 def eliminar_producto(db: Session, email: str, producto_id: str) -> bool:
     producto = db.query(Producto).filter(
         Producto.id == producto_id,
@@ -114,12 +118,15 @@ def eliminar_producto(db: Session, email: str, producto_id: str) -> bool:
     db.commit()
     return True
 
+
+# ─── TRANSPORTISTAS FAVORITOS ─────────────────────
 def listar_favoritos(db: Session, email: str):
     favoritos = db.query(TransportistaFavorito).filter(
         TransportistaFavorito.asociacion_email == email
     ).all()
     todos = db.query(Transportista).filter(Transportista.activo == "1").all()
     return favoritos, todos
+
 
 def agregar_favorito(db: Session, email: str, transportista_id: str) -> bool:
     existe = db.query(TransportistaFavorito).filter(
@@ -136,6 +143,7 @@ def agregar_favorito(db: Session, email: str, transportista_id: str) -> bool:
         return True
     return False
 
+
 def eliminar_favorito(db: Session, email: str, favorito_id: str) -> bool:
     fav = db.query(TransportistaFavorito).filter(
         TransportistaFavorito.id == favorito_id,
@@ -147,6 +155,8 @@ def eliminar_favorito(db: Session, email: str, favorito_id: str) -> bool:
         return True
     return False
 
+
+# ─── COTIZACIONES ─────────────────────────────────
 def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
     items = (
         db.query(ItemPedido)
@@ -184,6 +194,7 @@ def obtener_items_cotizacion_asociacion(db: Session, email: str) -> list:
         })
     return resultado
 
+
 def obtener_item_para_responder(db: Session, item_id: str, email_asociacion: str) -> Optional[ItemPedido]:
     return (
         db.query(ItemPedido)
@@ -195,6 +206,7 @@ def obtener_item_para_responder(db: Session, item_id: str, email_asociacion: str
         .filter(ItemPedido.id == item_id, Producto.asociacion_email == email_asociacion)
         .first()
     )
+
 
 def guardar_respuesta_cotizacion(
     db: Session,
@@ -234,7 +246,7 @@ def guardar_respuesta_cotizacion(
         precio_total = cantidad_final * precio_unit
         asociacion_nombre = item.producto.asociacion.nombre if item.producto.asociacion else email_asociacion
 
-        # Contrato
+        # 1. Contrato
         html_contrato = generar_contrato_html(
             comprador_email=comprador_email,
             asociacion_nombre=asociacion_nombre,
@@ -252,7 +264,7 @@ def guardar_respuesta_cotizacion(
         except Exception:
             pass
 
-        # Factura
+        # 2. Factura
         numero_factura = generar_numero_factura()
         items_factura = [{
             "producto_nombre": producto.nombre,
@@ -275,7 +287,7 @@ def guardar_respuesta_cotizacion(
         except Exception:
             pass
 
-        # Notificación al comprador
+        # 3. Notificación al comprador
         crear_notificacion(
             db,
             destinatario_email=comprador_email,
@@ -287,11 +299,11 @@ def guardar_respuesta_cotizacion(
     db.add(nueva)
     db.commit()
 
+    # 4. Actualizar estado del pedido si todos los ítems están aceptados
     actualizar_estado_pedido_si_aplica(db, item.pedido_id)
 
-    # Reservar stock si fue aceptada
+    # 5. Reservar stock cuando se acepta la cotización
     if aceptado == "aceptado":
-        from app.services.inventario_service import reservar_stock_por_cotizacion
         reservar_stock_por_cotizacion(db, item_id)
 
     return nueva

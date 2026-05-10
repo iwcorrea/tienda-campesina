@@ -41,6 +41,7 @@ class Producto(Base):
     tipo = Column(String, default="producto")
     tipo_precio = Column(String, default="fijo")
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    stock = Column(Integer, default=0)                     # <-- nuevo campo
 
     asociacion = relationship("Asociacion", back_populates="productos")
     valoraciones = relationship("Valoracion", back_populates="producto", cascade="all, delete-orphan")
