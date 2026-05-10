@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Nuevo mensaje{% endblock %}
 {% block content %}
-<div class="modern-section">
-    <h2>✉️ Nuevo mensaje</h2>
+<div class="modern-section" style="max-width:600px;margin:0 auto;">
+    <h2 class="fw-bold mb-4">✉️ Nuevo mensaje</h2>
     <form method="post" action="/mensajes/enviar" class="mt-4">
         <div class="mb-3">
-            <label for="destinatario_email" class="form-label">Email del destinatario</label>
+            <label for="destinatario_email" class="form-label fw-semibold">Email del destinatario</label>
             <input type="email" class="form-control rounded-pill" id="destinatario_email" name="destinatario_email" value="{{ destinatario_email }}" required>
         </div>
 
         {% if contactos %}
         <div class="mb-3">
-            <label for="contacto_selector" class="form-label">O elige un contacto de tu lista</label>
+            <label for="contacto_selector" class="form-label fw-semibold">O elige un contacto de tu lista</label>
             <select class="form-select rounded-pill" id="contacto_selector" onchange="seleccionarContacto()">
                 <option value="">-- Seleccionar contacto --</option>
                 {% for c in contactos %}
@@ -22,14 +22,14 @@
         {% endif %}
 
         <div class="mb-3">
-            <label for="producto_id" class="form-label">Producto relacionado (opcional)</label>
+            <label for="producto_id" class="form-label fw-semibold">Producto relacionado (opcional)</label>
             <input type="text" class="form-control rounded-pill" id="producto_id" name="producto_id" placeholder="ID del producto">
         </div>
         <div class="mb-3">
-            <label for="texto" class="form-label">Mensaje</label>
+            <label for="texto" class="form-label fw-semibold">Mensaje</label>
             <textarea class="form-control" id="texto" name="texto" rows="4" style="border-radius:16px;" required></textarea>
         </div>
-        <button type="submit" class="btn btn-success rounded-pill px-4">Enviar</button>
+        <button type="submit" class="btn btn-success rounded-pill px-5">Enviar</button>
     </form>
 </div>
 

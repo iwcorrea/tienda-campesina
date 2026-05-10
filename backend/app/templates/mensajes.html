@@ -3,14 +3,17 @@
 {% block head %}
 <style>
     .conversation-item {
-        transition: background 0.15s;
+        transition: all 0.15s ease;
         border-left: 3px solid transparent;
+        cursor: pointer;
     }
     .conversation-item:hover {
         background: #f8faf5;
+        border-left-color: #2d6a4f;
     }
     .conversation-item.unread {
-        border-left: 3px solid #2d6a4f;
+        border-left-color: #2d6a4f;
+        background: #f9fdf9;
     }
     .avatar-circle {
         width: 48px;
@@ -21,19 +24,25 @@
         justify-content: center;
         font-weight: 700;
         font-size: 1.1rem;
-        background: #e9ecef;
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
         color: #2d6a4f;
         flex-shrink: 0;
     }
     .search-input {
         border-radius: 24px;
         padding: 10px 20px;
-        border: 1px solid #dee2e6;
+        border: 1px solid #e9ecef;
         transition: all 0.2s;
+        background: #fff;
     }
     .search-input:focus {
         border-color: #2d6a4f;
         box-shadow: 0 0 0 3px rgba(45,106,79,0.08);
+        outline: none;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
     }
 </style>
 {% endblock %}
@@ -41,13 +50,13 @@
 <div class="modern-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold" style="font-size:1.5rem;">💬 Mensajes</h2>
-        <a href="/mensajes/nuevo" class="btn btn-success rounded-pill px-4">+ Nuevo</a>
+        <a href="/mensajes/nuevo" class="btn btn-success rounded-pill px-4">+ Nuevo mensaje</a>
     </div>
 
     <input type="text" id="buscadorConversaciones" class="search-input form-control mb-4" placeholder="🔍 Buscar conversación...">
 
     {% if conversaciones %}
-    <div class="list-group" id="listaConversaciones" style="border-radius:16px; overflow:hidden;">
+    <div class="list-group shadow-sm" id="listaConversaciones" style="border-radius:16px; overflow:hidden;">
         {% for conv in conversaciones %}
         <a href="/mensajes/chat/{{ conv.contacto_email }}" 
            class="list-group-item list-group-item-action conversation-item {% if conv.leido == '0' %}unread{% endif %}" 
@@ -57,10 +66,21 @@
                 <div class="flex-grow-1 min-width-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <strong class="text-truncate">{{ conv.contacto_nombre }}</strong>
-                        <small class="text-muted flex-shrink-0 ms-2" style="font-size:0.7rem;">{{ conv.fecha.strftime('%d/%m/%Y') if conv.fecha else '' }}</small>
+                        <small class="text-muted flex-shrink-0 ms-2" style="font-size:0.7rem;">
+                            {% if conv.fecha %}
+                                {% set fecha = conv.fecha %}
+                                {% if fecha.date() == today %}
+                                    {{ fecha.strftime('%I:%M %p') }}
+                                {% else %}
+                                    {{ fecha.strftime('%d/%m/%Y') }}
+                                {% endif %}
+                            {% endif %}
+                        </small>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mt-1">
-                        <span class="text-truncate {{ 'fw-semibold text-dark' if conv.leido == '0' else 'text-muted' }}" style="max-width:80%;">{{ conv.ultimo_mensaje }}</span>
+                        <span class="text-truncate {{ 'fw-semibold text-dark' if conv.leido == '0' else 'text-muted' }}" style="max-width:80%;">
+                            {{ conv.ultimo_mensaje }}
+                        </span>
                         {% if conv.leido == '0' %}
                         <span class="badge rounded-pill" style="background:#2d6a4f; font-size:0.65rem;">Nuevo</span>
                         {% endif %}
@@ -71,10 +91,10 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="text-center py-5">
+    <div class="empty-state">
         <div style="font-size:3rem;">📭</div>
         <p class="text-muted mt-3">No tienes mensajes todavía.</p>
-        <a href="/mensajes/nuevo" class="btn btn-outline-success rounded-pill">Envía tu primer mensaje</a>
+        <a href="/mensajes/nuevo" class="btn btn-outline-success rounded-pill mt-2">Envía tu primer mensaje</a>
     </div>
     {% endif %}
 </div>
