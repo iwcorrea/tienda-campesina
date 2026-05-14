@@ -2,59 +2,35 @@
 {% block title %}Panel de Control{% endblock %}
 {% block head %}
 <style>
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 1rem;
-    }
-    .metric-card {
-        background: #fff;
-        border-radius: 20px;
-        padding: 1.25rem;
-        text-align: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        border: 1px solid #f0f0f0;
-    }
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+    .metric-card { background: #fff; border-radius: 20px; padding: 1.25rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f0f0f0; }
     .metric-icon { font-size: 2rem; }
     .metric-value { font-size: 2rem; font-weight: 800; color: #2d6a4f; }
     .metric-title { font-size: 0.8rem; color: #6c757d; margin-top: 0.25rem; }
     .section-title { font-size: 1.1rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    .quick-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
     .order-list { list-style: none; padding: 0; }
-    .order-item {
-        background: #fff;
-        border-radius: 16px;
-        padding: 1rem;
-        margin-bottom: 0.75rem;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-        border: 1px solid #f0f0f0;
-    }
+    .order-item { background: #fff; border-radius: 16px; padding: 1rem; margin-bottom: 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid #f0f0f0; }
     .order-header { display: flex; justify-content: space-between; align-items: center; }
-    .badge-estado {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 600;
-    }
-    .timeline-steps {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-    }
-    .timeline-step {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.75rem;
-        background: #f8faf5;
-        padding: 4px 8px;
-        border-radius: 12px;
-    }
+    .badge-estado { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
 </style>
 {% endblock %}
 {% block content %}
 <div class="modern-section">
     <h2 class="fw-bold mb-3">{{ '🌱' if tipo == 'asociacion' else '🛒' if tipo == 'persona' else '🚚' }} Hola, {{ usuario }}</h2>
+
+    <!-- Acciones rápidas -->
+    <div class="quick-actions">
+        <a href="/pedidos" class="btn btn-outline-success rounded-pill btn-sm">📦 Mis pedidos</a>
+        <a href="/chat" class="btn btn-outline-success rounded-pill btn-sm">💬 Chat operacional</a>
+        {% if tipo == "asociacion" %}
+        <a href="/panel" class="btn btn-outline-success rounded-pill btn-sm">🛒 Mis productos</a>
+        <a href="/panel/cotizaciones" class="btn btn-outline-success rounded-pill btn-sm">📋 Cotizaciones</a>
+        {% endif %}
+        {% if tipo == "transportista" %}
+        <a href="/mis-envios" class="btn btn-outline-success rounded-pill btn-sm">🚚 Mis envíos</a>
+        {% endif %}
+    </div>
 
     <!-- Métricas -->
     <div class="dashboard-grid" id="metricas-container">
@@ -74,19 +50,10 @@
         <li class="order-item">
             <div class="order-header">
                 <a href="/pedidos/{{ p.id }}" class="text-decoration-none fw-semibold">#{{ p.id[:8] }}</a>
-                <span class="badge-estado 
-                    {% if p.estado == 'pendiente' %}bg-warning text-dark
-                    {% elif p.estado == 'aceptado' %}bg-info text-white
-                    {% elif p.estado == 'pagado' %}bg-primary text-white
-                    {% elif p.estado == 'entregado' %}bg-success text-white
-                    {% else %}bg-secondary text-white{% endif %}">
-                    {{ p.estado }}
-                </span>
+                <span class="badge-estado {% if p.estado == 'pendiente' %}bg-warning text-dark{% elif p.estado == 'aceptado' %}bg-info text-white{% elif p.estado == 'pagado' %}bg-primary text-white{% elif p.estado == 'entregado' %}bg-success text-white{% else %}bg-secondary text-white{% endif %}">{{ p.estado }}</span>
             </div>
             <div class="text-muted small mt-1">{{ p.fecha }} · {{ p.comprador_email }} · ${{ p.total }}</div>
             <div class="text-muted small">{{ p.items | join(', ') }}</div>
-            <!-- Timeline mini -->
-            <div class="timeline-steps" id="timeline-{{ p.id }}">Cargando...</div>
         </li>
         {% endfor %}
     </ul>
@@ -98,10 +65,7 @@
     <div class="section-title">🛒 Mis productos</div>
     <ul class="order-list">
         {% for prod in productos_activos %}
-        <li class="order-item d-flex justify-content-between">
-            <span>{{ prod.nombre }} <small class="text-muted">Stock: {{ prod.stock }}</small></span>
-            <span class="fw-bold">${{ prod.precio }}</span>
-        </li>
+        <li class="order-item d-flex justify-content-between"><span>{{ prod.nombre }} <small class="text-muted">Stock: {{ prod.stock }}</small></span><span class="fw-bold">${{ prod.precio }}</span></li>
         {% endfor %}
     </ul>
     {% endif %}
@@ -110,42 +74,20 @@
     <div class="section-title">📄 Documentos recientes</div>
     <ul class="order-list">
         {% for doc in documentos_recientes %}
-        <li class="order-item d-flex justify-content-between">
-            <span>{{ doc.tipo }}</span>
-            <a href="{{ doc.url }}" target="_blank" class="btn btn-sm btn-outline-success">Ver</a>
-        </li>
+        <li class="order-item d-flex justify-content-between"><span>{{ doc.tipo }}</span><a href="{{ doc.url }}" target="_blank" class="btn btn-sm btn-outline-success">Ver</a></li>
         {% endfor %}
     </ul>
     {% endif %}
 </div>
 
 <script>
-    // Cargar timelines de cada pedido
-    document.querySelectorAll('[id^="timeline-"]').forEach(function(el) {
-        var pedidoId = el.id.replace('timeline-', '');
-        fetch('/api/dashboard/timeline/' + pedidoId)
-            .then(res => res.json())
-            .then(data => {
-                el.innerHTML = data.map(e => 
-                    `<span class="timeline-step">${e.icono} ${e.descripcion}</span>`
-                ).join('');
-            });
-    });
-
-    // Actualizar métricas cada 30 segundos (opcional)
     setInterval(function() {
         fetch('/api/dashboard/metricas')
             .then(res => res.json())
             .then(data => {
                 var container = document.getElementById('metricas-container');
                 if (data.length && container) {
-                    container.innerHTML = data.map(m => 
-                        `<div class="metric-card">
-                            <div class="metric-icon">${m.icono}</div>
-                            <div class="metric-value">${m.valor}</div>
-                            <div class="metric-title">${m.titulo}</div>
-                        </div>`
-                    ).join('');
+                    container.innerHTML = data.map(m => `<div class="metric-card"><div class="metric-icon">${m.icono}</div><div class="metric-value">${m.valor}</div><div class="metric-title">${m.titulo}</div></div>`).join('');
                 }
             });
     }, 30000);
