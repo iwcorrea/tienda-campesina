@@ -1,0 +1,1 @@
+# Módulo de notificaciones desacopladas basadas en eventos
