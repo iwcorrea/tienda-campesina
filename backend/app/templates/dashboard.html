@@ -1,26 +1,153 @@
 {% extends "base.html" %}
 {% block title %}Panel de Control{% endblock %}
+{% block head %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1rem;
+    }
+    .metric-card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 1.25rem;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid #f0f0f0;
+    }
+    .metric-icon { font-size: 2rem; }
+    .metric-value { font-size: 2rem; font-weight: 800; color: #2d6a4f; }
+    .metric-title { font-size: 0.8rem; color: #6c757d; margin-top: 0.25rem; }
+    .section-title { font-size: 1.1rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+    .order-list { list-style: none; padding: 0; }
+    .order-item {
+        background: #fff;
+        border-radius: 16px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        border: 1px solid #f0f0f0;
+    }
+    .order-header { display: flex; justify-content: space-between; align-items: center; }
+    .badge-estado {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    .timeline-steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    .timeline-step {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.75rem;
+        background: #f8faf5;
+        padding: 4px 8px;
+        border-radius: 12px;
+    }
+</style>
+{% endblock %}
 {% block content %}
 <div class="modern-section">
-    <h2 class="fw-bold mb-4">📊 Panel de Control – {{ usuario }}</h2>
-    <div class="row g-3">
-        <div class="col-md-3"><div class="card p-3"><h6>Productos</h6><h2>{{ total_productos }}</h2></div></div>
-        <div class="col-md-3"><div class="card p-3"><h6>Valoraciones</h6><h2>{{ total_valoraciones }}</h2></div></div>
-        <div class="col-md-3"><div class="card p-3"><h6>Mensajes sin leer</h6><h2>{{ mensajes_pendientes }}</h2></div></div>
-        <div class="col-md-3"><div class="card p-3"><h6>Cotiz. pendientes</h6><h2>{{ cotizaciones_pendientes }}</h2></div></div>
+    <h2 class="fw-bold mb-3">{{ '🌱' if tipo == 'asociacion' else '🛒' if tipo == 'persona' else '🚚' }} Hola, {{ usuario }}</h2>
+
+    <!-- Métricas -->
+    <div class="dashboard-grid" id="metricas-container">
+        {% for m in metricas %}
+        <div class="metric-card">
+            <div class="metric-icon">{{ m.icono }}</div>
+            <div class="metric-value">{{ m.valor }}</div>
+            <div class="metric-title">{{ m.titulo }}</div>
+        </div>
+        {% endfor %}
     </div>
-    <h4 class="mt-4">Actividades recientes</h4>
-    {% if actividades %}
-    <ul class="list-group">
-        {% for a in actividades %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>{{ a.icono }} {{ a.texto }}</span>
-            <small class="text-muted">{{ a.fecha.strftime('%d/%m %H:%M') if a.fecha else '' }}</small>
+
+    <!-- Pedidos recientes -->
+    <div class="section-title">📦 Pedidos recientes</div>
+    <ul class="order-list" id="pedidos-list">
+        {% for p in pedidos_recientes %}
+        <li class="order-item">
+            <div class="order-header">
+                <a href="/pedidos/{{ p.id }}" class="text-decoration-none fw-semibold">#{{ p.id[:8] }}</a>
+                <span class="badge-estado 
+                    {% if p.estado == 'pendiente' %}bg-warning text-dark
+                    {% elif p.estado == 'aceptado' %}bg-info text-white
+                    {% elif p.estado == 'pagado' %}bg-primary text-white
+                    {% elif p.estado == 'entregado' %}bg-success text-white
+                    {% else %}bg-secondary text-white{% endif %}">
+                    {{ p.estado }}
+                </span>
+            </div>
+            <div class="text-muted small mt-1">{{ p.fecha }} · {{ p.comprador_email }} · ${{ p.total }}</div>
+            <div class="text-muted small">{{ p.items | join(', ') }}</div>
+            <!-- Timeline mini -->
+            <div class="timeline-steps" id="timeline-{{ p.id }}">Cargando...</div>
         </li>
         {% endfor %}
     </ul>
-    {% else %}
-    <p class="text-muted">No hay actividad.</p>
+    {% if not pedidos_recientes %}
+    <p class="text-muted">No tienes pedidos recientes.</p>
+    {% endif %}
+
+    {% if tipo == 'asociacion' and productos_activos %}
+    <div class="section-title">🛒 Mis productos</div>
+    <ul class="order-list">
+        {% for prod in productos_activos %}
+        <li class="order-item d-flex justify-content-between">
+            <span>{{ prod.nombre }} <small class="text-muted">Stock: {{ prod.stock }}</small></span>
+            <span class="fw-bold">${{ prod.precio }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if documentos_recientes %}
+    <div class="section-title">📄 Documentos recientes</div>
+    <ul class="order-list">
+        {% for doc in documentos_recientes %}
+        <li class="order-item d-flex justify-content-between">
+            <span>{{ doc.tipo }}</span>
+            <a href="{{ doc.url }}" target="_blank" class="btn btn-sm btn-outline-success">Ver</a>
+        </li>
+        {% endfor %}
+    </ul>
     {% endif %}
 </div>
+
+<script>
+    // Cargar timelines de cada pedido
+    document.querySelectorAll('[id^="timeline-"]').forEach(function(el) {
+        var pedidoId = el.id.replace('timeline-', '');
+        fetch('/api/dashboard/timeline/' + pedidoId)
+            .then(res => res.json())
+            .then(data => {
+                el.innerHTML = data.map(e => 
+                    `<span class="timeline-step">${e.icono} ${e.descripcion}</span>`
+                ).join('');
+            });
+    });
+
+    // Actualizar métricas cada 30 segundos (opcional)
+    setInterval(function() {
+        fetch('/api/dashboard/metricas')
+            .then(res => res.json())
+            .then(data => {
+                var container = document.getElementById('metricas-container');
+                if (data.length && container) {
+                    container.innerHTML = data.map(m => 
+                        `<div class="metric-card">
+                            <div class="metric-icon">${m.icono}</div>
+                            <div class="metric-value">${m.valor}</div>
+                            <div class="metric-title">${m.titulo}</div>
+                        </div>`
+                    ).join('');
+                }
+            });
+    }, 30000);
+</script>
 {% endblock %}
