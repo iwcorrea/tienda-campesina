@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, Form, File, UploadFile, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-
 from app.dependencies import get_db, get_current_user
 from app.services.transportista_service import (
     obtener_transportista_por_email,
@@ -11,9 +10,7 @@ from app.viewmodels.transportista import TransportistaViewModel
 from app.templates import templates
 import cloudinary.uploader
 
-
 router = APIRouter()
-
 
 def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
     if not file or not file.filename:
@@ -33,7 +30,6 @@ def upload_file_cloudinary(file: UploadFile, folder: str, raw: bool = False):
     except Exception:
         return ""
 
-
 @router.get("/perfil-transportista", response_class=HTMLResponse)
 def perfil_transportista(
     request: Request,
@@ -52,7 +48,6 @@ def perfil_transportista(
         "request": request,
         "transportista": transportista_vm,
     })
-
 
 @router.post("/perfil-transportista/actualizar")
 def actualizar_perfil_transportista_post(
