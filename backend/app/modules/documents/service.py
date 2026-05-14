@@ -16,7 +16,7 @@ def crear_documento(
     contenido_html: str,
     metadata_extra: str = ""
 ) -> Optional[Documento]:
-    """Genera un documento, lo sube a Cloudinary y guarda la metadata."""
+    """Genera un documento, lo sube a Cloudinary, guarda la metadata y dispara notificación."""
     if tipo not in DOCUMENT_TYPES:
         raise ValueError(f"Tipo de documento '{tipo}' no válido")
 
@@ -36,6 +36,17 @@ def crear_documento(
     db.add(documento)
     db.commit()
     db.refresh(documento)
+
+    # Disparar evento de notificación
+    from app.modules.notifications.events import dispatch_event
+    dispatch_event(
+        db,
+        "document_generated",
+        pedido_id,
+        usuario_generador,
+        tipo_documento=tipo
+    )
+
     return documento
 
 def obtener_documentos_pedido(db: Session, pedido_id: str) -> List[Documento]:
