@@ -1,0 +1,1 @@
+from app.models import Producto, Valoracion, MovimientoInventario, Asociacion

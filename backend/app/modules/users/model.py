@@ -1,0 +1,1 @@
+from app.models import Persona, Transportista, Contacto, SolicitudContacto, Bloqueo, Mensaje, NotificacionSistema, ValoracionComprador, Asociacion
