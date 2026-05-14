@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models import Pedido, ItemPedido, Producto, Notificacion as NotifModel
+from app.models import Pedido, ItemPedido, Producto
+from app.modules.notifications.model import Notificacion as NotifModel
 from app.modules.documents.model import Documento
 
 def calcular_metricas(db: Session, email: str, tipo_usuario: str) -> list:
