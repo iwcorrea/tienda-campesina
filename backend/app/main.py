@@ -5,8 +5,8 @@ from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-# ─── Router modular de auth (activado) ───
 from app.modules.auth.router import router as auth_router
+from app.modules.users.router import router as users_router
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
 from app.templates import templates
@@ -15,17 +15,13 @@ import cloudinary
 import time
 from sqlalchemy import text
 
-# Routers legacy (se mantienen sin cambios)
-from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
-from app.routers import personas, empleos, herramientas, mensajes
-from app.routers import transportistas
+# Routers legacy que aún no se migran
+from app.routers import home, catalogo, dashboard, panel, valoraciones, admin, calculadora
+from app.routers import empleos, herramientas
 from app.routers import pedidos
 from app.routers import carrito
 from app.routers import ayuda
 from app.routers import noticias
-from app.routers import notificaciones
-from app.routers import contactos
-from app.routers import transportista_envios
 from app.routers import pagos
 
 logging.basicConfig(level=logging.INFO)
@@ -77,28 +73,21 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # ─── Routers ──────────────────────────────────────
-app.include_router(auth_router, prefix="/auth")          # ← modular
+app.include_router(auth_router, prefix="/auth")          # módulo auth
+app.include_router(users_router)                         # módulo users (perfil, contactos, mensajes, notificaciones, transportistas, personas, asociación, envíos)
 app.include_router(home.router)
 app.include_router(catalogo.router)
 app.include_router(dashboard.router)
 app.include_router(panel.router)
-app.include_router(perfil.router)
-app.include_router(asociacion.router)
 app.include_router(valoraciones.router)
 app.include_router(admin.router)
 app.include_router(calculadora.router)
-app.include_router(personas.router)
 app.include_router(empleos.router)
 app.include_router(herramientas.router)
-app.include_router(mensajes.router)
-app.include_router(transportistas.router)
 app.include_router(pedidos.router)
 app.include_router(carrito.router)
 app.include_router(ayuda.router)
 app.include_router(noticias.router)
-app.include_router(notificaciones.router)
-app.include_router(contactos.router)
-app.include_router(transportista_envios.router)
 app.include_router(pagos.router)
 
 

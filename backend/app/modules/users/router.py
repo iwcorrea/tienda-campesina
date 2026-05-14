@@ -1,15 +1,12 @@
 from fastapi import APIRouter
-from app.routers.perfil import router as perfil_router
-from app.routers.contactos import router as contactos_router
-from app.routers.mensajes import router as mensajes_router
-from app.routers.notificaciones import router as notificaciones_router
-from app.routers.transportistas import router as transportistas_router
-from app.routers.personas import router as personas_router
+from app.routers import perfil, contactos, mensajes, notificaciones, transportistas, personas, asociacion, transportista_envios
 
 router = APIRouter()
-router.include_router(perfil_router, tags=["perfil"])
-router.include_router(contactos_router, prefix="/contactos", tags=["contactos"])
-router.include_router(mensajes_router, tags=["mensajes"])
-router.include_router(notificaciones_router, tags=["notificaciones"])
-router.include_router(transportistas_router, tags=["transportistas"])
-router.include_router(personas_router, tags=["personas"])
+router.include_router(perfil.router)
+router.include_router(contactos.router)
+router.include_router(mensajes.router)
+router.include_router(notificaciones.router)
+router.include_router(transportistas.router)
+router.include_router(personas.router)
+router.include_router(asociacion.router)
+router.include_router(transportista_envios.router)
