@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.modules.auth.router import router as auth_router
 from app.modules.users.router import router as users_router
 from app.modules.products.router import router as products_router
+from app.modules.orders.router import router as orders_router
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
 from app.templates import templates
@@ -19,11 +20,8 @@ from sqlalchemy import text
 # Routers legacy que aún no se migran
 from app.routers import home, dashboard, admin, calculadora
 from app.routers import empleos, herramientas
-from app.routers import pedidos
-from app.routers import carrito
 from app.routers import ayuda
 from app.routers import noticias
-from app.routers import pagos
 
 logging.basicConfig(level=logging.INFO)
 
@@ -75,19 +73,17 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # ─── Routers ──────────────────────────────────────
 app.include_router(auth_router, prefix="/auth")          # módulo auth
-app.include_router(users_router)                         # módulo users
+app.include_router(users_router)                         # módulo users (perfil, contactos, mensajes, notificaciones, transportistas, personas, asociación, envíos)
 app.include_router(products_router)                      # módulo products (catálogo, panel, valoraciones)
+app.include_router(orders_router)                        # módulo orders (pedidos, carrito, pagos)
 app.include_router(home.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)
 app.include_router(calculadora.router)
 app.include_router(empleos.router)
 app.include_router(herramientas.router)
-app.include_router(pedidos.router)
-app.include_router(carrito.router)
 app.include_router(ayuda.router)
 app.include_router(noticias.router)
-app.include_router(pagos.router)
 
 
 @app.on_event("startup")
@@ -276,6 +272,21 @@ def on_startup():
                 contacto_email VARCHAR NOT NULL,
                 tipo_relacion VARCHAR DEFAULT 'contacto',
                 fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            )
+        """))
+
+        # OrderEvents (nueva tabla)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS order_events (
+                id VARCHAR PRIMARY KEY,
+                pedido_id VARCHAR NOT NULL REFERENCES pedidos(id),
+                tipo VARCHAR NOT NULL,
+                descripcion TEXT DEFAULT '',
+                usuario_email VARCHAR,
+                estado_anterior VARCHAR,
+                estado_nuevo VARCHAR,
+                metadata_extra TEXT DEFAULT '',
+                fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             )
         """))
 
