@@ -1,0 +1,1 @@
+# Preparado para manejo de archivos adjuntos (imágenes, documentos)

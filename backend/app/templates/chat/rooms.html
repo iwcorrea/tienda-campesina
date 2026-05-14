@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Chat operacional{% endblock %}
+{% block content %}
+<div class="modern-section">
+    <h2 class="fw-bold mb-4">💬 Chat operacional</h2>
+    {% if rooms %}
+    <div class="list-group">
+        {% for r in rooms %}
+        <a href="/chat/room/{{ r.id }}" class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between">
+                <strong>Pedido #{{ r.pedido_id[:8] if r.pedido_id else 'General' }}</strong>
+                <small>{{ r.fecha_ultimo }}</small>
+            </div>
+            <small class="text-muted">{{ r.ultimo_mensaje or 'Sin mensajes' }}</small>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No tienes conversaciones activas.</p>
+    {% endif %}
+</div>
+{% endblock %}

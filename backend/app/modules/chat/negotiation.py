@@ -1,0 +1,1 @@
+# Preparado para futuras funcionalidades de negociación (cambio de cantidades, propuestas)
