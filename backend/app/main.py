@@ -11,7 +11,6 @@ from app.modules.products.router import router as products_router
 from app.modules.orders.router import router as orders_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.dashboard.router import router as dashboard_router
-from app.modules.chat.router import router as chat_router
 from app.modules.matching.router import router as matching_router
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
@@ -71,7 +70,6 @@ app.include_router(products_router)
 app.include_router(orders_router)
 app.include_router(notifications_router)
 app.include_router(dashboard_router)
-app.include_router(chat_router)
 app.include_router(matching_router)
 app.include_router(home.router)
 app.include_router(admin.router)
