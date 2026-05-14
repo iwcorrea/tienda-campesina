@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.models import Pago, Comision, Pedido, Transportista
 from app.services.notificacion_service import crear_notificacion
 from app.services.inventario_service import salida_stock_por_pedido
+from app.modules.orders.events import registrar_evento
 
 COMISION_PLATAFORMA = 8
 WOMPI_API_URL = "https://api.wompi.sv"
@@ -120,6 +121,17 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
 
     if pedido:
         pedido.estado = "pagado"
+
+        # Registrar evento de pago
+        registrar_evento(
+            db,
+            pago.pedido_id,
+            "payment_confirmed",
+            usuario_email=pago.comprador_email,
+            estado_anterior="aceptado",
+            estado_nuevo="pagado",
+            descripcion=f"Pago confirmado por ${pago.monto_total:,}"
+        )
 
         # Registrar salida de inventario (convierte reserva en salida real)
         salida_stock_por_pedido(db, pago.pedido_id)

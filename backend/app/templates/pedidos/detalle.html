@@ -118,6 +118,25 @@
     </div>
     {% endif %}
 
+    <!-- Historial de eventos -->
+    {% if eventos %}
+    <hr>
+    <h5>📜 Historial de eventos</h5>
+    <ul class="list-group list-group-flush mb-3">
+        {% for evento in eventos %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ evento.descripcion or evento.tipo }}</strong>
+                {% if evento.usuario_email %}
+                <br><small class="text-muted">por {{ evento.usuario_email }}</small>
+                {% endif %}
+            </div>
+            <small class="text-muted">{{ evento.fecha.strftime('%d/%m/%Y %H:%M') if evento.fecha else '' }}</small>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
     <p class="fw-bold text-end mt-3">Total: ${{ pedido.total }}</p>
     <a href="/pedidos" class="btn btn-secondary">← Volver</a>
 </div>

@@ -6,6 +6,7 @@ from app.dependencies import get_db, get_current_user
 from app.models import Pedido, ItemPedido, Producto
 from app.templates import templates
 from app.services.notificacion_service import crear_notificacion
+from app.modules.orders.events import registrar_evento
 
 router = APIRouter(prefix="/carrito", tags=["carrito"])
 
@@ -35,8 +36,6 @@ def agregar_al_carrito(
     producto = db.query(Producto).filter(Producto.id == producto_id).first()
     if not producto:
         return RedirectResponse(url="/catalogo", status_code=303)
-
-    # No permitir servicios en el carrito
     if producto.tipo == "servicio":
         return RedirectResponse(url="/catalogo?error=servicio_no_valido", status_code=303)
 
@@ -126,6 +125,9 @@ def confirmar_pedido(
                 precio_unitario_inicial=item["precio"]
             ))
         db.commit()
+
+        # Registrar evento
+        registrar_evento(db, pedido.id, "order_created", usuario_email=comprador_email, estado_nuevo="pendiente", descripcion="Pedido creado desde el carrito")
 
         # Notificar a la asociación
         crear_notificacion(

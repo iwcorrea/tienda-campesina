@@ -1,19 +1,19 @@
 import math
 from typing import Optional
 from fastapi import APIRouter, Request, Form, Query, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
 from app.services.pedido_service import (
     listar_pedidos,
     obtener_pedido_por_id,
     listar_cotizaciones_enviadas,
-    cancelar_pedido,
 )
 from app.viewmodels.pedido import PedidoViewModel, CotizacionEnviadaViewModel
 from app.templates import templates
-from app.models import Producto, Pedido, ItemPedido
+from app.models import Producto, Pedido, ItemPedido, OrderEvent
 from app.services.notificacion_service import crear_notificacion
+from app.modules.orders.events import registrar_evento
 import uuid
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
@@ -25,7 +25,6 @@ def listar(
     pagina: int = Query(1, ge=1),
     por_pagina: int = Query(10, ge=1, le=50),
     estado: Optional[str] = None,
-    orden: str = Query("fecha"),
     db: Session = Depends(get_db),
     current_user: Optional[dict] = Depends(get_current_user),
 ):
@@ -40,7 +39,6 @@ def listar(
         por_pagina=por_pagina,
         comprador_email=comprador_email,
         estado=estado,
-        orden=orden,
     )
 
     pedidos_vm = [PedidoViewModel.from_orm(p) for p in pedidos_orm]
@@ -53,7 +51,6 @@ def listar(
         "total_paginas": total_paginas,
         "por_pagina": por_pagina,
         "estado_actual": estado,
-        "orden_actual": orden,
         "total_pedidos": total,
     })
 
@@ -64,7 +61,6 @@ def cotizaciones_enviadas(
     pagina: int = Query(1, ge=1),
     por_pagina: int = Query(15, ge=1, le=50),
     estado: Optional[str] = None,
-    orden: str = Query("fecha"),
     db: Session = Depends(get_db),
     current_user: Optional[dict] = Depends(get_current_user),
 ):
@@ -78,7 +74,6 @@ def cotizaciones_enviadas(
         pagina=pagina,
         por_pagina=por_pagina,
         estado=estado,
-        orden=orden,
     )
 
     items_vm = [CotizacionEnviadaViewModel.from_orm(item) for item in items]
@@ -91,7 +86,6 @@ def cotizaciones_enviadas(
         "total_paginas": total_paginas,
         "por_pagina": por_pagina,
         "estado_actual": estado or "",
-        "orden_actual": orden,
         "total_items": total,
     })
 
@@ -110,7 +104,6 @@ def detalle(
     if not pedido:
         return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
-    # Permitir ver el pedido al comprador o a la asociación dueña de los productos
     if current_user.get("email") != pedido.comprador_email:
         pertenece = any(
             item.producto and item.producto.asociacion_email == current_user.get("email")
@@ -120,29 +113,33 @@ def detalle(
             return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
 
     pedido_vm = PedidoViewModel.from_orm(pedido)
+
+    # Obtener eventos del pedido
+    eventos = db.query(OrderEvent).filter(OrderEvent.pedido_id == pedido_id).order_by(OrderEvent.fecha.asc()).all()
+
     return templates.TemplateResponse("pedidos/detalle.html", {
         "request": request,
         "pedido": pedido_vm,
+        "eventos": eventos,
     })
 
 
-@router.post("/cancelar/{pedido_id}")
-def cancelar_pedido_post(
-    request: Request,
-    pedido_id: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    if not current_user:
-        return RedirectResponse(url="/auth/login", status_code=303)
-
-    resultado = cancelar_pedido(db, pedido_id, current_user["email"])
-    if resultado == "pagado":
-        return RedirectResponse(url="/pedidos?error=pagado", status_code=303)
-    elif not resultado:
-        return RedirectResponse(url="/pedidos?error=no_encontrado", status_code=303)
-
-    return RedirectResponse(url="/pedidos?cancelado=1", status_code=303)
+@router.get("/{pedido_id}/eventos")
+def obtener_eventos(pedido_id: str, db: Session = Depends(get_db)):
+    """API JSON para consultar el historial de eventos de un pedido."""
+    eventos = db.query(OrderEvent).filter(OrderEvent.pedido_id == pedido_id).order_by(OrderEvent.fecha.asc()).all()
+    return [
+        {
+            "id": e.id,
+            "tipo": e.tipo,
+            "descripcion": e.descripcion,
+            "usuario_email": e.usuario_email,
+            "estado_anterior": e.estado_anterior,
+            "estado_nuevo": e.estado_nuevo,
+            "fecha": e.fecha.strftime("%d/%m/%Y %H:%M") if e.fecha else None,
+        }
+        for e in eventos
+    ]
 
 
 @router.post("/cotizar-servicio/{producto_id}")
@@ -178,6 +175,9 @@ def cotizar_servicio(
         precio_unitario_inicial=producto.precio
     ))
     db.commit()
+
+    # Registrar evento
+    registrar_evento(db, pedido.id, "order_created", usuario_email=comprador_email, estado_nuevo="pendiente", descripcion="Pedido de servicio creado")
 
     crear_notificacion(
         db,

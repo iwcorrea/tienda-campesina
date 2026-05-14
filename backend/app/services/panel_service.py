@@ -8,7 +8,8 @@ from app.services.contrato_service import generar_contrato_html, subir_contrato
 from app.services.factura_service import generar_factura_html, generar_numero_factura, subir_factura
 from app.services.notificacion_service import crear_notificacion
 from app.services.pedido_service import actualizar_estado_pedido_si_aplica
-from app.services.inventario_service import inicializar_stock, reservar_stock_por_cotizacion, cancelar_reserva_pedido
+from app.services.inventario_service import inicializar_stock, reservar_stock_por_cotizacion
+from app.modules.orders.events import registrar_evento
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
@@ -252,6 +253,7 @@ def guardar_respuesta_cotizacion(
         precio_total = cantidad_final * precio_unit
         asociacion_nombre = item.producto.asociacion.nombre if item.producto.asociacion else email_asociacion
 
+        # 1. Contrato
         html_contrato = generar_contrato_html(
             comprador_email=comprador_email,
             asociacion_nombre=asociacion_nombre,
@@ -269,6 +271,7 @@ def guardar_respuesta_cotizacion(
         except Exception:
             pass
 
+        # 2. Factura
         numero_factura = generar_numero_factura()
         items_factura = [{
             "producto_nombre": producto.nombre,
@@ -291,6 +294,7 @@ def guardar_respuesta_cotizacion(
         except Exception:
             pass
 
+        # 3. Notificación al comprador
         crear_notificacion(
             db,
             destinatario_email=comprador_email,
@@ -302,10 +306,24 @@ def guardar_respuesta_cotizacion(
     db.add(nueva)
     db.commit()
 
+    # 4. Actualizar estado del pedido si todos los ítems están aceptados
     actualizar_estado_pedido_si_aplica(db, item.pedido_id)
 
+    # 5. Reservar stock SOLO si es un producto físico
     if aceptado == "aceptado" and item.producto and item.producto.tipo == "producto":
         reservar_stock_por_cotizacion(db, item_id)
+
+    # 6. Registrar evento cuando se acepta la cotización
+    if aceptado == "aceptado":
+        registrar_evento(
+            db,
+            pedido_id=item.pedido.id,
+            tipo="order_confirmed",
+            usuario_email=email_asociacion,
+            estado_anterior="pendiente",
+            estado_nuevo="aceptado",
+            descripcion=f"Cotización aceptada para '{producto.nombre}'"
+        )
 
     return nueva
 
@@ -326,6 +344,7 @@ def cancelar_cotizacion_aceptada(db: Session, item_id: str, email_asociacion: st
         db.delete(r)
 
     if item.producto and item.producto.tipo == "producto":
+        from app.services.inventario_service import cancelar_reserva_pedido
         cancelar_reserva_pedido(db, item.pedido.id if item.pedido else "")
 
     pedido = item.pedido
@@ -352,6 +371,7 @@ def reenviar_enlace_pago(db: Session, pedido_id: str, email_asociacion: str) -> 
     if not pertenece:
         return False
 
+    from app.services.notificacion_service import crear_notificacion
     crear_notificacion(
         db,
         destinatario_email=pedido.comprador_email,
