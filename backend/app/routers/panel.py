@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, Form, File, UploadFile, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.dependencies import get_db, get_current_user
 from app.services.panel_service import (
@@ -15,14 +14,12 @@ from app.services.panel_service import (
     obtener_items_cotizacion_asociacion,
     obtener_item_para_responder,
     guardar_respuesta_cotizacion,
-    cancelar_cotizacion_aceptada,
-    reenviar_enlace_pago,
 )
 from app.services.transporte_service import asignar_transportista_a_pedido
-from app.services.notificacion_service import crear_notificacion
+from app.modules.notifications.service import crear_notificacion
 from app.viewmodels.panel import PanelViewModel, ProductoPanelViewModel
 from app.templates import templates
-from app.models import Producto, Pedido, Transportista, ItemPedido, ValoracionComprador
+from app.models import Producto, Pedido, Transportista, ItemPedido
 from app.services.inventario_service import (
     listar_inventario_asociacion,
     obtener_movimientos_producto,
@@ -171,19 +168,22 @@ def panel_cotizaciones(
 
     items = obtener_items_cotizacion_asociacion(db, current_user["email"])
 
+    # Obtener reputación de los compradores
+    from app.models import ValoracionComprador
+    from sqlalchemy import func
     reputaciones = {}
     compradores_unicos = set()
     for item in items:
-        email_comp = item["pedido"]["comprador_email"]
-        if email_comp:
-            compradores_unicos.add(email_comp)
+        if item["pedido"]["comprador_email"]:
+            compradores_unicos.add(item["pedido"]["comprador_email"])
 
-    for email_comp in compradores_unicos:
+    for email in compradores_unicos:
         avg = db.query(func.avg(ValoracionComprador.estrellas)).filter(
-            ValoracionComprador.comprador_email == email_comp
+            ValoracionComprador.comprador_email == email
         ).scalar()
-        reputaciones[email_comp] = round(float(avg), 1) if avg else None
+        reputaciones[email] = round(float(avg), 1) if avg else None
 
+    # Filtrar por estado según el parámetro
     if estado == "pendiente":
         items = [i for i in items if not i["respuesta_aceptada"]]
     elif estado == "aceptada":
@@ -276,34 +276,6 @@ def eliminar_cotizacion(
     return RedirectResponse(url="/panel/cotizaciones?eliminada=1", status_code=303)
 
 
-@router.post("/panel/cotizacion/cancelar-aceptada/{item_id}")
-def cancelar_aceptada(
-    request: Request,
-    item_id: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    if not current_user or current_user.get("tipo") != "asociacion":
-        return RedirectResponse(url="/auth/login", status_code=303)
-
-    cancelar_cotizacion_aceptada(db, item_id, current_user["email"])
-    return RedirectResponse(url="/panel/cotizaciones?cancelada=1", status_code=303)
-
-
-@router.post("/panel/pedido/reenviar-pago/{pedido_id}")
-def reenviar_pago(
-    request: Request,
-    pedido_id: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    if not current_user or current_user.get("tipo") != "asociacion":
-        return RedirectResponse(url="/auth/login", status_code=303)
-
-    reenviar_enlace_pago(db, pedido_id, current_user["email"])
-    return RedirectResponse(url="/panel/cotizaciones?reenviado=1", status_code=303)
-
-
 @router.get("/panel/asignar-transportista/{pedido_id}", response_class=HTMLResponse)
 def asignar_transportista_form(
     request: Request,
@@ -318,10 +290,12 @@ def asignar_transportista_form(
     if not pedido:
         return RedirectResponse(url="/panel/cotizaciones", status_code=303)
 
-    tiene_producto = any(
-        item.producto and item.producto.tipo == "producto"
-        for item in pedido.items
-    )
+    # Verificar que el pedido contenga al menos un producto físico
+    tiene_producto = False
+    for item in pedido.items:
+        if item.producto and item.producto.tipo == "producto":
+            tiene_producto = True
+            break
     if not tiene_producto:
         return RedirectResponse(url="/panel/cotizaciones?error=solo_servicios", status_code=303)
 
@@ -346,11 +320,13 @@ def asignar_transportista_procesar(
     if not current_user or current_user.get("tipo") != "asociacion":
         return RedirectResponse(url="/auth/login", status_code=303)
 
+    # Verificar nuevamente que sea válido
     pedido = db.query(Pedido).filter(Pedido.id == pedido_id).first()
-    tiene_producto = any(
-        item.producto and item.producto.tipo == "producto"
-        for item in pedido.items
-    )
+    tiene_producto = False
+    for item in pedido.items:
+        if item.producto and item.producto.tipo == "producto":
+            tiene_producto = True
+            break
     if not tiene_producto:
         return RedirectResponse(url="/panel/cotizaciones?error=solo_servicios", status_code=303)
 
@@ -364,9 +340,10 @@ def asignar_transportista_procesar(
     if transportista:
         crear_notificacion(
             db,
-            destinatario_email=transportista.email,
-            remitente_email=current_user["email"],
-            texto=f"Se te ha asignado un nuevo envío (Pedido #{pedido_id[:8]}). Costo de envío: ${costo_envio:,}.",
+            transportista.email,
+            "transport_assigned",
+            pedido_id,
+            {"pedido_id": pedido_id, "costo_envio": costo_envio}
         )
 
     return RedirectResponse(url="/panel/cotizaciones?transportista_asignado=1", status_code=303)
