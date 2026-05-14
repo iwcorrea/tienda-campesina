@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
-from app.routers import perfil, contactos, mensajes, notificaciones, transportistas, personas, asociacion, transportista_envios
+from app.routers import perfil, contactos, mensajes, notificaciones, transportistas, personas, transportista_envios
 
 router = APIRouter()
 router.include_router(perfil.router)
