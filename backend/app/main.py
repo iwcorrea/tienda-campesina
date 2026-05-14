@@ -7,6 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from app.modules.auth.router import router as auth_router
 from app.modules.users.router import router as users_router
+from app.modules.products.router import router as products_router
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
 from app.templates import templates
@@ -16,7 +17,7 @@ import time
 from sqlalchemy import text
 
 # Routers legacy que aún no se migran
-from app.routers import home, catalogo, dashboard, panel, valoraciones, admin, calculadora
+from app.routers import home, dashboard, admin, calculadora
 from app.routers import empleos, herramientas
 from app.routers import pedidos
 from app.routers import carrito
@@ -74,12 +75,10 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # ─── Routers ──────────────────────────────────────
 app.include_router(auth_router, prefix="/auth")          # módulo auth
-app.include_router(users_router)                         # módulo users (perfil, contactos, mensajes, notificaciones, transportistas, personas, asociación, envíos)
+app.include_router(users_router)                         # módulo users
+app.include_router(products_router)                      # módulo products (catálogo, panel, valoraciones)
 app.include_router(home.router)
-app.include_router(catalogo.router)
 app.include_router(dashboard.router)
-app.include_router(panel.router)
-app.include_router(valoraciones.router)
 app.include_router(admin.router)
 app.include_router(calculadora.router)
 app.include_router(empleos.router)
