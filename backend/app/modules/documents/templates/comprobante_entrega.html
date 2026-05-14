@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Comprobante de Entrega</title>
+<style>body{font-family:Arial;margin:2cm;} h1{color:#2d6a4f;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:8px;} th{background:#f2f2f2;}</style>
+</head>
+<body>
+<h1>Comprobante de Entrega</h1>
+<p><strong>Pedido N°:</strong> {{ pedido_id }}</p>
+<p><strong>Fecha de entrega:</strong> {{ fecha_entrega }}</p>
+<p><strong>Recibió:</strong> {{ recibio }}</p>
+<p><strong>Entregó:</strong> {{ entrego }}</p>
+<table>
+<tr><th>Producto</th><th>Cantidad</th><th>Estado</th></tr>
+{% for item in items %}
+<tr><td>{{ item.nombre }}</td><td>{{ item.cantidad }}</td><td>{{ item.estado }}</td></tr>
+{% endfor %}
+</table>
+<p>Firma: ____________________________</p>
+</body>
+</html>

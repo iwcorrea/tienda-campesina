@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session, selectinload
 from app.models import Asociacion, Producto, Transportista, TransportistaFavorito, ItemPedido, RespuestaCotizacion
@@ -10,6 +11,8 @@ from app.services.notificacion_service import crear_notificacion
 from app.services.pedido_service import actualizar_estado_pedido_si_aplica
 from app.services.inventario_service import inicializar_stock, reservar_stock_por_cotizacion
 from app.modules.orders.events import registrar_evento
+from app.modules.documents.generators import generar_html as generar_doc_html
+from app.modules.documents.service import crear_documento
 
 
 def obtener_asociacion_y_productos(db: Session, email: str) -> Optional[Asociacion]:
@@ -253,7 +256,7 @@ def guardar_respuesta_cotizacion(
         precio_total = cantidad_final * precio_unit
         asociacion_nombre = item.producto.asociacion.nombre if item.producto.asociacion else email_asociacion
 
-        # 1. Contrato
+        # 1. Contrato (ya existente)
         html_contrato = generar_contrato_html(
             comprador_email=comprador_email,
             asociacion_nombre=asociacion_nombre,
@@ -271,7 +274,7 @@ def guardar_respuesta_cotizacion(
         except Exception:
             pass
 
-        # 2. Factura
+        # 2. Factura (ya existente)
         numero_factura = generar_numero_factura()
         items_factura = [{
             "producto_nombre": producto.nombre,
@@ -324,6 +327,28 @@ def guardar_respuesta_cotizacion(
             estado_nuevo="aceptado",
             descripcion=f"Cotización aceptada para '{producto.nombre}'"
         )
+
+        # 7. Generar documentos automáticos (contrato_basico, cotizacion)
+        datos_contrato = {
+            "fecha": datetime.now().strftime("%d/%m/%Y"),
+            "vendedor": asociacion_nombre,
+            "comprador": comprador_email,
+            "items": [{"nombre": producto.nombre, "cantidad": cantidad_final, "precio_unit": precio_unit, "total": precio_total}],
+            "condiciones": f"Entrega estimada: {fecha_entrega or 'Por acordar'}"
+        }
+        html_contrato_doc = generar_doc_html("contrato_basico", datos_contrato)
+        crear_documento(db, "contrato_basico", item.pedido.id, email_asociacion, html_contrato_doc)
+
+        datos_cotizacion = {
+            "fecha": datetime.now().strftime("%d/%m/%Y"),
+            "cliente": comprador_email,
+            "producto": producto.nombre,
+            "cantidad": cantidad_final,
+            "precio": precio_total,
+            "condiciones": fecha_entrega or "Por acordar"
+        }
+        html_cotizacion_doc = generar_doc_html("cotizacion", datos_cotizacion)
+        crear_documento(db, "cotizacion", item.pedido.id, email_asociacion, html_cotizacion_doc)
 
     return nueva
 

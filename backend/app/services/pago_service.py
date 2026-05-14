@@ -10,6 +10,8 @@ from app.models import Pago, Comision, Pedido, Transportista
 from app.services.notificacion_service import crear_notificacion
 from app.services.inventario_service import salida_stock_por_pedido
 from app.modules.orders.events import registrar_evento
+from app.modules.documents.generators import generar_html as generar_doc_html
+from app.modules.documents.service import crear_documento
 
 COMISION_PLATAFORMA = 8
 WOMPI_API_URL = "https://api.wompi.sv"
@@ -132,6 +134,18 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
             estado_nuevo="pagado",
             descripcion=f"Pago confirmado por ${pago.monto_total:,}"
         )
+
+        # Generar factura
+        datos_factura = {
+            "numero": f"FAC-{pago.wompi_referencia}",
+            "fecha": datetime.now().strftime("%d/%m/%Y"),
+            "vendedor": asociacion_email,
+            "comprador": pago.comprador_email,
+            "items": [{"nombre": "Pedido " + pago.pedido_id[:8], "cantidad": 1, "precio_unit": pago.monto_total, "subtotal": pago.monto_total}],
+            "total": pago.monto_total,
+        }
+        html_factura = generar_doc_html("factura", datos_factura)
+        crear_documento(db, "factura", pago.pedido_id, pago.comprador_email, html_factura)
 
         # Registrar salida de inventario (convierte reserva en salida real)
         salida_stock_por_pedido(db, pago.pedido_id)
