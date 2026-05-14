@@ -1,5 +1,6 @@
 import uuid
 import re
+import time
 from datetime import datetime, timezone
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -14,15 +15,6 @@ router = APIRouter()
 
 # ─── VALIDADOR DE CONTRASEÑA ──────────────────────
 def validar_contraseña(password: str):
-    """
-    Valida que la contraseña cumpla con los lineamientos de Google:
-    - Mínimo 12 caracteres
-    - Al menos una letra mayúscula
-    - Al menos una letra minúscula
-    - Al menos un número
-    - Al menos un símbolo especial (ASCII)
-    Retorna (True, "") si es válida, o (False, mensaje) si no.
-    """
     if len(password) < 12:
         return False, "La contraseña debe tener al menos 12 caracteres."
     if not re.search(r'[A-Z]', password):
@@ -50,24 +42,25 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), d
         request.session["usuario"] = email
         request.session["tipo_usuario"] = "asociacion"
         request.session["nombre_usuario"] = asociacion.nombre or email
+        request.session["last_activity"] = time.time()
         if email == "admin@example.com":
             request.session["es_admin"] = True
         return RedirectResponse(url="/dashboard", status_code=303)
 
-    # Intentar como persona
     persona = db.query(Persona).filter(Persona.email == email).first()
     if persona and bcrypt.checkpw(password.encode(), persona.hashed_password.encode()):
         request.session["usuario"] = email
         request.session["tipo_usuario"] = "persona"
         request.session["nombre_usuario"] = persona.nombre or email
+        request.session["last_activity"] = time.time()
         return RedirectResponse(url="/catalogo", status_code=303)
 
-    # Intentar como transportista
     transportista = db.query(Transportista).filter(Transportista.email == email).first()
     if transportista and bcrypt.checkpw(password.encode(), transportista.hashed_password.encode()):
         request.session["usuario"] = email
         request.session["tipo_usuario"] = "transportista"
         request.session["nombre_usuario"] = transportista.nombre or email
+        request.session["last_activity"] = time.time()
         return RedirectResponse(url="/perfil-transportista", status_code=303)
 
     return templates.TemplateResponse("login.html", {
@@ -100,7 +93,6 @@ def registro_asociacion(
     telefono: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    # Validar contraseña segura
     valida, msg = validar_contraseña(password)
     if not valida:
         return templates.TemplateResponse("registro.html", {
@@ -279,7 +271,6 @@ def cambiar_password(
             "error": msg,
         })
 
-    # Buscar el usuario en los tres tipos
     usuario = db.query(Asociacion).filter(Asociacion.email == email).first()
     if not usuario:
         usuario = db.query(Persona).filter(Persona.email == email).first()
