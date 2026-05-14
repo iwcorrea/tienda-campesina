@@ -1,27 +1,63 @@
 {% extends "base.html" %}
 {% block title %}Nueva contraseña{% endblock %}
 {% block content %}
-<div class="modern-section">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <h2 class="fw-bold mb-4">🔐 Nueva contraseña</h2>
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <form method="post" action="/auth/recuperar-nueva">
-                        <div class="mb-3">
-                            <label class="form-label">Nueva contraseña</label>
-                            <input type="password" name="password_nueva" class="form-control" required minlength="6">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Confirmar contraseña</label>
-                            <input type="password" name="password_repite" class="form-control" required minlength="6">
-                        </div>
-                        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
-                        <button type="submit" class="btn btn-success w-100">Cambiar contraseña</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+<div class="modern-section" style="max-width:500px; margin:0 auto;">
+    <h2 class="fw-bold mb-4">🔑 Nueva contraseña</h2>
+
+    {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
     </div>
+    {% endif %}
+
+    <form method="post" action="/auth/recuperar-nueva" onsubmit="return validarFormulario()">
+        <input type="hidden" name="token" value="{{ token }}">
+        <div class="mb-3">
+            <label for="password" class="form-label">Nueva contraseña</label>
+            <input type="password" class="form-control rounded-pill" id="password" name="password" required
+                   pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};:'&quot;,.<>/?\\|`~]).{12,}$"
+                   title="La contraseña debe tener al menos 12 caracteres, una mayúscula, una minúscula, un número y un símbolo especial.">
+            <small class="text-muted">Mínimo 12 caracteres, una mayúscula, una minúscula, un número y un símbolo (ej: ! @ # $ %).</small>
+        </div>
+        <div class="mb-3">
+            <label for="password_confirmacion" class="form-label">Confirmar contraseña</label>
+            <input type="password" class="form-control rounded-pill" id="password_confirmacion" name="password_confirmacion" required>
+        </div>
+        <button type="submit" class="btn btn-success rounded-pill w-100 py-2 fw-bold">Guardar contraseña</button>
+    </form>
 </div>
+
+<script>
+function validarFormulario() {
+    var password = document.getElementById('password').value;
+    var confirmacion = document.getElementById('password_confirmacion').value;
+
+    if (password.length < 12) {
+        alert('La contraseña debe tener al menos 12 caracteres.');
+        return false;
+    }
+    if (!/[A-Z]/.test(password)) {
+        alert('La contraseña debe incluir al menos una letra mayúscula.');
+        return false;
+    }
+    if (!/[a-z]/.test(password)) {
+        alert('La contraseña debe incluir al menos una letra minúscula.');
+        return false;
+    }
+    if (!/[0-9]/.test(password)) {
+        alert('La contraseña debe incluir al menos un número.');
+        return false;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};:'",.<>/?\\|`~]/.test(password)) {
+        alert('La contraseña debe incluir al menos un símbolo especial (ej: ! @ # $ %).');
+        return false;
+    }
+    if (password !== confirmacion) {
+        alert('Las contraseñas no coinciden.');
+        return false;
+    }
+    return true;
+}
+</script>
 {% endblock %}

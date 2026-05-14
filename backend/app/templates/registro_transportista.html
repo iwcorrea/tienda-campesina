@@ -1,63 +1,90 @@
 {% extends "base.html" %}
 {% block title %}Registro de Transportista{% endblock %}
 {% block content %}
-<div class="modern-section">
+<div class="modern-section" style="max-width:500px; margin:0 auto;">
     <h2 class="fw-bold mb-4">🚚 Registro de Transportista</h2>
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
-            <form action="/auth/registro-transportista" method="post" enctype="multipart/form-data">
-                <div class="mb-3">
-                    <label class="form-label">Email *</label>
-                    <input type="email" name="email" class="form-control" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Contraseña *</label>
-                    <input type="password" name="password" class="form-control" minlength="8" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Nombre completo *</label>
-                    <input type="text" name="nombre" class="form-control" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Teléfono</label>
-                    <input type="text" name="telefono" class="form-control" placeholder="Opcional">
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Tipo de vehículo *</label>
-                        <select name="tipo_vehiculo" class="form-select mb-3">
-                            <option value="moto">🏍️ Moto</option>
-                            <option value="camioneta" selected>🚗 Camioneta</option>
-                            <option value="camion">🚛 Camión</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Capacidad de carga *</label>
-                        <input type="text" name="capacidad" class="form-control mb-3" value="500 kg" required>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Zona de cobertura *</label>
-                    <input type="text" name="zona_cobertura" class="form-control" placeholder="Ej: Tierralta – Montería" required>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Tarifa base (COP) *</label>
-                        <input type="number" name="tarifa_base" class="form-control mb-3" value="5000" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Costo por kilómetro (COP) *</label>
-                        <input type="number" name="costo_km" class="form-control mb-3" value="1500" required>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Documento (licencia/SOAT) – opcional</label>
-                    <input type="file" name="documento" class="form-control" accept=".pdf,.jpg,.png">
-                </div>
-                <button type="submit" class="btn btn-success w-100">Registrarse como transportista</button>
-            </form>
-            {% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}
-        </div>
+
+    {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
     </div>
+    {% endif %}
+
+    <form method="post" action="/auth/registro-transportista" onsubmit="return validarFormulario()">
+        <div class="mb-3">
+            <label for="email" class="form-label">Correo electrónico</label>
+            <input type="email" class="form-control rounded-pill" id="email" name="email" value="{{ email or '' }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Contraseña</label>
+            <input type="password" class="form-control rounded-pill" id="password" name="password" required
+                   pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};:'&quot;,.<>/?\\|`~]).{12,}$"
+                   title="La contraseña debe tener al menos 12 caracteres, una mayúscula, una minúscula, un número y un símbolo especial.">
+            <small class="text-muted">Mínimo 12 caracteres, una mayúscula, una minúscula, un número y un símbolo (ej: ! @ # $ %).</small>
+        </div>
+        <div class="mb-3">
+            <label for="nombre" class="form-label">Nombre completo</label>
+            <input type="text" class="form-control rounded-pill" id="nombre" name="nombre" value="{{ nombre or '' }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="telefono" class="form-label">Teléfono</label>
+            <input type="text" class="form-control rounded-pill" id="telefono" name="telefono" value="{{ telefono or '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="tipo_vehiculo" class="form-label">Tipo de vehículo</label>
+            <select class="form-select rounded-pill" id="tipo_vehiculo" name="tipo_vehiculo">
+                <option value="camioneta">Camioneta</option>
+                <option value="camion">Camión</option>
+                <option value="moto">Moto</option>
+                <option value="bicicleta">Bicicleta</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="capacidad" class="form-label">Capacidad</label>
+            <input type="text" class="form-control rounded-pill" id="capacidad" name="capacidad" placeholder="Ej: 500 kg">
+        </div>
+        <div class="mb-3">
+            <label for="zona_cobertura" class="form-label">Zona de cobertura</label>
+            <input type="text" class="form-control rounded-pill" id="zona_cobertura" name="zona_cobertura" placeholder="Ej: Local, Regional">
+        </div>
+        <div class="mb-3">
+            <label for="tarifa_base" class="form-label">Tarifa base ($COP)</label>
+            <input type="number" class="form-control rounded-pill" id="tarifa_base" name="tarifa_base" min="0" value="5000">
+        </div>
+        <div class="mb-3">
+            <label for="costo_km" class="form-label">Costo por km ($COP)</label>
+            <input type="number" class="form-control rounded-pill" id="costo_km" name="costo_km" min="0" value="1500">
+        </div>
+        <button type="submit" class="btn btn-success rounded-pill w-100 py-2 fw-bold">Registrarme</button>
+    </form>
+    <p class="text-muted mt-3 text-center">¿Ya tienes cuenta? <a href="/auth/login">Inicia sesión</a></p>
 </div>
+
+<script>
+function validarFormulario() {
+    var password = document.getElementById('password').value;
+    if (password.length < 12) {
+        alert('La contraseña debe tener al menos 12 caracteres.');
+        return false;
+    }
+    if (!/[A-Z]/.test(password)) {
+        alert('La contraseña debe incluir al menos una letra mayúscula.');
+        return false;
+    }
+    if (!/[a-z]/.test(password)) {
+        alert('La contraseña debe incluir al menos una letra minúscula.');
+        return false;
+    }
+    if (!/[0-9]/.test(password)) {
+        alert('La contraseña debe incluir al menos un número.');
+        return false;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};:'",.<>/?\\|`~]/.test(password)) {
+        alert('La contraseña debe incluir al menos un símbolo especial (ej: ! @ # $ %).');
+        return false;
+    }
+    return true;
+}
+</script>
 {% endblock %}
