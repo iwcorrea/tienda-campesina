@@ -37,12 +37,12 @@ def validar_contraseña(password: str):
 
 
 # ─── LOGIN ────────────────────────────────────────
-@router.get("/auth/login", response_class=HTMLResponse)
+@router.get("/login", response_class=HTMLResponse)
 def login_form(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 
-@router.post("/auth/login")
+@router.post("/login")
 def login(request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     # Intentar autenticar como asociación
     asociacion = db.query(Asociacion).filter(Asociacion.email == email).first()
@@ -50,7 +50,7 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), d
         request.session["usuario"] = email
         request.session["tipo_usuario"] = "asociacion"
         request.session["nombre_usuario"] = asociacion.nombre or email
-        if email == "admin@example.com":           # ajusta según tu lógica de admin
+        if email == "admin@example.com":
             request.session["es_admin"] = True
         return RedirectResponse(url="/dashboard", status_code=303)
 
@@ -77,19 +77,19 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), d
 
 
 # ─── LOGOUT ───────────────────────────────────────
-@router.get("/auth/logout")
+@router.get("/logout")
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/", status_code=303)
 
 
 # ─── REGISTRO ASOCIACIÓN ──────────────────────────
-@router.get("/auth/registro", response_class=HTMLResponse)
+@router.get("/registro", response_class=HTMLResponse)
 def registro_asociacion_form(request: Request):
     return templates.TemplateResponse("registro.html", {"request": request})
 
 
-@router.post("/auth/registro")
+@router.post("/registro")
 def registro_asociacion(
     request: Request,
     email: str = Form(...),
@@ -141,12 +141,12 @@ def registro_asociacion(
 
 
 # ─── REGISTRO PERSONA ─────────────────────────────
-@router.get("/auth/registro-persona", response_class=HTMLResponse)
+@router.get("/registro-persona", response_class=HTMLResponse)
 def registro_persona_form(request: Request):
     return templates.TemplateResponse("registro_persona.html", {"request": request})
 
 
-@router.post("/auth/registro-persona")
+@router.post("/registro-persona")
 def registro_persona(
     request: Request,
     email: str = Form(...),
@@ -189,12 +189,12 @@ def registro_persona(
 
 
 # ─── REGISTRO TRANSPORTISTA ───────────────────────
-@router.get("/auth/registro-transportista", response_class=HTMLResponse)
+@router.get("/registro-transportista", response_class=HTMLResponse)
 def registro_transportista_form(request: Request):
     return templates.TemplateResponse("registro_transportista.html", {"request": request})
 
 
-@router.post("/auth/registro-transportista")
+@router.post("/registro-transportista")
 def registro_transportista(
     request: Request,
     email: str = Form(...),
@@ -247,14 +247,14 @@ def registro_transportista(
 
 
 # ─── CAMBIAR CONTRASEÑA ───────────────────────────
-@router.get("/auth/cambiar-password", response_class=HTMLResponse)
+@router.get("/cambiar-password", response_class=HTMLResponse)
 def cambiar_password_form(request: Request):
     if not request.session.get("usuario"):
         return RedirectResponse(url="/auth/login", status_code=303)
     return templates.TemplateResponse("cambiar_password.html", {"request": request})
 
 
-@router.post("/auth/cambiar-password")
+@router.post("/cambiar-password")
 def cambiar_password(
     request: Request,
     password_actual: str = Form(...),
