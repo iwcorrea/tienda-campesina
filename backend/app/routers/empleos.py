@@ -13,7 +13,7 @@ from app.services.empleo_service import (
     obtener_postulantes,
     seleccionar_candidato,
 )
-from app.services.notificacion_service import crear_notificacion
+from app.modules.notifications.service import crear_notificacion
 from app.viewmodels.empleo import VacanteViewModel
 from app.templates import templates
 

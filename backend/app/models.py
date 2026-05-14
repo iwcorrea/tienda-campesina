@@ -299,15 +299,7 @@ class Bloqueo(Base):
     bloqueado_email = Column(String, nullable=False)
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))    
 
-class NotificacionSistema(Base):
-    __tablename__ = "notificaciones_sistema"
-
-    id = Column(String, primary_key=True, default=generate_uuid)
-    destinatario_email = Column(String, nullable=False, index=True)
-    texto = Column(Text, nullable=False)
-    leido = Column(String, default="0")
-    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    url = Column(Text, default="")    
+ 
 class Pago(Base):
     """
     Representa un pago realizado por un comprador para un pedido específico.

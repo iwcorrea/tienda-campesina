@@ -7,7 +7,7 @@ import cloudinary.uploader
 from app.cloudinary_utils import delete_cloudinary_asset
 from app.services.contrato_service import generar_contrato_html, subir_contrato
 from app.services.factura_service import generar_factura_html, generar_numero_factura, subir_factura
-from app.services.notificacion_service import crear_notificacion
+from app.modules.notifications.service import crear_notificacion
 from app.services.pedido_service import actualizar_estado_pedido_si_aplica
 from app.services.inventario_service import inicializar_stock, reservar_stock_por_cotizacion
 from app.modules.orders.events import registrar_evento
@@ -396,7 +396,7 @@ def reenviar_enlace_pago(db: Session, pedido_id: str, email_asociacion: str) -> 
     if not pertenece:
         return False
 
-    from app.services.notificacion_service import crear_notificacion
+    from app.modules.notifications.service import crear_notificacion
     crear_notificacion(
         db,
         destinatario_email=pedido.comprador_email,

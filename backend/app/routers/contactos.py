@@ -13,7 +13,7 @@ from app.services.contacto_service import (
     rechazar_solicitud,
     cancelar_solicitud,
 )
-from app.services.notificacion_service import crear_notificacion
+from app.modules.notifications.service import crear_notificacion
 from app.templates import templates
 
 router = APIRouter(prefix="/contactos", tags=["contactos"])

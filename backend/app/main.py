@@ -21,7 +21,7 @@ import cloudinary
 import time
 from sqlalchemy import text
 
-# Routers legacy que aún no se migran
+# Routers legacy
 from app.routers import home, admin, calculadora
 from app.routers import empleos, herramientas
 from app.routers import ayuda
@@ -30,21 +30,14 @@ from app.routers import noticias
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
-
 cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
-
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
-# ─── MANEJO GLOBAL DE ERRORES ──
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logging.error(f"Error no manejado: {exc}", exc_info=True)
-    return HTMLResponse(
-        content=templates.get_template("500.html").render({"request": request}),
-        status_code=500
-    )
+    return HTMLResponse(content=templates.get_template("500.html").render({"request": request}), status_code=500)
 
-# ─── MIDDLEWARE COMBINADO ──
 @app.middleware("http")
 async def timeout_y_configuracion(request: Request, call_next):
     db = SessionLocal()
@@ -58,7 +51,6 @@ async def timeout_y_configuracion(request: Request, call_next):
         request.state.config = config
     finally:
         db.close()
-
     if "usuario" in request.session and "last_activity" in request.session:
         last_activity = request.session["last_activity"]
         now = time.time()
@@ -66,16 +58,13 @@ async def timeout_y_configuracion(request: Request, call_next):
             request.session.clear()
             return RedirectResponse(url="/auth/login", status_code=303)
         request.session["last_activity"] = now
-
     response = await call_next(request)
     return response
 
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, same_site="lax", https_only=True)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# ─── Routers ──────────────────────────────────────
 app.include_router(auth_router, prefix="/auth")
 app.include_router(users_router)
 app.include_router(products_router)
@@ -92,19 +81,15 @@ app.include_router(herramientas.router)
 app.include_router(ayuda.router)
 app.include_router(noticias.router)
 
-
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
-
     with engine.connect() as conn:
         # Configuracion
         existing = set()
         rows = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'"))
-        for row in rows:
-            existing.add(row[0])
-        model_columns = Configuracion.__table__.columns
-        for col in model_columns:
+        for row in rows: existing.add(row[0])
+        for col in Configuracion.__table__.columns:
             if col.name not in existing:
                 col_type = col.type.compile(dialect=engine.dialect)
                 sql = f'ALTER TABLE configuracion ADD COLUMN IF NOT EXISTS {col.name} {col_type}'
@@ -113,8 +98,7 @@ def on_startup():
         # Asociaciones
         existing_asoc = set()
         rows_asoc = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='asociaciones'"))
-        for row in rows_asoc:
-            existing_asoc.add(row[0])
+        for row in rows_asoc: existing_asoc.add(row[0])
         for col_name in ["pregunta_secreta", "respuesta_secreta_hash"]:
             if col_name not in existing_asoc:
                 sql = f'ALTER TABLE asociaciones ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
@@ -123,8 +107,7 @@ def on_startup():
         # Personas
         existing_pers = set()
         rows_pers = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='personas'"))
-        for row in rows_pers:
-            existing_pers.add(row[0])
+        for row in rows_pers: existing_pers.add(row[0])
         for col_name in ["pregunta_secreta", "respuesta_secreta_hash"]:
             if col_name not in existing_pers:
                 sql = f'ALTER TABLE personas ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
@@ -133,245 +116,68 @@ def on_startup():
         # Transportistas
         existing_trans = set()
         rows_trans = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='transportistas'"))
-        if rows_trans.rowcount > 0:
-            for row in rows_trans:
-                existing_trans.add(row[0])
-            for col_name in ["documento_url"]:
-                if col_name not in existing_trans:
-                    sql = f'ALTER TABLE transportistas ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
-                    conn.execute(text(sql))
+        for row in rows_trans: existing_trans.add(row[0])
+        if "documento_url" not in existing_trans:
+            conn.execute(text("ALTER TABLE transportistas ADD COLUMN IF NOT EXISTS documento_url TEXT DEFAULT ''"))
 
         # Vacantes
         existing_vac = set()
         rows_vac = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='vacantes'"))
-        for row in rows_vac:
-            existing_vac.add(row[0])
-        for col_name, col_type in [
-            ("tipo_contrato", "TEXT DEFAULT 'termino_fijo'"),
-            ("jornada", "TEXT DEFAULT 'completa'"),
-            ("requisitos", "TEXT DEFAULT ''"),
-            ("terminos_url", "TEXT DEFAULT ''")
-        ]:
+        for row in rows_vac: existing_vac.add(row[0])
+        for col_name, col_type in [("tipo_contrato","TEXT DEFAULT 'termino_fijo'"),("jornada","TEXT DEFAULT 'completa'"),("requisitos","TEXT DEFAULT ''"),("terminos_url","TEXT DEFAULT ''")]:
             if col_name not in existing_vac:
                 sql = f'ALTER TABLE vacantes ADD COLUMN IF NOT EXISTS {col_name} {col_type}'
                 conn.execute(text(sql))
 
-        # RespuestasCotizacion (contrato_url, factura_url)
+        # RespuestasCotizacion
         existing_resp = set()
         rows_resp = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='respuestas_cotizaciones'"))
-        for row in rows_resp:
-            existing_resp.add(row[0])
-        for col_name in ["contrato_url", "factura_url"]:
+        for row in rows_resp: existing_resp.add(row[0])
+        for col_name in ["contrato_url","factura_url"]:
             if col_name not in existing_resp:
                 sql = f'ALTER TABLE respuestas_cotizaciones ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))
 
-        # Pedidos (transportista_id, estado_envio, costo_envio)
+        # Pedidos
         existing_ped = set()
         rows_ped = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='pedidos'"))
-        for row in rows_ped:
-            existing_ped.add(row[0])
-        for col_name in ["transportista_id", "estado_envio", "costo_envio"]:
+        for row in rows_ped: existing_ped.add(row[0])
+        for col_name in ["transportista_id","estado_envio","costo_envio"]:
             if col_name not in existing_ped:
                 sql = f'ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS {col_name} TEXT DEFAULT \'\''
                 conn.execute(text(sql))
 
-        # Pagos (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS pagos (
-                id VARCHAR PRIMARY KEY,
-                pedido_id VARCHAR NOT NULL REFERENCES pedidos(id),
-                comprador_email VARCHAR NOT NULL,
-                monto_total INTEGER NOT NULL,
-                comision_plataforma INTEGER NOT NULL,
-                monto_vendedor INTEGER NOT NULL,
-                estado VARCHAR DEFAULT 'pendiente',
-                wompi_transaccion_id VARCHAR,
-                wompi_referencia VARCHAR,
-                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                fecha_confirmacion TIMESTAMP WITH TIME ZONE
-            )
-        """))
-
-        # Comisiones (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS comisiones (
-                id VARCHAR PRIMARY KEY,
-                pago_id VARCHAR NOT NULL REFERENCES pagos(id),
-                pedido_id VARCHAR NOT NULL REFERENCES pedidos(id),
-                asociacion_email VARCHAR NOT NULL REFERENCES asociaciones(email),
-                comprador_email VARCHAR NOT NULL,
-                monto_venta INTEGER NOT NULL,
-                porcentaje_comision INTEGER NOT NULL,
-                monto_comision INTEGER NOT NULL,
-                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )
-        """))
-
-        # MovimientosInventario (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS movimientos_inventario (
-                id VARCHAR PRIMARY KEY,
-                producto_id VARCHAR NOT NULL REFERENCES productos(id),
-                asociacion_email VARCHAR NOT NULL REFERENCES asociaciones(email),
-                tipo VARCHAR NOT NULL,
-                cantidad INTEGER NOT NULL,
-                stock_anterior INTEGER DEFAULT 0,
-                stock_nuevo INTEGER DEFAULT 0,
-                referencia VARCHAR DEFAULT '',
-                fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )
-        """))
-
-        # ValoracionesComprador (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS valoraciones_compradores (
-                id VARCHAR PRIMARY KEY,
-                comprador_email VARCHAR NOT NULL,
-                asociacion_email VARCHAR NOT NULL,
-                pedido_id VARCHAR NOT NULL,
-                estrellas INTEGER NOT NULL,
-                comentario TEXT DEFAULT '',
-                fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                FOREIGN KEY (asociacion_email) REFERENCES asociaciones(email),
-                FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
-            )
-        """))
-
-        # SolicitudesContacto (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS solicitudes_contacto (
-                id VARCHAR PRIMARY KEY,
-                solicitante_email VARCHAR NOT NULL,
-                receptor_email VARCHAR NOT NULL,
-                estado VARCHAR DEFAULT 'pendiente',
-                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )
-        """))
-
-        # Bloqueos (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS bloqueos (
-                id VARCHAR PRIMARY KEY,
-                bloqueador_email VARCHAR NOT NULL,
-                bloqueado_email VARCHAR NOT NULL,
-                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )
-        """))
-
-        # NotificacionesSistema (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS notificaciones_sistema (
-                id VARCHAR PRIMARY KEY,
-                destinatario_email VARCHAR NOT NULL,
-                texto TEXT NOT NULL,
-                leido VARCHAR DEFAULT '0',
-                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                url TEXT DEFAULT ''
-            )
-        """))
-
-        # Contactos (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS contactos (
-                id VARCHAR PRIMARY KEY,
-                usuario_email VARCHAR NOT NULL,
-                contacto_email VARCHAR NOT NULL,
-                tipo_relacion VARCHAR DEFAULT 'contacto',
-                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )
-        """))
-
-        # OrderEvents (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS order_events (
-                id VARCHAR PRIMARY KEY,
-                pedido_id VARCHAR NOT NULL REFERENCES pedidos(id),
-                tipo VARCHAR NOT NULL,
-                descripcion TEXT DEFAULT '',
-                usuario_email VARCHAR,
-                estado_anterior VARCHAR,
-                estado_nuevo VARCHAR,
-                metadata_extra TEXT DEFAULT '',
-                fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )
-        """))
-
-        # Productos (columna stock)
+        # Pagos
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS pagos (id VARCHAR PRIMARY KEY, pedido_id VARCHAR NOT NULL REFERENCES pedidos(id), comprador_email VARCHAR NOT NULL, monto_total INTEGER NOT NULL, comision_plataforma INTEGER NOT NULL, monto_vendedor INTEGER NOT NULL, estado VARCHAR DEFAULT 'pendiente', wompi_transaccion_id VARCHAR, wompi_referencia VARCHAR, fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(), fecha_confirmacion TIMESTAMP WITH TIME ZONE)"""))
+        # Comisiones
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS comisiones (id VARCHAR PRIMARY KEY, pago_id VARCHAR NOT NULL REFERENCES pagos(id), pedido_id VARCHAR NOT NULL REFERENCES pedidos(id), asociacion_email VARCHAR NOT NULL REFERENCES asociaciones(email), comprador_email VARCHAR NOT NULL, monto_venta INTEGER NOT NULL, porcentaje_comision INTEGER NOT NULL, monto_comision INTEGER NOT NULL, fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW())"""))
+        # MovimientosInventario
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS movimientos_inventario (id VARCHAR PRIMARY KEY, producto_id VARCHAR NOT NULL REFERENCES productos(id), asociacion_email VARCHAR NOT NULL REFERENCES asociaciones(email), tipo VARCHAR NOT NULL, cantidad INTEGER NOT NULL, stock_anterior INTEGER DEFAULT 0, stock_nuevo INTEGER DEFAULT 0, referencia VARCHAR DEFAULT '', fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW())"""))
+        # ValoracionesComprador
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS valoraciones_compradores (id VARCHAR PRIMARY KEY, comprador_email VARCHAR NOT NULL, asociacion_email VARCHAR NOT NULL, pedido_id VARCHAR NOT NULL, estrellas INTEGER NOT NULL, comentario TEXT DEFAULT '', fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW(), FOREIGN KEY (asociacion_email) REFERENCES asociaciones(email), FOREIGN KEY (pedido_id) REFERENCES pedidos(id))"""))
+        # SolicitudesContacto
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS solicitudes_contacto (id VARCHAR PRIMARY KEY, solicitante_email VARCHAR NOT NULL, receptor_email VARCHAR NOT NULL, estado VARCHAR DEFAULT 'pendiente', fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW())"""))
+        # Bloqueos
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS bloqueos (id VARCHAR PRIMARY KEY, bloqueador_email VARCHAR NOT NULL, bloqueado_email VARCHAR NOT NULL, fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW())"""))
+        # Contactos
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS contactos (id VARCHAR PRIMARY KEY, usuario_email VARCHAR NOT NULL, contacto_email VARCHAR NOT NULL, tipo_relacion VARCHAR DEFAULT 'contacto', fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW())"""))
+        # OrderEvents
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS order_events (id VARCHAR PRIMARY KEY, pedido_id VARCHAR NOT NULL REFERENCES pedidos(id), tipo VARCHAR NOT NULL, descripcion TEXT DEFAULT '', usuario_email VARCHAR, estado_anterior VARCHAR, estado_nuevo VARCHAR, metadata_extra TEXT DEFAULT '', fecha TIMESTAMP WITH TIME ZONE DEFAULT NOW())"""))
+        # Documentos
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS documentos (id VARCHAR PRIMARY KEY, tipo VARCHAR NOT NULL, pedido_id VARCHAR NOT NULL REFERENCES pedidos(id), usuario_generador VARCHAR NOT NULL, fecha_generacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(), estado VARCHAR DEFAULT 'generado', metadata_extra TEXT DEFAULT '', storage_url TEXT DEFAULT '', version INTEGER DEFAULT 1)"""))
+        # Notificaciones
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS notificaciones (id VARCHAR PRIMARY KEY, usuario_email VARCHAR NOT NULL, tipo_evento VARCHAR NOT NULL, canal VARCHAR DEFAULT 'in_app', estado VARCHAR DEFAULT 'pending', titulo TEXT DEFAULT '', contenido TEXT DEFAULT '', referencia_pedido_id VARCHAR, fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(), fecha_envio TIMESTAMP WITH TIME ZONE, fecha_lectura TIMESTAMP WITH TIME ZONE)"""))
+        # ChatRooms
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS chat_rooms (id VARCHAR PRIMARY KEY, pedido_id VARCHAR REFERENCES pedidos(id), producto_id VARCHAR REFERENCES productos(id), tipo VARCHAR DEFAULT 'pedido', estado VARCHAR DEFAULT 'activa', fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW())"""))
+        # ChatParticipantes
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS chat_participantes (id VARCHAR PRIMARY KEY, room_id VARCHAR NOT NULL REFERENCES chat_rooms(id), usuario_email VARCHAR NOT NULL, rol VARCHAR DEFAULT 'participante', fecha_union TIMESTAMP WITH TIME ZONE DEFAULT NOW())"""))
+        # ChatMessages
+        conn.execute(text("""CREATE TABLE IF NOT EXISTS chat_messages (id VARCHAR PRIMARY KEY, room_id VARCHAR NOT NULL REFERENCES chat_rooms(id), remitente_email VARCHAR NOT NULL, tipo VARCHAR DEFAULT 'texto', contenido TEXT DEFAULT '', attachment_url TEXT DEFAULT '', metadata_extra TEXT DEFAULT '', fecha_envio TIMESTAMP WITH TIME ZONE DEFAULT NOW())"""))
+        # Productos stock
         existing_prod = set()
         rows_prod = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='productos'"))
-        for row in rows_prod:
-            existing_prod.add(row[0])
+        for row in rows_prod: existing_prod.add(row[0])
         if "stock" not in existing_prod:
             conn.execute(text("ALTER TABLE productos ADD COLUMN stock INTEGER DEFAULT 0"))
-
-        # Documentos (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS documentos (
-                id VARCHAR PRIMARY KEY,
-                tipo VARCHAR NOT NULL,
-                pedido_id VARCHAR NOT NULL REFERENCES pedidos(id),
-                usuario_generador VARCHAR NOT NULL,
-                fecha_generacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                estado VARCHAR DEFAULT 'generado',
-                metadata_extra TEXT DEFAULT '',
-                storage_url TEXT DEFAULT '',
-                version INTEGER DEFAULT 1
-            )
-        """))
-
-        # Notificaciones (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS notificaciones (
-                id VARCHAR PRIMARY KEY,
-                usuario_email VARCHAR NOT NULL,
-                tipo_evento VARCHAR NOT NULL,
-                canal VARCHAR DEFAULT 'in_app',
-                estado VARCHAR DEFAULT 'pending',
-                titulo TEXT DEFAULT '',
-                contenido TEXT DEFAULT '',
-                referencia_pedido_id VARCHAR,
-                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                fecha_envio TIMESTAMP WITH TIME ZONE,
-                fecha_lectura TIMESTAMP WITH TIME ZONE
-            )
-        """))
-
-        # ChatRooms (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS chat_rooms (
-                id VARCHAR PRIMARY KEY,
-                pedido_id VARCHAR REFERENCES pedidos(id),
-                producto_id VARCHAR REFERENCES productos(id),
-                tipo VARCHAR DEFAULT 'pedido',
-                estado VARCHAR DEFAULT 'activa',
-                fecha_creacion TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )
-        """))
-
-        # ChatParticipantes (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS chat_participantes (
-                id VARCHAR PRIMARY KEY,
-                room_id VARCHAR NOT NULL REFERENCES chat_rooms(id),
-                usuario_email VARCHAR NOT NULL,
-                rol VARCHAR DEFAULT 'participante',
-                fecha_union TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )
-        """))
-
-        # ChatMessages (nueva tabla)
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id VARCHAR PRIMARY KEY,
-                room_id VARCHAR NOT NULL REFERENCES chat_rooms(id),
-                remitente_email VARCHAR NOT NULL,
-                tipo VARCHAR DEFAULT 'texto',
-                contenido TEXT DEFAULT '',
-                attachment_url TEXT DEFAULT '',
-                metadata_extra TEXT DEFAULT '',
-                fecha_envio TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            )
-        """))
 
         conn.commit()

@@ -13,7 +13,7 @@ from app.viewmodels.pedido import PedidoViewModel, CotizacionEnviadaViewModel
 from app.templates import templates
 from app.models import Producto, Pedido, ItemPedido
 from app.modules.orders.model import OrderEvent   # <-- corregido
-from app.services.notificacion_service import crear_notificacion
+from app.modules.notifications.service import crear_notificacion
 from app.modules.orders.events import registrar_evento
 import uuid
 

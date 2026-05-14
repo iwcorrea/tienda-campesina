@@ -7,7 +7,7 @@ from typing import Optional, Tuple
 import httpx
 from sqlalchemy.orm import Session
 from app.models import Pago, Comision, Pedido, Transportista
-from app.services.notificacion_service import crear_notificacion
+from app.modules.notifications.service import crear_notificacion
 from app.services.inventario_service import salida_stock_por_pedido
 from app.modules.orders.events import registrar_evento
 from app.modules.documents.generators import generar_html as generar_doc_html
