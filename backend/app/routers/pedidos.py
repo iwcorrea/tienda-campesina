@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 from fastapi import APIRouter, Request, Form, Query, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
 from app.services.pedido_service import (
@@ -11,7 +11,8 @@ from app.services.pedido_service import (
 )
 from app.viewmodels.pedido import PedidoViewModel, CotizacionEnviadaViewModel
 from app.templates import templates
-from app.models import Producto, Pedido, ItemPedido, OrderEvent
+from app.models import Producto, Pedido, ItemPedido
+from app.modules.orders.model import OrderEvent   # <-- corregido
 from app.services.notificacion_service import crear_notificacion
 from app.modules.orders.events import registrar_evento
 import uuid
@@ -113,8 +114,6 @@ def detalle(
             return templates.TemplateResponse("403.html", {"request": request}, status_code=403)
 
     pedido_vm = PedidoViewModel.from_orm(pedido)
-
-    # Obtener eventos del pedido
     eventos = db.query(OrderEvent).filter(OrderEvent.pedido_id == pedido_id).order_by(OrderEvent.fecha.asc()).all()
 
     return templates.TemplateResponse("pedidos/detalle.html", {
@@ -126,7 +125,6 @@ def detalle(
 
 @router.get("/{pedido_id}/eventos")
 def obtener_eventos(pedido_id: str, db: Session = Depends(get_db)):
-    """API JSON para consultar el historial de eventos de un pedido."""
     eventos = db.query(OrderEvent).filter(OrderEvent.pedido_id == pedido_id).order_by(OrderEvent.fecha.asc()).all()
     return [
         {
@@ -176,7 +174,6 @@ def cotizar_servicio(
     ))
     db.commit()
 
-    # Registrar evento
     registrar_evento(db, pedido.id, "order_created", usuario_email=comprador_email, estado_nuevo="pendiente", descripcion="Pedido de servicio creado")
 
     crear_notificacion(
