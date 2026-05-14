@@ -5,7 +5,8 @@ from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-from app.auth import router as auth_router
+# ─── Router modular de auth (activado) ───
+from app.modules.auth.router import router as auth_router
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
 from app.templates import templates
@@ -14,7 +15,7 @@ import cloudinary
 import time
 from sqlalchemy import text
 
-# Routers
+# Routers legacy (se mantienen sin cambios)
 from app.routers import home, catalogo, dashboard, panel, perfil, asociacion, valoraciones, admin, calculadora
 from app.routers import personas, empleos, herramientas, mensajes
 from app.routers import transportistas
@@ -59,7 +60,6 @@ async def timeout_y_configuracion(request: Request, call_next):
     finally:
         db.close()
 
-    # Control de inactividad (solo si la sesión tiene usuario y last_activity)
     if "usuario" in request.session and "last_activity" in request.session:
         last_activity = request.session["last_activity"]
         now = time.time()
@@ -76,7 +76,8 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, 
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-app.include_router(auth_router, prefix="/auth")
+# ─── Routers ──────────────────────────────────────
+app.include_router(auth_router, prefix="/auth")          # ← modular
 app.include_router(home.router)
 app.include_router(catalogo.router)
 app.include_router(dashboard.router)
