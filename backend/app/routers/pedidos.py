@@ -47,22 +47,18 @@ async def obtener_pedido(
 async def crear_pedido(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
-    # aquí vendrían los campos del body (productos, etc.)
 ):
-    # Crear pedido en borrador (simplificado)
     nuevo = Pedido(
         comprador_email=current_user["email"],
         estado=OrderState.DRAFT.value,
-        # otros campos...
     )
     db.add(nuevo)
-    db.flush()  # para obtener ID
+    db.flush()
 
-    # Registrar primer estado
     change_order_state(
         db, nuevo, OrderState.DRAFT.value,
         changed_by=current_user["email"],
-        metadata={"evento": "creación"}
+        extra_data={"evento": "creación"}
     )
     db.commit()
     db.refresh(nuevo)
@@ -82,7 +78,7 @@ async def confirmar_pedido(
         change_order_state(
             db, pedido, OrderState.CONFIRMED.value,
             changed_by=current_user["email"],
-            metadata={"motivo": "Confirmación del comprador"}
+            extra_data={"motivo": "Confirmación del comprador"}
         )
         db.commit()
         db.refresh(pedido)
@@ -93,7 +89,7 @@ async def confirmar_pedido(
 @router.post("/{pedido_id}/asignar-transporte")
 async def asignar_transporte(
     pedido_id: str,
-    transportista_id: str,  # enviado en el body
+    transportista_id: str,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
@@ -104,9 +100,8 @@ async def asignar_transporte(
         change_order_state(
             db, pedido, OrderState.TRANSPORT_ASSIGNED.value,
             changed_by=current_user["email"],
-            metadata={"transportista_id": transportista_id}
+            extra_data={"transportista_id": transportista_id}
         )
-        # Opcional: pedido.transportista_id = transportista_id
         db.commit()
         db.refresh(pedido)
         return {"mensaje": "Transporte asignado", "estado": pedido.estado}
@@ -126,7 +121,7 @@ async def marcar_en_transito(
         change_order_state(
             db, pedido, OrderState.IN_TRANSIT.value,
             changed_by=current_user["email"],
-            metadata={"iniciado_por": current_user["email"]}
+            extra_data={"iniciado_por": current_user["email"]}
         )
         db.commit()
         db.refresh(pedido)
@@ -147,7 +142,7 @@ async def marcar_entregado(
         change_order_state(
             db, pedido, OrderState.DELIVERED.value,
             changed_by=current_user["email"],
-            metadata={"recibido_por": current_user["email"]}
+            extra_data={"recibido_por": current_user["email"]}
         )
         db.commit()
         db.refresh(pedido)
@@ -169,7 +164,7 @@ async def cerrar_pedido(
         change_order_state(
             db, pedido, OrderState.CLOSED.value,
             changed_by=current_user["email"],
-            metadata={"motivo": motivo or "Cierre del pedido"}
+            extra_data={"motivo": motivo or "Cierre del pedido"}
         )
         db.commit()
         db.refresh(pedido)
