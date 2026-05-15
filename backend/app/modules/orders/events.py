@@ -2,9 +2,8 @@ from sqlalchemy.orm import Session
 from app.modules.orders.model import OrderEvent
 from app.modules.orders.constants import EVENT_TYPES
 from app.events.dispatcher import EventDispatcher
-from app.events.payloads import OrderBasePayload
+from app.events.payloads import OrderBasePayload, PaymentConfirmedPayload
 
-# Obtener la instancia única del dispatcher (se crea en main.py y se inyecta)
 _dispatcher: EventDispatcher = None
 
 def init_dispatcher(dispatcher: EventDispatcher):
@@ -19,9 +18,9 @@ def registrar_evento(
     estado_anterior: str = None,
     estado_nuevo: str = None,
     metadata_extra: str = "",
-    descripcion: str = ""
+    descripcion: str = "",
+    extra: dict = None
 ):
-    # 1. Guardar el evento específico de órdenes (tabla existente)
     evento = OrderEvent(
         pedido_id=pedido_id,
         tipo=tipo,
@@ -32,24 +31,25 @@ def registrar_evento(
         metadata_extra=metadata_extra,
     )
     db.add(evento)
-    # No hacemos commit aquí, lo hará el llamante
 
-    # 2. Publicar al EventDispatcher central
     if _dispatcher:
-        payload = OrderBasePayload(
-            pedido_id=pedido_id,
-            usuario_email=usuario_email,
-            estado_anterior=estado_anterior,
-            estado_nuevo=estado_nuevo,
-            descripcion=descripcion,
-            extra={"metadata_extra": metadata_extra}
-        )
-        _dispatcher.publish(
-            event_type=tipo,
-            payload=payload,
-            db=db,
-            origin="orders"
-        )
-    else:
-        # Fallback: si no se ha inicializado el dispatcher (no debería ocurrir)
-        pass
+        if tipo == "payment_confirmed" and extra:
+            payload = PaymentConfirmedPayload(
+                pedido_id=pedido_id,
+                usuario_email=usuario_email,
+                estado_anterior=estado_anterior,
+                estado_nuevo=estado_nuevo,
+                descripcion=descripcion,
+                extra=extra,
+                **extra
+            )
+        else:
+            payload = OrderBasePayload(
+                pedido_id=pedido_id,
+                usuario_email=usuario_email,
+                estado_anterior=estado_anterior,
+                estado_nuevo=estado_nuevo,
+                descripcion=descripcion,
+                extra=extra or {}
+            )
+        _dispatcher.publish(event_type=tipo, payload=payload, db=db, origin="orders")

@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
 from app.models import Pedido, ItemPedido, Producto
 from app.templates import templates
-from app.modules.notifications.service import crear_notificacion
 from app.modules.orders.events import registrar_evento
 from app.modules.orders.service import change_order_state
 from app.modules.orders.models import OrderState
@@ -98,12 +97,11 @@ def confirmar_pedido(request: Request, db: Session = Depends(get_db), current_us
         pedido = Pedido(
             id=str(uuid.uuid4()),
             comprador_email=comprador_email,
-            estado=OrderState.DRAFT.value      # "pendiente"
+            estado=OrderState.DRAFT.value
         )
         db.add(pedido)
         db.flush()
 
-        # Primer registro de estado
         change_order_state(
             db=db,
             pedido=pedido,
@@ -123,13 +121,14 @@ def confirmar_pedido(request: Request, db: Session = Depends(get_db), current_us
 
         db.commit()
 
-        registrar_evento(db, pedido.id, "order_created", usuario_email=comprador_email,
-                         estado_nuevo=OrderState.DRAFT.value, descripcion="Pedido creado desde el carrito")
-        crear_notificacion(db, email_asoc, "order_created", pedido.id,
-                           {"comprador_email": comprador_email, "pedido_id": pedido.id})
+        # Publicar evento (las notificaciones se envían por listener)
+        registrar_evento(
+            db, pedido.id, "order_created",
+            usuario_email=comprador_email,
+            estado_nuevo=OrderState.DRAFT.value,
+            descripcion="Pedido creado desde el carrito",
+            extra={"vendedor_email": email_asoc}
+        )
 
-    crear_notificacion(db, comprador_email, "order_created",
-                       pedido.id if 'pedido' in locals() else "",
-                       {"comprador_email": comprador_email})
     request.session["carrito"] = []
     return RedirectResponse(url="/pedidos?confirmado=1", status_code=303)

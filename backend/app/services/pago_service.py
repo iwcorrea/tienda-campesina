@@ -7,13 +7,12 @@ from typing import Optional, Tuple
 import httpx
 from sqlalchemy.orm import Session
 from app.models import Pago, Comision, Pedido, Transportista
-from app.modules.notifications.service import crear_notificacion
 from app.services.inventario_service import salida_stock_por_pedido
-from app.modules.orders.events import registrar_evento
 from app.modules.orders.service import change_order_state
 from app.modules.orders.models import OrderState
 from app.modules.documents.generators import generar_html as generar_doc_html
 from app.modules.documents.service import crear_documento
+from app.modules.orders.events import registrar_evento
 
 COMISION_PLATAFORMA = 8
 WOMPI_API_URL = "https://api.wompi.sv"
@@ -124,7 +123,6 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
     db.add(comision)
 
     if pedido:
-        # Transición usando la máquina de estados → "pagado" (OrderState.CONFIRMED.value)
         change_order_state(
             db=db,
             pedido=pedido,
@@ -133,18 +131,31 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
             extra_data={"motivo": "Pago confirmado", "monto": pago.monto_total}
         )
 
-        # Registrar evento (legacy, se mantiene temporalmente)
+        # Datos del transportista si existe
+        transportista_email = None
+        if pedido.transportista:
+            transportista_email = pedido.transportista.email
+
+        # Publicar evento con todos los datos necesarios para notificaciones
         registrar_evento(
             db,
             pago.pedido_id,
             "payment_confirmed",
             usuario_email=pago.comprador_email,
-            estado_anterior="aceptado",   # valor anterior antes del cambio (no se usa ahora para nada más)
+            estado_anterior="aceptado",
             estado_nuevo=OrderState.CONFIRMED.value,
-            descripcion=f"Pago confirmado por ${pago.monto_total:,}"
+            descripcion=f"Pago confirmado por ${pago.monto_total:,}",
+            extra={
+                "monto_total": pago.monto_total,
+                "comision_plataforma": pago.comision_plataforma,
+                "monto_vendedor": pago.monto_vendedor,
+                "vendedor_email": asociacion_email,
+                "transportista_email": transportista_email,
+                "costo_envio": pedido.costo_envio or 0,
+            }
         )
 
-        # Generar factura
+        # Generar factura (esto será desacoplado en Tarea 5)
         datos_factura = {
             "numero": f"FAC-{pago.wompi_referencia}",
             "fecha": datetime.now().strftime("%d/%m/%Y"),
@@ -156,34 +167,7 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
         html_factura = generar_doc_html("factura", datos_factura)
         crear_documento(db, "factura", pago.pedido_id, pago.comprador_email, html_factura)
 
-        # Salida de inventario
         salida_stock_por_pedido(db, pago.pedido_id)
-
-        # Notificaciones (se mantienen; en Tarea 4 se migrarán a eventos)
-        crear_notificacion(
-            db,
-            destinatario_email=asociacion_email,
-            remitente_email=pago.comprador_email,
-            texto=f"Pago recibido por ${pago.monto_total:,} para el pedido #{pago.pedido_id[:8]}. Comisión: ${pago.comision_plataforma:,}.",
-        )
-        crear_notificacion(
-            db,
-            destinatario_email=pago.comprador_email,
-            remitente_email="sistema",
-            texto=f"✅ Pago confirmado por ${pago.monto_total:,} para el pedido #{pago.pedido_id[:8]}.",
-        )
-
-    if pedido and pedido.transportista:
-        transportista = db.query(Transportista).filter(Transportista.id == pedido.transportista_id).first()
-        if transportista and pedido.costo_envio > 0:
-            comision_envio = int(pedido.costo_envio * COMISION_PLATAFORMA / 100)
-            monto_transportista = pedido.costo_envio - comision_envio
-            crear_notificacion(
-                db,
-                destinatario_email=transportista.email,
-                remitente_email="sistema",
-                texto=f"El envío del pedido #{pago.pedido_id[:8]} ha sido pagado. Recibirás ${monto_transportista:,}.",
-            )
 
     db.commit()
     return pago
