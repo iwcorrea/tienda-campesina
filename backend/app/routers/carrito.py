@@ -7,6 +7,8 @@ from app.models import Pedido, ItemPedido, Producto
 from app.templates import templates
 from app.modules.notifications.service import crear_notificacion
 from app.modules.orders.events import registrar_evento
+from app.modules.orders.service import change_order_state
+from app.modules.orders.models import OrderState
 
 router = APIRouter(prefix="/carrito", tags=["carrito"])
 
@@ -93,15 +95,41 @@ def confirmar_pedido(request: Request, db: Session = Depends(get_db), current_us
         grupos[email_asoc].append(item)
 
     for email_asoc, items in grupos.items():
-        pedido = Pedido(id=str(uuid.uuid4()), comprador_email=comprador_email, estado="pendiente")
+        pedido = Pedido(
+            id=str(uuid.uuid4()),
+            comprador_email=comprador_email,
+            estado=OrderState.DRAFT.value      # "pendiente"
+        )
         db.add(pedido)
         db.flush()
-        for item in items:
-            db.add(ItemPedido(id=str(uuid.uuid4()), pedido_id=pedido.id, producto_id=item["producto_id"], cantidad=item["cantidad"], precio_unitario_inicial=item["precio"]))
-        db.commit()
-        registrar_evento(db, pedido.id, "order_created", usuario_email=comprador_email, estado_nuevo="pendiente", descripcion="Pedido creado desde el carrito")
-        crear_notificacion(db, email_asoc, "order_created", pedido.id, {"comprador_email": comprador_email, "pedido_id": pedido.id})
 
-    crear_notificacion(db, comprador_email, "order_created", pedido.id if 'pedido' in locals() else "", {"comprador_email": comprador_email})
+        # Primer registro de estado
+        change_order_state(
+            db=db,
+            pedido=pedido,
+            new_state=OrderState.DRAFT.value,
+            changed_by=comprador_email,
+            extra_data={"evento": "creación desde carrito"}
+        )
+
+        for item in items:
+            db.add(ItemPedido(
+                id=str(uuid.uuid4()),
+                pedido_id=pedido.id,
+                producto_id=item["producto_id"],
+                cantidad=item["cantidad"],
+                precio_unitario_inicial=item["precio"]
+            ))
+
+        db.commit()
+
+        registrar_evento(db, pedido.id, "order_created", usuario_email=comprador_email,
+                         estado_nuevo=OrderState.DRAFT.value, descripcion="Pedido creado desde el carrito")
+        crear_notificacion(db, email_asoc, "order_created", pedido.id,
+                           {"comprador_email": comprador_email, "pedido_id": pedido.id})
+
+    crear_notificacion(db, comprador_email, "order_created",
+                       pedido.id if 'pedido' in locals() else "",
+                       {"comprador_email": comprador_email})
     request.session["carrito"] = []
     return RedirectResponse(url="/pedidos?confirmado=1", status_code=303)

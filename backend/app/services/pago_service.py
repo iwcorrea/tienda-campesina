@@ -10,6 +10,8 @@ from app.models import Pago, Comision, Pedido, Transportista
 from app.modules.notifications.service import crear_notificacion
 from app.services.inventario_service import salida_stock_por_pedido
 from app.modules.orders.events import registrar_evento
+from app.modules.orders.service import change_order_state
+from app.modules.orders.models import OrderState
 from app.modules.documents.generators import generar_html as generar_doc_html
 from app.modules.documents.service import crear_documento
 
@@ -122,16 +124,23 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
     db.add(comision)
 
     if pedido:
-        pedido.estado = "pagado"
+        # Transición usando la máquina de estados → "pagado" (OrderState.CONFIRMED.value)
+        change_order_state(
+            db=db,
+            pedido=pedido,
+            new_state=OrderState.CONFIRMED.value,
+            changed_by=pago.comprador_email,
+            extra_data={"motivo": "Pago confirmado", "monto": pago.monto_total}
+        )
 
-        # Registrar evento de pago
+        # Registrar evento (legacy, se mantiene temporalmente)
         registrar_evento(
             db,
             pago.pedido_id,
             "payment_confirmed",
             usuario_email=pago.comprador_email,
-            estado_anterior="aceptado",
-            estado_nuevo="pagado",
+            estado_anterior="aceptado",   # valor anterior antes del cambio (no se usa ahora para nada más)
+            estado_nuevo=OrderState.CONFIRMED.value,
             descripcion=f"Pago confirmado por ${pago.monto_total:,}"
         )
 
@@ -147,9 +156,10 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
         html_factura = generar_doc_html("factura", datos_factura)
         crear_documento(db, "factura", pago.pedido_id, pago.comprador_email, html_factura)
 
-        # Registrar salida de inventario (convierte reserva en salida real)
+        # Salida de inventario
         salida_stock_por_pedido(db, pago.pedido_id)
 
+        # Notificaciones (se mantienen; en Tarea 4 se migrarán a eventos)
         crear_notificacion(
             db,
             destinatario_email=asociacion_email,

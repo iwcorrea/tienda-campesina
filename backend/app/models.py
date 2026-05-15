@@ -41,7 +41,7 @@ class Producto(Base):
     tipo = Column(String, default="producto")
     tipo_precio = Column(String, default="fijo")
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    stock = Column(Integer, default=0)                     # <-- nuevo campo
+    stock = Column(Integer, default=0)
 
     asociacion = relationship("Asociacion", back_populates="productos")
     valoraciones = relationship("Valoracion", back_populates="producto", cascade="all, delete-orphan")
@@ -86,7 +86,7 @@ class Vacante(Base):
     terminos_url = Column(Text, default="")
     fecha_limite = Column(DateTime(timezone=True), nullable=False)
     fecha_publicacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    estado = Column(String, default="activa")               # activa / cubierta
+    estado = Column(String, default="activa")
     persona_seleccionada_email = Column(String, nullable=True)
     contrato_trabajo_url = Column(Text, default="")
 
@@ -108,7 +108,6 @@ class Configuracion(Base):
     __tablename__ = "configuracion"
 
     id = Column(Integer, primary_key=True, default=1)
-
     titulo_sitio = Column(String, default="Tienda Campesina")
     descripcion_meta = Column(Text, default="Plataforma para visibilizar asociaciones rurales.")
     google_verification = Column(String, default="")
@@ -213,8 +212,8 @@ class Pedido(Base):
     estado = Column(String, default="pendiente")
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     transportista_id = Column(String, ForeignKey("transportistas.id"), nullable=True)
-    estado_envio = Column(String, default="pendiente")   # pendiente, en_transito, entregado
-    costo_envio = Column(Integer, default=0)             # en COP, lo define la asociación al asigna
+    estado_envio = Column(String, default="pendiente")
+    costo_envio = Column(Integer, default=0)
 
     items = relationship("ItemPedido", back_populates="pedido", cascade="all, delete-orphan")
     transportista = relationship("Transportista")
@@ -263,10 +262,27 @@ class Contacto(Base):
     __tablename__ = "contactos"
 
     id = Column(String, primary_key=True, default=generate_uuid)
-    usuario_email = Column(String, nullable=False, index=True)       # quien agrega
-    contacto_email = Column(String, nullable=False)                  # quien es agregado
-    tipo_relacion = Column(String, default="contacto")               # "favorito", "cliente", "proveedor"
-    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))    
+    usuario_email = Column(String, nullable=False, index=True)
+    contacto_email = Column(String, nullable=False)
+    tipo_relacion = Column(String, default="contacto")
+    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+class SolicitudContacto(Base):
+    __tablename__ = "solicitudes_contacto"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    solicitante_email = Column(String, nullable=False, index=True)
+    receptor_email = Column(String, nullable=False)
+    estado = Column(String, default="pendiente")
+    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+class Bloqueo(Base):
+    __tablename__ = "bloqueos"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    bloqueador_email = Column(String, nullable=False, index=True)
+    bloqueado_email = Column(String, nullable=False)
+    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 class ValoracionComprador(Base):
     __tablename__ = "valoraciones_compradores"
@@ -282,52 +298,24 @@ class ValoracionComprador(Base):
     asociacion = relationship("Asociacion")
     pedido = relationship("Pedido")
 
-class SolicitudContacto(Base):
-    __tablename__ = "solicitudes_contacto"
-
-    id = Column(String, primary_key=True, default=generate_uuid)
-    solicitante_email = Column(String, nullable=False, index=True)
-    receptor_email = Column(String, nullable=False)
-    estado = Column(String, default="pendiente")  # pendiente, aceptada, rechazada
-    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-class Bloqueo(Base):
-    __tablename__ = "bloqueos"
-
-    id = Column(String, primary_key=True, default=generate_uuid)
-    bloqueador_email = Column(String, nullable=False, index=True)
-    bloqueado_email = Column(String, nullable=False)
-    fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))    
-
- 
 class Pago(Base):
-    """
-    Representa un pago realizado por un comprador para un pedido específico.
-    Se registra cuando el comprador inicia el checkout y se actualiza
-    cuando Wompi confirma la transacción.
-    """
     __tablename__ = "pagos"
 
     id = Column(String, primary_key=True, default=generate_uuid)
     pedido_id = Column(String, ForeignKey("pedidos.id"), nullable=False)
     comprador_email = Column(String, nullable=False)
-    monto_total = Column(Integer, nullable=False)               # en COP
-    comision_plataforma = Column(Integer, nullable=False)        # en COP
-    monto_vendedor = Column(Integer, nullable=False)             # en COP
-    estado = Column(String, default="pendiente")                 # pendiente, completado, fallido, reembolsado
-    wompi_transaccion_id = Column(String, nullable=True)         # ID de transacción en Wompi
-    wompi_referencia = Column(String, nullable=True)             # Referencia externa
+    monto_total = Column(Integer, nullable=False)
+    comision_plataforma = Column(Integer, nullable=False)
+    monto_vendedor = Column(Integer, nullable=False)
+    estado = Column(String, default="pendiente")
+    wompi_transaccion_id = Column(String, nullable=True)
+    wompi_referencia = Column(String, nullable=True)
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     fecha_confirmacion = Column(DateTime(timezone=True), nullable=True)
 
     pedido = relationship("Pedido", backref="pagos")
 
-
 class Comision(Base):
-    """
-    Registro histórico de todas las comisiones generadas por la plataforma.
-    Se crea automáticamente cuando un pago es confirmado por Wompi.
-    """
     __tablename__ = "comisiones"
 
     id = Column(String, primary_key=True, default=generate_uuid)
@@ -336,7 +324,7 @@ class Comision(Base):
     asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
     comprador_email = Column(String, nullable=False)
     monto_venta = Column(Integer, nullable=False)
-    porcentaje_comision = Column(Integer, nullable=False)           # e.g., 8 para 8%
+    porcentaje_comision = Column(Integer, nullable=False)
     monto_comision = Column(Integer, nullable=False)
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
@@ -360,7 +348,4 @@ class MovimientoInventario(Base):
     producto = relationship("Producto", backref="movimientos")
     asociacion = relationship("Asociacion")
 
-    # ... (todo el código original permanece)
-
-# Importación necesaria para que SQLAlchemy conozca OrderStateLog y cree la tabla automáticamente
 from app.modules.orders.models import OrderStateLog

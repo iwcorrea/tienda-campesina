@@ -8,9 +8,10 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 class OrderState(str, Enum):
-    DRAFT = "borrador"
-    NEGOTIATION = "negociacion"
-    CONFIRMED = "confirmado"
+    # Valores que ya usa el monolito – no rompen el frontend
+    DRAFT = "pendiente"
+    NEGOTIATION = "aceptado"
+    CONFIRMED = "pagado"
     TRANSPORT_ASSIGNED = "transporte_asignado"
     IN_TRANSIT = "en_transito"
     DELIVERED = "entregado"
@@ -25,4 +26,4 @@ class OrderStateLog(Base):
     new_state = Column(String, nullable=False)
     changed_by = Column(String, nullable=False)   # email o sistema
     changed_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)       # nombre no reservado
