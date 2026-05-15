@@ -11,6 +11,7 @@ router = APIRouter(
     prefix="/pedidos",
     tags=["pedidos"],
     responses={404: {"description": "Pedido no encontrado"}},
+    deprecated=True
 )
 
 # ---------- Consultas ----------

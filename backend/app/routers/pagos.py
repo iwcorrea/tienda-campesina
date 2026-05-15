@@ -14,7 +14,7 @@ from app.viewmodels.pago import PagoViewModel
 from app.templates import templates
 from app.models import Pedido, Pago
 
-router = APIRouter(prefix="/pagos", tags=["pagos"])
+router = APIRouter(prefix="/pagos", tags=["pagos"], deprecated=True)
 
 
 @router.get("/checkout/{pedido_id}", response_class=HTMLResponse)

@@ -9,7 +9,7 @@ from app.modules.orders.events import registrar_evento
 from app.modules.orders.service import change_order_state
 from app.modules.orders.models import OrderState
 
-router = APIRouter(prefix="/carrito", tags=["carrito"])
+router = APIRouter(prefix="/carrito", tags=["carrito"], deprecated=True)
 
 def get_carrito(request: Request) -> list:
     return request.session.get("carrito", [])
@@ -121,7 +121,6 @@ def confirmar_pedido(request: Request, db: Session = Depends(get_db), current_us
 
         db.commit()
 
-        # Publicar evento (las notificaciones se envían por listener)
         registrar_evento(
             db, pedido.id, "order_created",
             usuario_email=comprador_email,
