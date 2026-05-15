@@ -350,3 +350,6 @@ class MovimientoInventario(Base):
 
 from app.modules.orders.models import OrderStateLog
 from app.events.models import EventLog
+# ... (todo el código existente)
+
+from app.modules.transport.models import Transport, TransportStateLog

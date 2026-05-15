@@ -17,3 +17,12 @@ class PaymentConfirmedPayload(OrderBasePayload):
     transportista_email: Optional[str] = None
     costo_envio: int = 0
     wompi_referencia: str = ""           # <-- nuevo campo
+
+class TransportBasePayload(BaseModel):
+    transport_id: str
+    pedido_id: str
+    usuario_email: str
+    estado_anterior: Optional[str] = None
+    estado_nuevo: Optional[str] = None
+    descripcion: str = ""
+    extra: Dict[str, Any] = Field(default_factory=dict)

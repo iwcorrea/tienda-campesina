@@ -33,8 +33,9 @@ from app.events.dispatcher import EventDispatcher
 from app.events.registry import register_all_listeners
 from app.modules.orders.events import init_dispatcher
 
-# Router v2 modular de pedidos
+# Routers v2 modulares
 from app.modules.orders import router_v2 as orders_v2
+from app.modules.transport import router_v2 as transport_v2
 
 logging.basicConfig(level=logging.INFO)
 
@@ -95,7 +96,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # =========================================================
 dispatcher = EventDispatcher()
 init_dispatcher(dispatcher)          # inyecta el dispatcher en orders/events.py
-register_all_listeners(dispatcher)   # registra listeners de notificaciones, documentos y chat
+register_all_listeners(dispatcher)   # registra listeners de notificaciones, documentos, chat, orders y transport
 
 # =========================================================
 # Función que registra TODOS los routers legacy
@@ -136,8 +137,13 @@ app.mount("/api/v1", v1_app)
 # 3. Enrutador para v2 modular
 # =========================================================
 v2_modular_router = APIRouter(prefix="/api/v2/modular")
+
 # Montar los endpoints v2 de pedidos
 v2_modular_router.include_router(orders_v2.router, prefix="/orders", tags=["orders_v2"])
+
+# Montar los endpoints v2 de transporte
+v2_modular_router.include_router(transport_v2.router, prefix="/transport", tags=["transport_v2"])
+
 app.include_router(v2_modular_router)
 
 # =========================================================
@@ -145,7 +151,7 @@ app.include_router(v2_modular_router)
 # =========================================================
 @app.on_event("startup")
 def on_startup():
-    # Crear todas las tablas (incluye nuevas: order_state_logs, event_log)
+    # Crear todas las tablas (incluye nuevas: order_state_logs, event_log, transportes, transport_state_logs)
     Base.metadata.create_all(bind=engine)
 
     # Asegurar columnas nuevas en configuracion (migración ad‑hoc)
