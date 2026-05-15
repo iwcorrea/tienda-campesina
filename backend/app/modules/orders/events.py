@@ -1,6 +1,15 @@
 from sqlalchemy.orm import Session
 from app.modules.orders.model import OrderEvent
 from app.modules.orders.constants import EVENT_TYPES
+from app.events.dispatcher import EventDispatcher
+from app.events.payloads import OrderBasePayload
+
+# Obtener la instancia única del dispatcher (se crea en main.py y se inyecta)
+_dispatcher: EventDispatcher = None
+
+def init_dispatcher(dispatcher: EventDispatcher):
+    global _dispatcher
+    _dispatcher = dispatcher
 
 def registrar_evento(
     db: Session,
@@ -12,6 +21,7 @@ def registrar_evento(
     metadata_extra: str = "",
     descripcion: str = ""
 ):
+    # 1. Guardar el evento específico de órdenes (tabla existente)
     evento = OrderEvent(
         pedido_id=pedido_id,
         tipo=tipo,
@@ -22,10 +32,24 @@ def registrar_evento(
         metadata_extra=metadata_extra,
     )
     db.add(evento)
-    db.commit()
+    # No hacemos commit aquí, lo hará el llamante
 
-    from app.modules.notifications.events import dispatch_event
-    dispatch_event(db, tipo, pedido_id, usuario_email, **({"estado_nuevo": estado_nuevo} if estado_nuevo else {}))
-
-    from app.modules.chat.listeners import dispatch_chat_event
-    dispatch_chat_event(db, tipo, pedido_id, usuario_email, **({"estado_nuevo": estado_nuevo} if estado_nuevo else {}))
+    # 2. Publicar al EventDispatcher central
+    if _dispatcher:
+        payload = OrderBasePayload(
+            pedido_id=pedido_id,
+            usuario_email=usuario_email,
+            estado_anterior=estado_anterior,
+            estado_nuevo=estado_nuevo,
+            descripcion=descripcion,
+            extra={"metadata_extra": metadata_extra}
+        )
+        _dispatcher.publish(
+            event_type=tipo,
+            payload=payload,
+            db=db,
+            origin="orders"
+        )
+    else:
+        # Fallback: si no se ha inicializado el dispatcher (no debería ocurrir)
+        pass

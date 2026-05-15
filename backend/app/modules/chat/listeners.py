@@ -1,14 +1,20 @@
-"""
-Listeners que reaccionan a eventos del sistema y ejecutan acciones en el chat.
-"""
-from app.modules.chat.events import on_order_created, on_transport_assigned
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from app.events.dispatcher import EventDispatcher
+# Importar la función original que ahora quedará como fallback
+from app.modules.chat.listeners import dispatch_chat_event as original_dispatch
 
-CHAT_EVENT_LISTENERS = {
-    "order_created": on_order_created,
-    "transport_assigned": on_transport_assigned,
-}
+def _on_order_chat_event(payload: BaseModel, db: Session):
+    """Cuando ocurre un evento de pedido, actualiza el chat operacional."""
+    # Usamos la misma función que antes se llamaba directamente
+    original_dispatch(
+        db=db,
+        tipo=payload.dict().get("tipo", ""),
+        pedido_id=payload.pedido_id,
+        usuario_email=payload.usuario_email,
+        estado_nuevo=payload.estado_nuevo
+    )
 
-def dispatch_chat_event(db, tipo_evento: str, pedido_id: str, usuario_email: str, **kwargs):
-    listener = CHAT_EVENT_LISTENERS.get(tipo_evento)
-    if listener:
-        listener(db, pedido_id, usuario_email, **kwargs)
+def register(dispatcher: EventDispatcher):
+    for event_type in ["order_created", "payment_confirmed", "transport_assigned"]:
+        dispatcher.register(event_type, _on_order_chat_event)

@@ -1,0 +1,1 @@
+# Eventos centralizados de la plataforma

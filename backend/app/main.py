@@ -28,6 +28,11 @@ from app.routers import empleos, herramientas
 from app.routers import ayuda
 from app.routers import noticias
 
+# EventDispatcher
+from app.events.dispatcher import EventDispatcher
+from app.events.registry import register_all_listeners
+from app.modules.orders.events import init_dispatcher
+
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
@@ -83,13 +88,16 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # =========================================================
+# Inicialización del EventDispatcher central
+# =========================================================
+dispatcher = EventDispatcher()
+init_dispatcher(dispatcher)          # inyecta el dispatcher en orders/events.py
+register_all_listeners(dispatcher)   # registra listeners de notificaciones y chat
+
+# =========================================================
 # Función que registra TODOS los routers legacy
 # =========================================================
 def include_legacy_routers(target_app: FastAPI):
-    """
-    Registra en target_app todos los routers actuales (monolito)
-    con los mismos prefijos que utiliza hoy el frontend.
-    """
     target_app.include_router(auth_router, prefix="/auth")
     target_app.include_router(users_router)
     target_app.include_router(products_router)
@@ -118,15 +126,13 @@ v1_app = FastAPI(
     description="Endpoints legacy del monolito, expuestos bajo /api/v1",
     version="1.0.0"
 )
-include_legacy_routers(v1_app)          # Los mismos routers, mismo comportamiento
-app.mount("/api/v1", v1_app)            # Monta v1_app en /api/v1
-# Ejemplo: /api/v1/auth/login, /api/v1/products/, etc.
+include_legacy_routers(v1_app)
+app.mount("/api/v1", v1_app)
 
 # =========================================================
 # 3. Preparar enrutador para v2 modular (vacío por ahora)
 # =========================================================
 v2_modular_router = APIRouter(prefix="/api/v2/modular")
-# Aquí se incluirán los nuevos routers modulares (orders, transport, etc.) en futuras tareas
 app.include_router(v2_modular_router)
 
 # =========================================================
@@ -134,10 +140,10 @@ app.include_router(v2_modular_router)
 # =========================================================
 @app.on_event("startup")
 def on_startup():
-    # Crear tablas si no existen
+    # Crear todas las tablas (incluye las nuevas: order_state_logs, event_log)
     Base.metadata.create_all(bind=engine)
 
-    # Asegurar columnas nuevas en configuracion (migración ad-hoc)
+    # Asegurar columnas nuevas en configuracion (migración ad‑hoc)
     with engine.connect() as conn:
         existing = set()
         rows = conn.execute(
@@ -146,15 +152,9 @@ def on_startup():
         for row in rows:
             existing.add(row[0])
 
-        # Ejemplo: añadir columna si falta (código original del repositorio)
         if "permitir_registro" not in existing:
             conn.execute(text("ALTER TABLE configuracion ADD COLUMN permitir_registro BOOLEAN DEFAULT TRUE"))
         if "mantenimiento_modo" not in existing:
             conn.execute(text("ALTER TABLE configuracion ADD COLUMN mantenimiento_modo BOOLEAN DEFAULT FALSE"))
-        # ... (puede haber más columnas según la versión exacta del código original;
-        # se mantienen las mismas que ya estaban en el archivo original)
 
         conn.commit()
-
-# El resto del código se mantiene exactamente como en el archivo original
-# (por brevedad no lo repito, pero se debe conservar cualquier lógica adicional que existiera)

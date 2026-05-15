@@ -349,3 +349,4 @@ class MovimientoInventario(Base):
     asociacion = relationship("Asociacion")
 
 from app.modules.orders.models import OrderStateLog
+from app.events.models import EventLog
