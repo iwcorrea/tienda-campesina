@@ -10,6 +10,8 @@ import {
   processQueue,
   listenConnectivity,
 } from '../../utils/offlineQueue';
+import FeedbackEmoji from '../../components/FeedbackEmoji';
+import { track } from '../../telemetry/pilot';
 import styles from './TransportHomeV2.module.css';
 
 const ESTADO_MAP = {
@@ -26,20 +28,19 @@ export default function TransportHomeV2() {
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(!navigator.onLine);
   const [pending, setPending] = useState(pendingCount());
-  const [processing, setProcessing] = useState({}); // transportId -> true
+  const [processing, setProcessing] = useState({});
 
   const loadAssignments = useCallback(async () => {
     try {
       const data = await fetchTransportAssignments();
       setViajes(data);
     } catch {
-      // Si falla, se queda con los datos actuales (o vacío)
+      // mantener datos anteriores
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Función que ejecuta una acción offline genérica
   const execOfflineAction = useCallback(async (item) => {
     if (item.type === 'pickup') {
       await pickupTransport(item.transportId);
@@ -48,7 +49,6 @@ export default function TransportHomeV2() {
     }
   }, []);
 
-  // Procesar cola offline
   const processOffline = useCallback(async () => {
     await processQueue(execOfflineAction);
     setPending(pendingCount());
@@ -60,14 +60,14 @@ export default function TransportHomeV2() {
     return cleanup;
   }, [execOfflineAction]);
 
-  // Carga inicial y polling cada 30s
+  // Carga inicial y polling
   useEffect(() => {
     loadAssignments();
     const interval = setInterval(loadAssignments, 30000);
     return () => clearInterval(interval);
   }, [loadAssignments]);
 
-  // Monitorear estado online/offline
+  // Monitoreo de conexión
   useEffect(() => {
     const handleOnline = () => { setOffline(false); processOffline(); };
     const handleOffline = () => setOffline(true);
@@ -79,6 +79,11 @@ export default function TransportHomeV2() {
     };
   }, [processOffline]);
 
+  // Telemetría – vista de pantalla
+  useEffect(() => {
+    track('screen_view', { screen: 'transport' });
+  }, []);
+
   const handleAction = async (transportId, actionType) => {
     setProcessing((prev) => ({ ...prev, [transportId]: true }));
     try {
@@ -87,12 +92,13 @@ export default function TransportHomeV2() {
       } else if (actionType === 'deliver') {
         await deliverTransport(transportId);
       }
-      await loadAssignments(); // refrescar lista
+      track('action_executed', { action: actionType });
+      await loadAssignments();
     } catch (err) {
       if (!navigator.onLine) {
-        // Encolar para envío posterior
         enqueue({ type: actionType, transportId });
         setPending(pendingCount());
+        track('offline_queue_used', { action: actionType });
       } else {
         alert('Ocurrió un error. Intenta de nuevo.');
       }
@@ -176,6 +182,7 @@ export default function TransportHomeV2() {
           })}
         </div>
       )}
+      <FeedbackEmoji screenName="transport" />
     </div>
   );
 }

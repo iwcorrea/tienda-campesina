@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { negotiateOrder } from '../../api/v2';
-import { enqueue, pendingCount } from '../../utils/offlineQueue';
+import { enqueue } from '../../utils/offlineQueue';
+import { track } from '../../telemetry/pilot';
 import styles from './NegotiationPanel.module.css';
 
 export default function NegotiationPanel({ orderId, currentQuantity, currentPrice, onProposalSuccess }) {
@@ -21,12 +22,13 @@ export default function NegotiationPanel({ orderId, currentQuantity, currentPric
     try {
       await negotiateOrder(orderId, quantity, price);
       setOfflineQueued(false);
+      track('action_executed', { action: 'propose' });
       onProposalSuccess();
     } catch (err) {
       if (!navigator.onLine) {
-        // Encolar para envío posterior
         enqueue({ type: 'negotiate', orderId, quantity, price });
         setOfflineQueued(true);
+        track('offline_queue_used', { action: 'propose' });
       } else {
         setError('Ocurrió un error. Intenta nuevamente.');
       }

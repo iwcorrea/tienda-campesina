@@ -1,0 +1,59 @@
+.container {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 999;
+    opacity: 0.85;
+  }
+  
+  .emojiRow {
+    display: flex;
+    gap: 8px;
+    background: rgba(255,255,255,0.9);
+    padding: 8px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  .emojiBtn {
+    font-size: 28px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+  }
+  
+  .commentBox {
+    background: white;
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    display: flex;
+    gap: 4px;
+  }
+  
+  .commentInput {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 14px;
+    width: 140px;
+  }
+  
+  .commentSend {
+    background: #2d6a4f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  
+  .thanks {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+  }
