@@ -14,25 +14,21 @@ function saveQueue(queue) {
 
 /**
  * Agrega una acción a la cola offline.
- * accion: { type: 'pickup'|'deliver', transportId, ... }
+ * item: objeto arbitrario que guardaremos (type, orderId, quantity, etc.)
  */
-export function enqueue(accion) {
+export function enqueue(item) {
   const queue = getQueue();
-  queue.push({ ...accion, timestamp: Date.now() });
+  queue.push({ ...item, timestamp: Date.now() });
   saveQueue(queue);
 }
 
-/**
- * Retorna la cantidad de acciones pendientes.
- */
 export function pendingCount() {
   return getQueue().length;
 }
 
 /**
- * Intenta procesar todas las acciones pendientes.
- * Llama a la función ejecutora correspondiente.
- * execFn(type, transportId) => Promise
+ * Procesa todas las acciones pendientes usando la función ejecutora dada.
+ * execFn recibe el objeto completo guardado en la cola.
  */
 export async function processQueue(execFn) {
   const queue = getQueue();
@@ -41,7 +37,7 @@ export async function processQueue(execFn) {
   const remaining = [];
   for (const item of queue) {
     try {
-      await execFn(item.type, item.transportId);
+      await execFn(item);
     } catch {
       remaining.push(item);
     }
@@ -52,7 +48,8 @@ export async function processQueue(execFn) {
 /**
  * Escucha eventos de conexión y reintenta automáticamente.
  * execFn: igual que en processQueue.
- * callback: se llama cada vez que la cola cambia de tamaño.
+ * callback: se llama con el número de pendientes después de cada intento.
+ * Retorna función para limpiar el listener.
  */
 export function listenConnectivity(execFn, callback) {
   async function tryProcess() {
@@ -61,6 +58,5 @@ export function listenConnectivity(execFn, callback) {
   }
 
   window.addEventListener('online', tryProcess);
-  // también se puede llamar al montar el componente
   return () => window.removeEventListener('online', tryProcess);
 }

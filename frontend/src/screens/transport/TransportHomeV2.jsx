@@ -33,32 +33,32 @@ export default function TransportHomeV2() {
       const data = await fetchTransportAssignments();
       setViajes(data);
     } catch {
-      // Si falla, mantener los viajes actuales (probablemente vacíos o antiguos)
+      // Si falla, se queda con los datos actuales (o vacío)
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Procesar acciones offline
-  const processOffline = useCallback(async () => {
-    await processQueue(async (type, transportId) => {
-      if (type === 'pickup') await pickupTransport(transportId);
-      else if (type === 'deliver') await deliverTransport(transportId);
-    });
-    setPending(pendingCount());
+  // Función que ejecuta una acción offline genérica
+  const execOfflineAction = useCallback(async (item) => {
+    if (item.type === 'pickup') {
+      await pickupTransport(item.transportId);
+    } else if (item.type === 'deliver') {
+      await deliverTransport(item.transportId);
+    }
   }, []);
+
+  // Procesar cola offline
+  const processOffline = useCallback(async () => {
+    await processQueue(execOfflineAction);
+    setPending(pendingCount());
+  }, [execOfflineAction]);
 
   // Listener de conectividad
   useEffect(() => {
-    const cleanup = listenConnectivity(
-      async (type, transportId) => {
-        if (type === 'pickup') await pickupTransport(transportId);
-        else if (type === 'deliver') await deliverTransport(transportId);
-      },
-      (newPending) => setPending(newPending)
-    );
+    const cleanup = listenConnectivity(execOfflineAction, (newPending) => setPending(newPending));
     return cleanup;
-  }, []);
+  }, [execOfflineAction]);
 
   // Carga inicial y polling cada 30s
   useEffect(() => {
@@ -81,13 +81,16 @@ export default function TransportHomeV2() {
 
   const handleAction = async (transportId, actionType) => {
     setProcessing((prev) => ({ ...prev, [transportId]: true }));
-    const actionFn = actionType === 'pickup' ? pickupTransport : deliverTransport;
     try {
-      await actionFn(transportId);
-      // Recargar la lista para obtener el nuevo estado
-      await loadAssignments();
+      if (actionType === 'pickup') {
+        await pickupTransport(transportId);
+      } else if (actionType === 'deliver') {
+        await deliverTransport(transportId);
+      }
+      await loadAssignments(); // refrescar lista
     } catch (err) {
       if (!navigator.onLine) {
+        // Encolar para envío posterior
         enqueue({ type: actionType, transportId });
         setPending(pendingCount());
       } else {

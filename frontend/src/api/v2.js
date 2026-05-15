@@ -42,12 +42,27 @@ async function request(url, options = {}) {
   }
 }
 
+// ─── Pedidos ───────────────────────────────────────
 export async function fetchOrderTimeline(orderId) {
   return request(`/orders/${orderId}/timeline`);
 }
+
+export async function fetchOrder(orderId) {
+  return request(`/orders/${orderId}`);
+}
+
+export async function negotiateOrder(orderId, proposedQuantity, proposedPricePerKg) {
+  return request(`/orders/${orderId}/negotiate`, {
+    method: 'POST',
+    body: JSON.stringify({
+      proposed_quantity: proposedQuantity,
+      proposed_price_per_kg: proposedPricePerKg,
+    }),
+  });
+}
+
 // ─── Transporte ─────────────────────────────────────
 export async function fetchTransportAssignments() {
-  // Asume que GET /api/v2/modular/transport devuelve lista de transportes
   return request('/transport');
 }
 
