@@ -16,3 +16,4 @@ class PaymentConfirmedPayload(OrderBasePayload):
     vendedor_email: str = ""
     transportista_email: Optional[str] = None
     costo_envio: int = 0
+    wompi_referencia: str = ""           # <-- nuevo campo

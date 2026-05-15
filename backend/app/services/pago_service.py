@@ -10,8 +10,6 @@ from app.models import Pago, Comision, Pedido, Transportista
 from app.services.inventario_service import salida_stock_por_pedido
 from app.modules.orders.service import change_order_state
 from app.modules.orders.models import OrderState
-from app.modules.documents.generators import generar_html as generar_doc_html
-from app.modules.documents.service import crear_documento
 from app.modules.orders.events import registrar_evento
 
 COMISION_PLATAFORMA = 8
@@ -136,7 +134,7 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
         if pedido.transportista:
             transportista_email = pedido.transportista.email
 
-        # Publicar evento con todos los datos necesarios para notificaciones
+        # Publicar evento con todos los datos necesarios para notificaciones y documentos
         registrar_evento(
             db,
             pago.pedido_id,
@@ -152,20 +150,12 @@ def confirmar_pago(db: Session, wompi_transaccion_id: str, wompi_referencia: str
                 "vendedor_email": asociacion_email,
                 "transportista_email": transportista_email,
                 "costo_envio": pedido.costo_envio or 0,
+                "wompi_referencia": pago.wompi_referencia,
             }
         )
 
-        # Generar factura (esto será desacoplado en Tarea 5)
-        datos_factura = {
-            "numero": f"FAC-{pago.wompi_referencia}",
-            "fecha": datetime.now().strftime("%d/%m/%Y"),
-            "vendedor": asociacion_email,
-            "comprador": pago.comprador_email,
-            "items": [{"nombre": "Pedido " + pago.pedido_id[:8], "cantidad": 1, "precio_unit": pago.monto_total, "subtotal": pago.monto_total}],
-            "total": pago.monto_total,
-        }
-        html_factura = generar_doc_html("factura", datos_factura)
-        crear_documento(db, "factura", pago.pedido_id, pago.comprador_email, html_factura)
+        # La factura se genera ahora en el listener de documentos
+        # Las notificaciones se envían desde el listener de notificaciones
 
         salida_stock_por_pedido(db, pago.pedido_id)
 
