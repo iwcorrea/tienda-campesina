@@ -1,54 +1,34 @@
-"""
-Servicio de dominio para pedidos agrícolas.
-Contiene la lógica de negocio pura, sin dependencias HTTP.
-"""
-import uuid
+from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
-from app.models import Pedido
-from app.modules.orders.constants import ORDER_STATES
-from app.modules.orders.validators import validar_transicion
-from app.modules.orders.events import registrar_evento
+from app.models import Pedido  # modelo central, permanece en app/models.py
+from .models import OrderStateLog
+from .validators import validate_transition
+import logging
 
-def crear_pedido(
-    db: Session,
-    comprador_email: str,
-) -> Pedido:
-    """Crea un pedido en estado draft."""
-    pedido = Pedido(
-        id=str(uuid.uuid4()),
-        comprador_email=comprador_email,
-        estado="draft",
-    )
-    db.add(pedido)
-    db.commit()
-    db.refresh(pedido)
-    registrar_evento(db, pedido.id, "order_created", usuario_email=comprador_email, estado_nuevo="draft")
-    return pedido
+logger = logging.getLogger(__name__)
 
-def avanzar_estado(
+def change_order_state(
     db: Session,
     pedido: Pedido,
-    nuevo_estado: str,
-    usuario_email: str = "",
-    metadata: str = ""
-) -> bool:
-    """Intenta avanzar el pedido al nuevo estado, validando la transición."""
-    if not validar_transicion(pedido.estado, nuevo_estado):
-        raise ValueError(f"No se puede pasar de '{pedido.estado}' a '{nuevo_estado}'")
-    estado_anterior = pedido.estado
-    pedido.estado = nuevo_estado
-    db.commit()
-    # Mapear el nuevo estado al tipo de evento correspondiente
-    tipo_evento = f"order_{nuevo_estado}" if f"order_{nuevo_estado}" in [
-        "order_confirmed", "order_cancelled", "order_completed", "order_verified", "order_disputed"
-    ] else "note_added"
-    registrar_evento(
-        db,
-        pedido.id,
-        tipo_evento,
-        usuario_email=usuario_email,
-        estado_anterior=estado_anterior,
-        estado_nuevo=nuevo_estado,
-        metadata_extra=metadata,
+    new_state: str,
+    changed_by: str,
+    metadata: Optional[Dict[str, Any]] = None
+) -> Pedido:
+    """
+    Cambia el estado de un pedido validando la transición y registrando el log.
+    No hace commit ni refresh (se espera que el router lo haga).
+    """
+    current_state = pedido.estado
+    validate_transition(current_state, new_state)
+
+    log = OrderStateLog(
+        order_id=pedido.id,
+        previous_state=current_state,
+        new_state=new_state,
+        changed_by=changed_by,
+        metadata=metadata or {},
     )
-    return True
+    db.add(log)
+    pedido.estado = new_state
+    logger.info(f"Pedido {pedido.id}: '{current_state}' -> '{new_state}' por {changed_by}")
+    return pedido

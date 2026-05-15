@@ -359,3 +359,8 @@ class MovimientoInventario(Base):
 
     producto = relationship("Producto", backref="movimientos")
     asociacion = relationship("Asociacion")
+
+    # ... (todo el código original permanece)
+
+# Importación necesaria para que SQLAlchemy conozca OrderStateLog y cree la tabla automáticamente
+from app.modules.orders.models import OrderStateLog

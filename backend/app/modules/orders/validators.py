@@ -1,14 +1,27 @@
-"""
-Validaciones de reglas de negocio para pedidos agrícolas.
-"""
-from app.modules.orders.constants import VALID_TRANSITIONS, ORDER_STATES
+from typing import Optional
+from .models import OrderState
 
-def validar_transicion(estado_actual: str, estado_propuesto: str) -> bool:
-    """Retorna True si la transición es válida."""
-    if estado_actual not in VALID_TRANSITIONS:
+ALLOWED_TRANSITIONS = {
+    OrderState.DRAFT: [OrderState.NEGOTIATION, OrderState.CLOSED],
+    OrderState.NEGOTIATION: [OrderState.CONFIRMED, OrderState.DRAFT, OrderState.CLOSED],
+    OrderState.CONFIRMED: [OrderState.TRANSPORT_ASSIGNED, OrderState.CLOSED],
+    OrderState.TRANSPORT_ASSIGNED: [OrderState.IN_TRANSIT, OrderState.CLOSED],
+    OrderState.IN_TRANSIT: [OrderState.DELIVERED, OrderState.CLOSED],
+    OrderState.DELIVERED: [OrderState.CLOSED],
+    OrderState.CLOSED: [],
+}
+
+def is_valid_transition(current_state: Optional[str], new_state: str) -> bool:
+    if current_state is None:
+        return new_state == OrderState.DRAFT.value
+    try:
+        current = OrderState(current_state)
+        next_state = OrderState(new_state)
+    except ValueError:
         return False
-    return estado_propuesto in VALID_TRANSITIONS[estado_actual]
+    allowed = ALLOWED_TRANSITIONS.get(current, [])
+    return next_state in allowed
 
-def es_estado_final(estado: str) -> bool:
-    """Retorna True si el pedido ya terminó su ciclo de vida."""
-    return estado in ("completed", "cancelled")
+def validate_transition(current_state: Optional[str], new_state: str):
+    if not is_valid_transition(current_state, new_state):
+        raise ValueError(f"Transición no permitida: '{current_state}' -> '{new_state}'")
