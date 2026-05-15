@@ -1,0 +1,93 @@
+.container {
+    padding: 16px;
+    font-family: system-ui, sans-serif;
+    background: #fff;
+    min-height: 100vh;
+  }
+  
+  .title {
+    font-size: 20px;
+    margin: 0 0 16px;
+    color: #2f3e2f;
+    text-align: center;
+  }
+  
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .event {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border-left: 4px solid;
+    background: #f9f9f9;
+  }
+  
+  .icon {
+    font-size: 32px;
+    line-height: 1;
+    min-width: 40px;
+    text-align: center;
+  }
+  
+  .content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .stateText {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2f3e2f;
+  }
+  
+  .time {
+    font-size: 14px;
+    color: #616161;
+    margin-top: 2px;
+  }
+  
+  .detail {
+    font-size: 13px;
+    color: #424242;
+    margin-top: 4px;
+    background: #eee;
+    padding: 2px 8px;
+    border-radius: 12px;
+    align-self: flex-start;
+  }
+  
+  .offlineBar {
+    background: #fff3e0;
+    color: #e65100;
+    text-align: center;
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+  
+  .skeleton {
+    height: 48px;
+    background: #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    animation: pulse 1.5s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+  }
+  
+  .empty {
+    text-align: center;
+    color: #757575;
+    margin-top: 32px;
+  }
