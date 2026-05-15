@@ -45,3 +45,16 @@ async function request(url, options = {}) {
 export async function fetchOrderTimeline(orderId) {
   return request(`/orders/${orderId}/timeline`);
 }
+// ─── Transporte ─────────────────────────────────────
+export async function fetchTransportAssignments() {
+  // Asume que GET /api/v2/modular/transport devuelve lista de transportes
+  return request('/transport');
+}
+
+export async function pickupTransport(transportId) {
+  return request(`/transport/${transportId}/pickup`, { method: 'POST' });
+}
+
+export async function deliverTransport(transportId) {
+  return request(`/transport/${transportId}/deliver`, { method: 'POST' });
+}

@@ -1,0 +1,114 @@
+.container {
+    padding: 16px;
+    font-family: system-ui, sans-serif;
+    background: #fff;
+    min-height: 100vh;
+  }
+  
+  .title {
+    font-size: 20px;
+    margin: 0 0 16px;
+    color: #2f3e2f;
+    text-align: center;
+  }
+  
+  .offlineBanner {
+    background: #ffecb3;
+    color: #e65100;
+    text-align: center;
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .card {
+    border-left: 6px solid;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  
+  .cardHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .icon {
+    font-size: 28px;
+  }
+  
+  .statusText {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2f3e2f;
+  }
+  
+  .cardBody p {
+    margin: 4px 0;
+    font-size: 14px;
+    color: #424242;
+  }
+  
+  .actions {
+    margin-top: 12px;
+  }
+  
+  .actionBtn {
+    width: 100%;
+    padding: 14px;
+    background: #2E7D32;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .actionBtn:disabled {
+    background: #a5d6a7;
+  }
+  
+  .completed {
+    text-align: center;
+    font-size: 16px;
+    color: #2E7D32;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  
+  .skeleton {
+    height: 80px;
+    background: #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    animation: pulse 1.5s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
+  }
+  
+  .empty {
+    text-align: center;
+    margin-top: 64px;
+    color: #757575;
+  }
+  
+  .emptyIcon {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
