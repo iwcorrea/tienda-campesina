@@ -8,6 +8,9 @@ venv/
 .venv/
 backend/venv/
 
+# Node
+node_modules/
+
 # Environments and secrets
 .env
 backend/.env
@@ -17,9 +20,8 @@ backend/google_drive/credentials.json
 *.db
 *.sqlite3
 
-# Build / packaging
-build/
-dist/
+# Build / packaging (solo la carpeta dist en la raíz, no frontend/dist)
+/dist/
 *.egg-info/
 .eggs/
 
