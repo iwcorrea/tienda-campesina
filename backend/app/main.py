@@ -33,31 +33,26 @@ from app.events.dispatcher import EventDispatcher
 from app.events.registry import register_all_listeners
 from app.modules.orders.events import init_dispatcher
 
-# Routers v2 modulares
+# Routers v2 modulares (todos existen)
+from app.modules.auth import router_v2 as auth_v2
+from app.modules.users import router_v2 as users_v2
 from app.modules.orders import router_v2 as orders_v2
 from app.modules.transport import router_v2 as transport_v2
 from app.modules.products import router_v2 as products_v2
 from app.modules.dashboard import router_v2 as dashboard_v2
 from app.modules.admin import router_v2 as admin_v2
-from app.modules.auth import router_v2 as auth_v2
-from app.modules.users import router_v2 as users_v2
 
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
-# Configuraciones previas
 cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
-# Middlewares
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logging.error(f"Error no manejado: {exc}", exc_info=True)
-    return HTMLResponse(
-        content=templates.get_template("500.html").render({"request": request}),
-        status_code=500
-    )
+    return HTMLResponse(content=templates.get_template("500.html").render({"request": request}), status_code=500)
 
 @app.middleware("http")
 async def timeout_y_configuracion(request: Request, call_next):
@@ -83,22 +78,13 @@ async def timeout_y_configuracion(request: Request, call_next):
     return response
 
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, same_site="lax", https_only=True)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Inicialización del EventDispatcher central
 dispatcher = EventDispatcher()
 init_dispatcher(dispatcher)
 register_all_listeners(dispatcher)
 
-# Función que registra TODOS los routers legacy
 def include_legacy_routers(target_app: FastAPI):
     target_app.include_router(auth_router, prefix="/auth")
     target_app.include_router(users_router)
@@ -115,31 +101,26 @@ def include_legacy_routers(target_app: FastAPI):
     target_app.include_router(ayuda.router)
     target_app.include_router(noticias.router)
 
-# Aplicación principal (rutas legacy en raíz)
 include_legacy_routers(app)
 
-# Sub-aplicación para API v1
-v1_app = FastAPI(title="API v1 (Legacy)", description="Endpoints legacy", version="1.0.0")
+v1_app = FastAPI(title="API v1 (Legacy)")
 include_legacy_routers(v1_app)
 app.mount("/api/v1", v1_app)
 
-# Enrutador v2 modular
 v2_modular_router = APIRouter(prefix="/api/v2/modular")
+v2_modular_router.include_router(auth_v2.router, prefix="/auth", tags=["auth_v2"])
+v2_modular_router.include_router(users_v2.router, prefix="/users", tags=["users_v2"])
 v2_modular_router.include_router(orders_v2.router, prefix="/orders", tags=["orders_v2"])
 v2_modular_router.include_router(transport_v2.router, prefix="/transport", tags=["transport_v2"])
 v2_modular_router.include_router(products_v2.router, prefix="/products", tags=["products_v2"])
 v2_modular_router.include_router(dashboard_v2.router, prefix="/dashboard", tags=["dashboard_v2"])
 v2_modular_router.include_router(admin_v2.router, prefix="/admin", tags=["admin_v2"])
-v2_modular_router.include_router(auth_v2.router, prefix="/auth", tags=["auth_v2"])
-v2_modular_router.include_router(users_v2.router, prefix="/users", tags=["users_v2"])
 app.include_router(v2_modular_router)
 
-# Startup
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
-        # Asegurar columnas en configuracion
         existing = set()
         rows = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'"))
         for row in rows:
@@ -148,8 +129,6 @@ def on_startup():
             conn.execute(text("ALTER TABLE configuracion ADD COLUMN permitir_registro BOOLEAN DEFAULT TRUE"))
         if "mantenimiento_modo" not in existing:
             conn.execute(text("ALTER TABLE configuracion ADD COLUMN mantenimiento_modo BOOLEAN DEFAULT FALSE"))
-
-        # Agregar columna region a las tablas principales si no existe
         for tabla in ["asociaciones", "personas", "transportistas", "pedidos", "transportes"]:
             cols = conn.execute(text(f"SELECT column_name FROM information_schema.columns WHERE table_name='{tabla}'"))
             col_names = {row[0] for row in cols}
