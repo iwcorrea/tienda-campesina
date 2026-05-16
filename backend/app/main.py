@@ -39,6 +39,8 @@ from app.modules.transport import router_v2 as transport_v2
 from app.modules.products import router_v2 as products_v2
 from app.modules.dashboard import router_v2 as dashboard_v2
 from app.modules.admin import router_v2 as admin_v2
+from app.modules.auth import router_v2 as auth_v2
+from app.modules.users import router_v2 as users_v2
 
 logging.basicConfig(level=logging.INFO)
 
@@ -128,6 +130,8 @@ v2_modular_router.include_router(transport_v2.router, prefix="/transport", tags=
 v2_modular_router.include_router(products_v2.router, prefix="/products", tags=["products_v2"])
 v2_modular_router.include_router(dashboard_v2.router, prefix="/dashboard", tags=["dashboard_v2"])
 v2_modular_router.include_router(admin_v2.router, prefix="/admin", tags=["admin_v2"])
+v2_modular_router.include_router(auth_v2.router, prefix="/auth", tags=["auth_v2"])
+v2_modular_router.include_router(users_v2.router, prefix="/users", tags=["users_v2"])
 app.include_router(v2_modular_router)
 
 # Startup

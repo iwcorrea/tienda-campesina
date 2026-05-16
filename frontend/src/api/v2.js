@@ -28,6 +28,49 @@ async function request(url, options = {}) {
   }
 }
 
+// ─── Autenticación ─────────────────────────────────
+export async function loginV2(email, password) {
+  const formData = new URLSearchParams();
+  formData.append('email', email);
+  formData.append('password', password);
+  return request(`/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: formData.toString(),
+  });
+}
+
+export async function registerV2(email, password, tipo, nombre, telefono = '', region = '') {
+  const formData = new URLSearchParams();
+  formData.append('email', email);
+  formData.append('password', password);
+  formData.append('tipo', tipo);
+  formData.append('nombre', nombre);
+  formData.append('telefono', telefono);
+  formData.append('region', region);
+  return request(`/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: formData.toString(),
+  });
+}
+
+export async function logoutV2() {
+  return request(`/auth/logout`, { method: 'POST' });
+}
+
+// ─── Usuarios ──────────────────────────────────────
+export async function fetchProfile() {
+  return request(`/users/me`);
+}
+
+export async function updateProfile(data) {
+  return request(`/users/me`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
 // ─── Productos ─────────────────────────────────────
 export async function fetchProducts(query = '', region = '') {
   const params = new URLSearchParams();
