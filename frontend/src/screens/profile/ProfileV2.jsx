@@ -1,9 +1,9 @@
-import React from 'react';
-import { useAuth } from '../../context/AuthContext'; // Ajustar ruta
+import React, { useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
 import styles from './ProfileV2.module.css';
 
 export default function ProfileV2() {
-  const { user } = useAuth();
+  const { user } = useContext(AuthContext);
   if (!user) return <div className={styles.loading}>Cargando perfil...</div>;
 
   return (
