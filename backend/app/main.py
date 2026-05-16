@@ -1,4 +1,3 @@
-main.py
 import logging
 import os
 from fastapi import FastAPI, Request, APIRouter
