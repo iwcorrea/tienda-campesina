@@ -33,11 +33,13 @@ app = FastAPI()
 cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
+# ─── Exception handler ────────────────────────────
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logging.error(f"Error no manejado: {exc}", exc_info=True)
     return JSONResponse(status_code=500, content={"detail": "Error interno del servidor"})
 
+# ─── Middlewares ───────────────────────────────────
 @app.middleware("http")
 async def timeout_y_configuracion(request: Request, call_next):
     db = SessionLocal()
@@ -64,10 +66,12 @@ async def timeout_y_configuracion(request: Request, call_next):
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, same_site="lax", https_only=True)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+# ─── EventDispatcher ──────────────────────────────
 dispatcher = EventDispatcher()
 init_dispatcher(dispatcher)
 register_all_listeners(dispatcher)
 
+# ─── Routers API v2 ───────────────────────────────
 v2_modular_router = APIRouter(prefix="/api/v2/modular")
 v2_modular_router.include_router(auth_v2.router, prefix="/auth", tags=["auth_v2"])
 v2_modular_router.include_router(users_v2.router, prefix="/users", tags=["users_v2"])
@@ -78,35 +82,35 @@ v2_modular_router.include_router(dashboard_v2.router, prefix="/dashboard", tags=
 v2_modular_router.include_router(admin_v2.router, prefix="/admin", tags=["admin_v2"])
 app.include_router(v2_modular_router)
 
-# Ruta absoluta al directorio dist del frontend calculada de forma segura
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", "frontend", "dist"))
-
-# Endpoint de depuración para verificar el directorio dist en Render
-@app.get("/debug-dist")
-def debug_dist():
-    return {
-        "frontend_dir": FRONTEND_DIR,
-        "exists": os.path.isdir(FRONTEND_DIR),
-        "index_exists": os.path.isfile(os.path.join(FRONTEND_DIR, "index.html")),
-        "files": os.listdir(FRONTEND_DIR) if os.path.isdir(FRONTEND_DIR) else []
-    }
+# ─── Frontend React (SPA) ─────────────────────────
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
 
 if os.path.isdir(FRONTEND_DIR):
+    # Montar assets estáticos (JS, CSS)
     assets_dir = os.path.join(FRONTEND_DIR, "assets")
     if os.path.isdir(assets_dir):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
-    @app.get("/{full_path:path}")
+    # Servir index.html como fallback para todas las rutas no capturadas
+    @app.get("/{full_path:path}", response_class=FileResponse)
     async def serve_spa(full_path: str):
-        file_path = os.path.join(FRONTEND_DIR, full_path) if full_path else ""
+        """
+        Sirve archivos estáticos del frontend o el index.html (SPA).
+        """
+        file_path = os.path.join(FRONTEND_DIR, full_path) if full_path else None
         if file_path and os.path.isfile(file_path):
             return FileResponse(file_path)
+        # Fallback SPA
         index_path = os.path.join(FRONTEND_DIR, "index.html")
         if os.path.exists(index_path):
             return FileResponse(index_path)
         return JSONResponse(status_code=404, content={"detail": "Not found"})
+else:
+    @app.get("/")
+    async def no_frontend():
+        return JSONResponse({"detail": "Frontend no construido"}, status_code=500)
 
+# ─── Startup ──────────────────────────────────────
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
