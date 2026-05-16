@@ -22,7 +22,6 @@ def admin_stats(db: Session = Depends(get_db), current_user: dict = Depends(get_
 @router.get("/users")
 def admin_users(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     is_admin(current_user)
-    # simplificado: lista de asociaciones
     return db.query(Asociacion).all()
 
 @router.get("/commissions")

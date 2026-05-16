@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey
+from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -25,6 +25,7 @@ class Asociacion(Base):
     fecha_registro = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     pregunta_secreta = Column(String, default="")
     respuesta_secreta_hash = Column(String, default="")
+    region = Column(String, nullable=True, default=None)
 
     productos = relationship("Producto", back_populates="asociacion", cascade="all, delete-orphan")
     transportistas_favoritos = relationship("TransportistaFavorito", back_populates="asociacion", cascade="all, delete-orphan")
@@ -70,6 +71,7 @@ class Persona(Base):
     fecha_registro = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     pregunta_secreta = Column(String, default="")
     respuesta_secreta_hash = Column(String, default="")
+    region = Column(String, nullable=True, default=None)
 
 class Vacante(Base):
     __tablename__ = "vacantes"
@@ -108,6 +110,7 @@ class Configuracion(Base):
     __tablename__ = "configuracion"
 
     id = Column(Integer, primary_key=True, default=1)
+
     titulo_sitio = Column(String, default="Tienda Campesina")
     descripcion_meta = Column(Text, default="Plataforma para visibilizar asociaciones rurales.")
     google_verification = Column(String, default="")
@@ -191,6 +194,7 @@ class Transportista(Base):
     activo = Column(String, default="1")
     fecha_registro = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     documento_url = Column(Text, default="")
+    region = Column(String, nullable=True, default=None)
 
     favoritos = relationship("TransportistaFavorito", back_populates="transportista", cascade="all, delete-orphan")
 
@@ -214,6 +218,7 @@ class Pedido(Base):
     transportista_id = Column(String, ForeignKey("transportistas.id"), nullable=True)
     estado_envio = Column(String, default="pendiente")
     costo_envio = Column(Integer, default=0)
+    region = Column(String, nullable=True, default=None)
 
     items = relationship("ItemPedido", back_populates="pedido", cascade="all, delete-orphan")
     transportista = relationship("Transportista")
@@ -267,6 +272,20 @@ class Contacto(Base):
     tipo_relacion = Column(String, default="contacto")
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
+class ValoracionComprador(Base):
+    __tablename__ = "valoraciones_compradores"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    comprador_email = Column(String, nullable=False, index=True)
+    asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
+    pedido_id = Column(String, ForeignKey("pedidos.id"), nullable=False)
+    estrellas = Column(Integer, nullable=False)
+    comentario = Column(Text, default="")
+    fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    asociacion = relationship("Asociacion")
+    pedido = relationship("Pedido")
+
 class SolicitudContacto(Base):
     __tablename__ = "solicitudes_contacto"
 
@@ -283,20 +302,6 @@ class Bloqueo(Base):
     bloqueador_email = Column(String, nullable=False, index=True)
     bloqueado_email = Column(String, nullable=False)
     fecha_creacion = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-class ValoracionComprador(Base):
-    __tablename__ = "valoraciones_compradores"
-
-    id = Column(String, primary_key=True, default=generate_uuid)
-    comprador_email = Column(String, nullable=False, index=True)
-    asociacion_email = Column(String, ForeignKey("asociaciones.email"), nullable=False)
-    pedido_id = Column(String, ForeignKey("pedidos.id"), nullable=False)
-    estrellas = Column(Integer, nullable=False)
-    comentario = Column(Text, default="")
-    fecha = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-    asociacion = relationship("Asociacion")
-    pedido = relationship("Pedido")
 
 class Pago(Base):
     __tablename__ = "pagos"
@@ -348,8 +353,8 @@ class MovimientoInventario(Base):
     producto = relationship("Producto", backref="movimientos")
     asociacion = relationship("Asociacion")
 
+# Importaciones de nuevos modelos modulares
 from app.modules.orders.models import OrderStateLog
 from app.events.models import EventLog
-# ... (todo el código existente)
-
 from app.modules.transport.models import Transport, TransportStateLog
+from app.modules.billing.models import Commission

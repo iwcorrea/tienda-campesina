@@ -13,11 +13,17 @@ def get_dashboard(db: Session = Depends(get_db), current_user: dict = Depends(ge
     data = {"activeOrders": 0, "todayDeliveries": 0}
     now = datetime.now(timezone.utc)
     if tipo == "comprador":
-        data["activeOrders"] = db.query(Pedido).filter(Pedido.comprador_email == email, Pedido.estado != "entregado").count()
+        data["activeOrders"] = db.query(Pedido).filter(
+            Pedido.comprador_email == email,
+            Pedido.estado != "entregado"
+        ).count()
     elif tipo == "asociacion":
-        # Simplificado: contar pedidos donde la asociación es vendedora (vía items)
         from app.models import ItemPedido
-        data["activeOrders"] = db.query(Pedido).join(ItemPedido).filter(ItemPedido.producto.has(asociacion_email=email)).filter(Pedido.estado != "entregado").count()
-    # entregas de hoy
-    data["todayDeliveries"] = db.query(Pedido).filter(Pedido.estado == "entregado", Pedido.fecha_creacion >= now.date()).count()
+        data["activeOrders"] = db.query(Pedido).join(ItemPedido).filter(
+            ItemPedido.producto.has(asociacion_email=email)
+        ).filter(Pedido.estado != "entregado").count()
+    data["todayDeliveries"] = db.query(Pedido).filter(
+        Pedido.estado == "entregado",
+        Pedido.fecha_creacion >= now.date()
+    ).count()
     return data

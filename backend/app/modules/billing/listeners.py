@@ -1,15 +1,14 @@
 from sqlalchemy.orm import Session
 from app.events.dispatcher import EventDispatcher
-from app.events.payloads import TransportBasePayload  # o el que corresponda
+from app.events.payloads import TransportBasePayload
 from app.models import Pedido
+from app.modules.transport.models import Transport
 from app.modules.billing.models import Commission
 import logging
 
 logger = logging.getLogger(__name__)
 
 def _on_transport_delivered(payload: TransportBasePayload, db: Session):
-    # Obtener el pedido asociado al transporte
-    from app.models import Transport
     transport = db.query(Transport).filter(Transport.id == payload.transport_id).first()
     if not transport:
         return
@@ -17,7 +16,6 @@ def _on_transport_delivered(payload: TransportBasePayload, db: Session):
     if not pedido or pedido.estado != "entregado":
         return
 
-    # Calcular monto total del pedido (suma de items * precios acordados)
     total = 0
     for item in pedido.items:
         precio = item.precio_unitario_inicial
@@ -27,7 +25,7 @@ def _on_transport_delivered(payload: TransportBasePayload, db: Session):
                 break
         total += item.cantidad * precio
 
-    percentage = 5.0  # Configurable
+    percentage = 5.0
     amount = int(total * percentage / 100)
 
     commission = Commission(

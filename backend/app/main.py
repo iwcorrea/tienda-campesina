@@ -22,7 +22,7 @@ import cloudinary
 import time
 from sqlalchemy import text
 
-# Routers legacy (páginas)
+# Routers legacy
 from app.routers import home, admin, calculadora
 from app.routers import empleos, herramientas
 from app.routers import ayuda
@@ -44,9 +44,7 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
-# =========================================================
 # Configuraciones previas
-# =========================================================
 cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
@@ -91,19 +89,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Archivos estáticos (compartidos)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# =========================================================
 # Inicialización del EventDispatcher central
-# =========================================================
 dispatcher = EventDispatcher()
-init_dispatcher(dispatcher)          # inyecta el dispatcher en orders/events.py
-register_all_listeners(dispatcher)   # registra listeners de notificaciones, documentos, chat, orders y transport
+init_dispatcher(dispatcher)
+register_all_listeners(dispatcher)
 
-# =========================================================
 # Función que registra TODOS los routers legacy
-# =========================================================
 def include_legacy_routers(target_app: FastAPI):
     target_app.include_router(auth_router, prefix="/auth")
     target_app.include_router(users_router)
@@ -120,64 +113,34 @@ def include_legacy_routers(target_app: FastAPI):
     target_app.include_router(ayuda.router)
     target_app.include_router(noticias.router)
 
-# =========================================================
-# 1. Aplicación principal (rutas legacy directamente en raíz)
-# =========================================================
+# Aplicación principal (rutas legacy en raíz)
 include_legacy_routers(app)
 
-# =========================================================
-# 2. Sub-aplicación para versión 1 de la API (/api/v1)
-# =========================================================
-v1_app = FastAPI(
-    title="API v1 (Legacy)",
-    description="Endpoints legacy del monolito, expuestos bajo /api/v1",
-    version="1.0.0"
-)
+# Sub-aplicación para API v1
+v1_app = FastAPI(title="API v1 (Legacy)", description="Endpoints legacy", version="1.0.0")
 include_legacy_routers(v1_app)
 app.mount("/api/v1", v1_app)
 
-# =========================================================
-# 3. Enrutador para v2 modular
-# =========================================================
+# Enrutador v2 modular
 v2_modular_router = APIRouter(prefix="/api/v2/modular")
-
-# Montar los endpoints v2 de pedidos
 v2_modular_router.include_router(orders_v2.router, prefix="/orders", tags=["orders_v2"])
-
-# Montar los endpoints v2 de transporte
 v2_modular_router.include_router(transport_v2.router, prefix="/transport", tags=["transport_v2"])
-
-# Montar los endpoints v2 de productos
 v2_modular_router.include_router(products_v2.router, prefix="/products", tags=["products_v2"])
-
-# Montar los endpoints v2 del dashboard
 v2_modular_router.include_router(dashboard_v2.router, prefix="/dashboard", tags=["dashboard_v2"])
-
-# Montar los endpoints v2 de administración
 v2_modular_router.include_router(admin_v2.router, prefix="/admin", tags=["admin_v2"])
-
 app.include_router(v2_modular_router)
 
-# =========================================================
-# Eventos de startup (migraciones automáticas)
-# =========================================================
+# Startup
 @app.on_event("startup")
 def on_startup():
-    # Crear todas las tablas (incluye nuevas: order_state_logs, event_log, transportes, transport_state_logs)
     Base.metadata.create_all(bind=engine)
-
-    # Asegurar columnas nuevas en configuracion (migración ad‑hoc)
     with engine.connect() as conn:
         existing = set()
-        rows = conn.execute(
-            text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'")
-        )
+        rows = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'"))
         for row in rows:
-            existing.add(row)
-
+            existing.add(row[0])
         if "permitir_registro" not in existing:
             conn.execute(text("ALTER TABLE configuracion ADD COLUMN permitir_registro BOOLEAN DEFAULT TRUE"))
         if "mantenimiento_modo" not in existing:
             conn.execute(text("ALTER TABLE configuracion ADD COLUMN mantenimiento_modo BOOLEAN DEFAULT FALSE"))
-
         conn.commit()
