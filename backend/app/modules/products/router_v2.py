@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from app.dependencies import get_db, get_current_user
 from app.models import Producto, Asociacion
+from .catalog import listar_productos_catalogo, obtener_producto_por_id
 
 router = APIRouter(prefix="/products", tags=["products_v2"])
 
@@ -35,28 +36,24 @@ def list_products(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    query = db.query(Producto)
+    productos = listar_productos_catalogo(db)
 
     if q:
         q_lower = q.lower()
-        query = query.filter(
-            (Producto.nombre.ilike(f"%{q_lower}%")) |
-            (Producto.descripcion.ilike(f"%{q_lower}%"))
-        )
+        productos = [p for p in productos if
+                     q_lower in p.nombre.lower() or
+                     (p.descripcion and q_lower in p.descripcion.lower())]
 
     effective_region = region or (current_user.get("region") if current_user else None)
     if effective_region:
-        query = query.join(Producto.asociacion).filter(Asociacion.region == effective_region)
+        productos = [p for p in productos if p.asociacion and p.asociacion.region == effective_region]
 
     start = (page - 1) * per_page
-    productos_pagina = query.order_by(Producto.fecha_creacion.desc()).offset(start).limit(per_page).all()
-
-    # Devuelve solo el array, el frontend espera un array simple
-    return [_format_producto(p) for p in productos_pagina]
+    return [_format_producto(p) for p in productos[start:start + per_page]]
 
 @router.get("/{product_id}")
 def get_product(product_id: str, db: Session = Depends(get_db)):
-    producto = db.query(Producto).filter(Producto.id == product_id).first()
+    producto = obtener_producto_por_id(db, product_id)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return _format_producto(producto)

@@ -1,17 +1,17 @@
-"""
-Capa de almacenamiento: subida de documentos a Cloudinary.
-"""
-import io
-from fastapi import UploadFile
-from app.services.upload_service import upload_raw, upload_image
-from app.cloudinary_utils import delete_cloudinary_asset
+"""Almacenamiento de documentos en Cloudinary."""
+import cloudinary.uploader
 
-def guardar_documento(html_content: str, filename: str, folder: str = "documentos") -> str:
-    """Sube el HTML como archivo raw a Cloudinary y retorna la URL."""
-    file_bytes = io.BytesIO(html_content.encode("utf-8"))
-    file = UploadFile(filename=filename, file=file_bytes, headers={"content-type": "text/html"})
-    return upload_raw(file, folder=folder)
-
-def eliminar_documento(url: str):
-    """Elimina un documento de Cloudinary por su URL."""
-    delete_cloudinary_asset(url)
+def guardar_documento(contenido_html: str, filename: str, folder: str) -> str:
+    """
+    Sube un documento HTML a Cloudinary y retorna la URL.
+    """
+    result = cloudinary.uploader.upload(
+        contenido_html.encode('utf-8'),
+        resource_type="raw",
+        folder=folder,
+        public_id=filename.rsplit('.', 1)[0],
+        format="html",
+        use_filename=True,
+        unique_filename=True,
+    )
+    return result.get("secure_url", "")
