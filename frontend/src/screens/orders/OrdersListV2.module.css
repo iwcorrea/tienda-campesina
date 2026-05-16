@@ -1,0 +1,10 @@
+.container { padding: 16px; }
+.title { font-size: 20px; margin-bottom: 16px; }
+.card {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px; border-left: 5px solid; border-radius: 10px;
+  margin-bottom: 10px; text-decoration: none; color: inherit;
+}
+.id { font-size: 15px; font-weight: 600; }
+.state { font-size: 14px; font-weight: 600; }
+.loading, .empty { text-align: center; margin-top: 40px; color: #666; }

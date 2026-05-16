@@ -28,12 +28,12 @@ async function request(url, options = {}) {
   }
 }
 
-// ─── Autenticación ─────────────────────────────────
+// ─── Auth ────────────────────────────────────────
 export async function loginV2(email, password) {
   const formData = new URLSearchParams();
   formData.append('email', email);
   formData.append('password', password);
-  return request(`/auth/login`, {
+  return request('/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: formData.toString(),
@@ -48,7 +48,7 @@ export async function registerV2(email, password, tipo, nombre, telefono = '', r
   formData.append('nombre', nombre);
   formData.append('telefono', telefono);
   formData.append('region', region);
-  return request(`/auth/register`, {
+  return request('/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: formData.toString(),
@@ -56,22 +56,19 @@ export async function registerV2(email, password, tipo, nombre, telefono = '', r
 }
 
 export async function logoutV2() {
-  return request(`/auth/logout`, { method: 'POST' });
+  return request('/auth/logout', { method: 'POST' });
 }
 
-// ─── Usuarios ──────────────────────────────────────
+// ─── Users ───────────────────────────────────────
 export async function fetchProfile() {
-  return request(`/users/me`);
+  return request('/users/me');
 }
 
 export async function updateProfile(data) {
-  return request(`/users/me`, {
-    method: 'PATCH',
-    body: JSON.stringify(data),
-  });
+  return request('/users/me', { method: 'PATCH', body: JSON.stringify(data) });
 }
 
-// ─── Productos ─────────────────────────────────────
+// ─── Products ────────────────────────────────────
 export async function fetchProducts(query = '', region = '') {
   const params = new URLSearchParams();
   if (query) params.append('q', query);
@@ -83,30 +80,41 @@ export async function fetchProduct(productId) {
   return request(`/products/${productId}`);
 }
 
-// ─── Pedidos (orders) ─────────────────────────────
-export async function fetchOrderTimeline(orderId) {
-  return request(`/orders/${orderId}/timeline`);
-}
-
-export async function fetchOrder(orderId) {
-  return request(`/orders/${orderId}`);
-}
-
-export async function fetchOrders(estado, region = '') {
+// ─── Orders ──────────────────────────────────────
+export async function fetchOrders(estado = '', region = '') {
   const params = new URLSearchParams();
   if (estado) params.append('estado', estado);
   if (region) params.append('region', region);
   return request(`/orders?${params.toString()}`);
 }
 
+export async function fetchOrder(orderId) {
+  return request(`/orders/${orderId}`);
+}
+
+export async function fetchOrderTimeline(orderId) {
+  return request(`/orders/${orderId}/timeline`);
+}
+
+export async function createOrder() {
+  return request('/orders', { method: 'POST' });
+}
+
 export async function negotiateOrder(orderId, proposedQuantity, proposedPricePerKg) {
   return request(`/orders/${orderId}/negotiate`, {
     method: 'POST',
-    body: JSON.stringify({ proposed_quantity: proposedQuantity, proposed_price_per_kg: proposedPricePerKg }),
+    body: JSON.stringify({
+      proposed_quantity: proposedQuantity,
+      proposed_price_per_kg: proposedPricePerKg,
+    }),
   });
 }
 
-// ─── Transporte ────────────────────────────────────
+export async function confirmOrder(orderId) {
+  return request(`/orders/${orderId}/confirm`, { method: 'POST' });
+}
+
+// ─── Transport ───────────────────────────────────
 export async function fetchTransportAssignments() {
   return request('/transport');
 }
@@ -119,7 +127,7 @@ export async function deliverTransport(transportId) {
   return request(`/transport/${transportId}/deliver`, { method: 'POST' });
 }
 
-// ─── Dashboard ─────────────────────────────────────
+// ─── Dashboard ───────────────────────────────────
 export async function fetchDashboard() {
   return request('/dashboard');
 }

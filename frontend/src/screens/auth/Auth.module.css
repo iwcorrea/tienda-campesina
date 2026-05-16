@@ -1,0 +1,62 @@
+.container {
+    padding: 24px 16px;
+    font-family: system-ui, sans-serif;
+    min-height: 100vh;
+    background: #fff;
+  }
+  .title {
+    font-size: 22px;
+    text-align: center;
+    margin-bottom: 24px;
+    color: #2f3e2f;
+  }
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+    color: #2f3e2f;
+  }
+  .input, .select {
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-family: inherit;
+  }
+  .button {
+    padding: 16px;
+    background: #2d6a4f;
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .button:disabled {
+    background: #a5d6a7;
+  }
+  .error {
+    color: #c62828;
+    font-size: 14px;
+    margin: 0;
+    text-align: center;
+  }
+  .link {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+  .link a {
+    color: #2d6a4f;
+    font-weight: 600;
+  }
