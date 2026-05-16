@@ -1,3 +1,4 @@
+main.py
 import logging
 import os
 from fastapi import FastAPI, Request, APIRouter
@@ -81,6 +82,16 @@ app.include_router(v2_modular_router)
 # Ruta absoluta al directorio dist del frontend calculada de forma segura
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", "frontend", "dist"))
+
+# Endpoint de depuración para verificar el directorio dist en Render
+@app.get("/debug-dist")
+def debug_dist():
+    return {
+        "frontend_dir": FRONTEND_DIR,
+        "exists": os.path.isdir(FRONTEND_DIR),
+        "index_exists": os.path.isfile(os.path.join(FRONTEND_DIR, "index.html")),
+        "files": os.listdir(FRONTEND_DIR) if os.path.isdir(FRONTEND_DIR) else []
+    }
 
 if os.path.isdir(FRONTEND_DIR):
     assets_dir = os.path.join(FRONTEND_DIR, "assets")
