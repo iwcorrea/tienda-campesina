@@ -135,6 +135,7 @@ app.include_router(v2_modular_router)
 def on_startup():
     Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
+        # Asegurar columnas en configuracion
         existing = set()
         rows = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'"))
         for row in rows:
@@ -143,4 +144,11 @@ def on_startup():
             conn.execute(text("ALTER TABLE configuracion ADD COLUMN permitir_registro BOOLEAN DEFAULT TRUE"))
         if "mantenimiento_modo" not in existing:
             conn.execute(text("ALTER TABLE configuracion ADD COLUMN mantenimiento_modo BOOLEAN DEFAULT FALSE"))
+
+        # Agregar columna region a las tablas principales si no existe
+        for tabla in ["asociaciones", "personas", "transportistas", "pedidos", "transportes"]:
+            cols = conn.execute(text(f"SELECT column_name FROM information_schema.columns WHERE table_name='{tabla}'"))
+            col_names = {row[0] for row in cols}
+            if "region" not in col_names:
+                conn.execute(text(f"ALTER TABLE {tabla} ADD COLUMN region VARCHAR DEFAULT NULL"))
         conn.commit()
