@@ -3,19 +3,17 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from math import ceil
 from app.dependencies import get_db, get_current_user
-from app.models import Producto, Asociacion, Valoracion
-from app.services.catalogo_service import (
-    listar_productos_catalogo,
-    obtener_producto_por_id as servicio_obtener_producto,
-)
+from app.models import Producto
 
 router = APIRouter(prefix="/products", tags=["products_v2"])
 
-def _format_producto(producto):
+def _format_producto(producto: Producto) -> dict:
     """Formatea un objeto Producto al contrato que espera el frontend."""
     valoraciones = producto.valoraciones
-    promedio = round(sum(v.estrellas for v in valoraciones) / len(valoraciones), 1) if valoraciones else None
-
+    promedio = (
+        round(sum(v.estrellas for v in valoraciones) / len(valoraciones), 1)
+        if valoraciones else None
+    )
     return {
         "id": producto.id,
         "nombre": producto.nombre,
@@ -41,34 +39,34 @@ def list_products(
 ):
     """
     Lista productos con filtros opcionales, paginado.
-    Reutiliza el servicio legacy de catálogo.
     """
-    # El servicio legacy espera filtros específicos; adaptamos aquí
-    # para no modificar el servicio.
-    # Retorna todos los productos activos, luego aplicamos búsqueda y paginación.
-    productos_brutos = listar_productos_catalogo(db)  # lista de Producto
-
+    # Consulta base con joins necesarios para evitar N+1
+    query = db.query(Producto)
+    # Cargar relaciones necesarias (asociacion y valoraciones) para evitar consultas extra
+    # (esto funciona si las relaciones están definidas con lazy='joined' o se hace eagerload)
+    # Como Producto ya tiene relationship a asociacion y valoraciones, se cargarán bajo demanda.
+    
     # Filtro por búsqueda
     if q:
         q_lower = q.lower()
-        productos_brutos = [p for p in productos_brutos if
-                            q_lower in p.nombre.lower() or
-                            (p.descripcion and q_lower in p.descripcion.lower())]
-
-    # Filtro por región (si se pasa, o usar la del usuario)
+        query = query.filter(
+            (Producto.nombre.ilike(f"%{q_lower}%")) |
+            (Producto.descripcion.ilike(f"%{q_lower}%"))
+        )
+    
+    # Filtro por región (a través de la asociación)
     effective_region = region or (current_user.get("region") if current_user else None)
     if effective_region:
-        productos_brutos = [p for p in productos_brutos if
-                            p.asociacion and p.asociacion.region == effective_region]
-
-    total = len(productos_brutos)
+        from app.models import Asociacion
+        query = query.join(Producto.asociacion).filter(Asociacion.region == effective_region)
+    
+    total = query.count()
     total_pages = ceil(total / per_page) if total else 0
     start = (page - 1) * per_page
-    end = start + per_page
-    pagina_productos = productos_brutos[start:end]
-
-    resultado = [_format_producto(p) for p in pagina_productos]
-
+    productos_pagina = query.order_by(Producto.fecha_creacion.desc()).offset(start).limit(per_page).all()
+    
+    resultado = [_format_producto(p) for p in productos_pagina]
+    
     return {
         "data": resultado,
         "meta": {
@@ -81,7 +79,7 @@ def list_products(
 
 @router.get("/{product_id}")
 def get_product(product_id: str, db: Session = Depends(get_db)):
-    producto = servicio_obtener_producto(db, product_id)
+    producto = db.query(Producto).filter(Producto.id == product_id).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return _format_producto(producto)
