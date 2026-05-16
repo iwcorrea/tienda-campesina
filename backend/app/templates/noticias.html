@@ -1,26 +1,24 @@
 {% extends "base.html" %}
-{% block title %}Noticias{% endblock %}
-{% block content %}
-<div class="modern-section">
-    <h2 class="fw-bold mb-4">📰 Noticias</h2>
-    <div class="row g-4">
-        {% for noticia in noticias %}
-        <div class="col-md-6">
-            <div class="card modern-card h-100">
-                {% if noticia.imagen_url %}
-                <img src="{{ noticia.imagen_url }}" class="card-img-top" alt="{{ noticia.titulo }}">
-                {% endif %}
-                <div class="card-body">
-                    <h5 class="card-title">{{ noticia.titulo }}</h5>
-                    <p class="card-text text-muted">{{ noticia.contenido[:150] }}{% if noticia.contenido|length > 150 %}...{% endif %}</p>
-                    <small class="text-muted">{{ noticia.fecha_publicacion.strftime('%d/%m/%Y') }}</small>
-                    <a href="/noticias/{{ noticia.id }}" class="btn btn-sm btn-outline-success mt-2">Leer más</a>
-                </div>
+{% block contenido %}
+<h1 class="mb-4">📰 Noticias</h1>
+{% if noticias %}
+<div class="row">
+    {% for noticia in noticias %}
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            {% if noticia.imagen_url %}
+            <img src="{{ noticia.imagen_url }}" loading="lazy" class="card-img-top" alt="{{ noticia.titulo }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ noticia.titulo }}</h5>
+                <p class="card-text">{{ noticia.contenido[:150] }}...</p>
+                <a href="/noticias/{{ noticia.id }}" class="btn btn-outline-success btn-sm">Leer más</a>
             </div>
         </div>
-        {% else %}
-        <div class="col-12 text-center text-muted">No hay noticias.</div>
-        {% endfor %}
     </div>
+    {% endfor %}
 </div>
+{% else %}
+<div class="alert alert-info">No hay noticias publicadas.</div>
+{% endif %}
 {% endblock %}

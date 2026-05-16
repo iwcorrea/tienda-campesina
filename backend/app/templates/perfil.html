@@ -1,58 +1,23 @@
 {% extends "base.html" %}
-{% block title %}{{ asociacion.nombre }}{% endblock %}
-{% block content %}
-<div class="modern-section">
-    <div class="row">
-        <div class="col-md-4">
-            <img src="{{ asociacion.logo_url or 'https://placehold.co/300x200/5B8C51/white?text=Logo' }}" class="img-fluid rounded mb-3">
-            <h2>{{ asociacion.nombre }}</h2>
-            <p>{{ asociacion.descripcion }}</p>
-            <p><strong>Dirección:</strong> {{ asociacion.direccion }}</p>
-            <p><strong>Teléfono:</strong> {{ asociacion.telefono }}</p>
-            {% if asociacion.show_whatsapp == "1" %}
-            <a href="https://wa.me/{{ asociacion.telefono }}" class="btn btn-success">Contactar por WhatsApp</a>
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2>👤 Mi perfil</h2>
+        <ul class="list-group mb-4">
+            <li class="list-group-item"><strong>Nombre:</strong> {{ usuario.nombre }}</li>
+            <li class="list-group-item"><strong>Email:</strong> {{ usuario.email }}</li>
+            <li class="list-group-item"><strong>Tipo:</strong> {{ usuario.tipo }}</li>
+            {% if usuario.region %}
+            <li class="list-group-item"><strong>Región:</strong> {{ usuario.region }}</li>
             {% endif %}
-
-            {% if request.session.get("usuario") %}
-            <form method="post" action="/contactos/agregar" class="mt-3">
-                <input type="hidden" name="contacto_email" value="{{ asociacion.email }}">
-                <input type="hidden" name="tipo_relacion" value="proveedor">
-                <button type="submit" class="btn btn-outline-primary">➕ Agregar a mis contactos</button>
-            </form>
+            {% if usuario.telefono %}
+            <li class="list-group-item"><strong>Teléfono:</strong> {{ usuario.telefono }}</li>
             {% endif %}
-        </div>
-        <div class="col-md-8">
-            <h3>Productos y servicios</h3>
-            <div class="row row-cols-1 row-cols-md-2 g-3">
-                {% for producto in productos %}
-                <div class="col">
-                    <div class="card shadow-sm border-0">
-                        <img src="{{ producto.imagen }}" class="card-img-top" alt="{{ producto.nombre }}" style="height:150px; object-fit:cover;">
-                        <div class="card-body">
-                            <h5>{{ producto.nombre }}</h5>
-                            <p class="text-muted small">{{ producto.descripcion[:80] }}...</p>
-                            <p class="fw-bold">${{ producto.precio }}</p>
-                            <small>{{ producto.tipo }} / {{ producto.tipo_precio }}</small>
-                            {% if request.session.get("usuario") %}
-                                {% if producto.tipo == 'producto' %}
-                                    <form method="post" action="/carrito/agregar/{{ producto.id }}" class="mt-2">
-                                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">+ Agregar al carrito</button>
-                                    </form>
-                                {% else %}
-                                    <form method="post" action="/pedidos/cotizar-servicio/{{ producto.id }}" class="mt-2">
-                                        <input type="hidden" name="cantidad" value="1">
-                                        <button type="submit" class="btn btn-sm btn-outline-warning w-100">📋 Solicitar cotización</button>
-                                    </form>
-                                {% endif %}
-                            {% else %}
-                                <a href="/auth/login" class="btn btn-sm btn-outline-secondary w-100 mt-2">Iniciar sesión para comprar</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+        </ul>
+        <a href="/pedidos" class="btn btn-outline-success">Mis pedidos</a>
+        {% if usuario.tipo == 'transportista' %}
+        <a href="/transportista" class="btn btn-outline-success">Mis viajes</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

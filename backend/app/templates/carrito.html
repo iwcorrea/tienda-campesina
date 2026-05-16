@@ -1,60 +1,55 @@
 {% extends "base.html" %}
-{% block title %}Mi Carrito{% endblock %}
-{% block content %}
-<div class="modern-section">
-    <h2 class="fw-bold mb-4">🛒 Carrito de compras</h2>
+{% block contenido %}
+<h1 class="mb-4">🛒 Mi carrito</h1>
 
-    {% if vacio %}
-    <p class="text-muted">Tu carrito está vacío. <a href="/catalogo">Ir al catálogo</a></p>
-    {% else %}
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr><th>Producto</th><th>Asociación</th><th>Precio unit.</th><th>Cantidad</th><th>Subtotal</th><th>Acción</th></tr>
-            </thead>
-            <tbody>
-                {% for item in carrito %}
-                <tr>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            {% if item.imagen %}
-                            <img src="{{ item.imagen }}" class="rounded me-2" style="width:50px; height:50px; object-fit:cover;">
-                            {% endif %}
-                            {{ item.nombre }}
-                        </div>
-                    </td>
-                    <td>{{ item.asociacion_email }}</td>
-                    <td>${{ item.precio }}</td>
-                    <td>
-                        <form method="post" action="/carrito/actualizar" class="d-flex align-items-center">
+{% if carrito %}
+<div class="row">
+    <div class="col-md-8">
+        {% for item in carrito %}
+        <div class="card mb-3">
+            <div class="row g-0">
+                <div class="col-4">
+                    <img src="{{ item.imagen or '/static/placeholder.png' }}" 
+                         loading="lazy" 
+                         class="img-fluid rounded-start" 
+                         alt="{{ item.nombre }}">
+                </div>
+                <div class="col-8">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ item.nombre }}</h5>
+                        <p class="text-success fw-bold">${{ "{:,.0f}".format(item.precio) }} x {{ item.cantidad }}</p>
+                        <p class="card-text"><small class="text-muted">Productor: {{ item.asociacion_email }}</small></p>
+                        <form method="post" action="/carrito/actualizar" class="d-flex gap-2">
                             <input type="hidden" name="producto_id" value="{{ item.producto_id }}">
-                            <input type="number" name="cantidad" value="{{ item.cantidad }}" min="1" class="form-control form-control-sm" style="width:80px;" onchange="this.form.submit()">
+                            <input type="number" name="cantidad" value="{{ item.cantidad }}" min="0" class="form-control form-control-sm" style="width:70px">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Actualizar</button>
                         </form>
-                    </td>
-                    <td>${{ item.precio * item.cantidad }}</td>
-                    <td>
-                        <form method="post" action="/carrito/eliminar/{{ item.producto_id }}" onsubmit="return confirm('¿Quitar este producto?');">
-                            <button class="btn btn-sm btn-outline-danger">🗑️</button>
+                        <form method="post" action="/carrito/eliminar/{{ item.producto_id }}" class="mt-1">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar</button>
                         </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="5" class="text-end fw-bold">Total estimado:</td>
-                    <td class="fw-bold">${{ total }}</td>
-                </tr>
-            </tfoot>
-        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
-
-    <div class="d-flex justify-content-between mt-3">
-        <a href="/catalogo" class="btn btn-secondary">← Seguir comprando</a>
-        <form method="post" action="/carrito/confirmar" onsubmit="return confirm('¿Confirmar pedido? Se enviará como cotización a las asociaciones.');">
-            <button type="submit" class="btn btn-success">Confirmar pedido</button>
-        </form>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5>Total: ${{ "{:,.0f}".format(total) }}</h5>
+                {% if usuario %}
+                <form method="post" action="/carrito/confirmar">
+                    <button type="submit" class="btn btn-success w-100">Confirmar pedido</button>
+                </form>
+                {% else %}
+                <a href="/auth/login?next=/carrito" class="btn btn-outline-success w-100">Inicia sesión para confirmar</a>
+                {% endif %}
+            </div>
+        </div>
     </div>
-    {% endif %}
 </div>
+{% else %}
+<div class="alert alert-info">Tu carrito está vacío.</div>
+<a href="/catalogo" class="btn btn-success">Explorar cosechas</a>
+{% endif %}
 {% endblock %}

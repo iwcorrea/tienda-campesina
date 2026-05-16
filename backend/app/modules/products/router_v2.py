@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
-from math import ceil
 from app.dependencies import get_db, get_current_user
-from app.models import Producto
+from app.models import Producto, Asociacion
 
 router = APIRouter(prefix="/products", tags=["products_v2"])
 
@@ -47,15 +46,12 @@ def list_products(
 
     effective_region = region or (current_user.get("region") if current_user else None)
     if effective_region:
-        from app.models import Asociacion
         query = query.join(Producto.asociacion).filter(Asociacion.region == effective_region)
 
-    total = query.count()
-    total_pages = ceil(total / per_page) if total else 0
     start = (page - 1) * per_page
     productos_pagina = query.order_by(Producto.fecha_creacion.desc()).offset(start).limit(per_page).all()
 
-    # El frontend espera un array simple, no {data: [], meta: {}}
+    # Devuelve solo el array, el frontend espera un array simple
     return [_format_producto(p) for p in productos_pagina]
 
 @router.get("/{product_id}")

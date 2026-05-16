@@ -1,89 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Checkout – Pedido #{{ pedido.id[:8] }}{% endblock %}
-{% block head %}
-<style>
-    .checkout-container {
-        max-width: 600px;
-        margin: 0 auto;
-    }
-    .resumen-card {
-        border-radius: 20px;
-        border: 1px solid #e9ecef;
-        background: #fff;
-        padding: 2rem;
-    }
-    .total-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        font-size: 0.95rem;
-    }
-    .total-row.final {
-        font-weight: 700;
-        font-size: 1.2rem;
-        border-top: 2px solid #e9ecef;
-        padding-top: 16px;
-        margin-top: 8px;
-        color: #2d6a4f;
-    }
-    .comision-info {
-        background: #f8faf5;
-        border-radius: 12px;
-        padding: 1rem;
-        margin-top: 1rem;
-        font-size: 0.85rem;
-    }
-</style>
-{% endblock %}
-{% block content %}
-<div class="modern-section">
-    <div class="checkout-container">
-        <h2 class="fw-bold mb-4">💳 Checkout</h2>
-
-        <div class="resumen-card">
-            <h5>Pedido #{{ pedido.id[:8] }}</h5>
-            <hr>
-
-            {% for item in pedido.items %}
-            {% set resp = item.respuestas | selectattr("aceptado","equalto","aceptado") | first %}
-            <div class="total-row">
-                <span>{{ item.producto_nombre or 'Producto' }} (x{{ item.cantidad }})</span>
-                <span>${{ item.subtotal }}</span>
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2 class="mb-3">💳 Confirmar pago</h2>
+        <div class="card">
+            <div class="card-body">
+                <h5>Pedido #{{ pedido.id[:8] }}</h5>
+                <p>Total a pagar: <strong>${{ "{:,.0f}".format(total) }}</strong></p>
+                <p>Comisión plataforma: ${{ "{:,.0f}".format(comision_plataforma) }}</p>
+                <p>Costo de envío: ${{ "{:,.0f}".format(costo_envio) }}</p>
+                <form method="post" action="/pagos/iniciar/{{ pedido.id }}">
+                    <button type="submit" class="btn btn-success w-100">Ir a pagar</button>
+                </form>
             </div>
-            {% endfor %}
-
-            {% if costo_envio > 0 %}
-            <div class="total-row">
-                <span>Costo de envío</span>
-                <span>${{ costo_envio | int }}</span>
-            </div>
-            {% endif %}
-
-            <div class="total-row final">
-                <span>Total del pedido</span>
-                <span>${{ total | int }}</span>
-            </div>
-
-            <div class="comision-info">
-                <div class="total-row">
-                    <span>Comisión plataforma ({{ porcentaje_comision }}%)</span>
-                    <span class="text-danger">- ${{ comision_plataforma | int }}</span>
-                </div>
-                <div class="total-row fw-bold">
-                    <span>Recibe la asociación</span>
-                    <span class="text-success">${{ monto_vendedor | int }}</span>
-                </div>
-            </div>
-
-            <form method="post" action="/pagos/iniciar/{{ pedido.id }}" class="mt-4">
-                <button type="submit" class="btn btn-success w-100 rounded-pill py-3 fw-bold">
-                    Pagar ${{ total | int }} COP
-                </button>
-            </form>
-
-            <a href="/pedidos/{{ pedido.id }}" class="btn btn-outline-secondary w-100 rounded-pill mt-2">
-                ← Volver al pedido
-            </a>
         </div>
     </div>
 </div>

@@ -1,75 +1,55 @@
 {% extends "base.html" %}
-{% block title %}{{ config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
-{% block content %}
-<div class="modern-section">
-    <!-- Bienvenida -->
-    <div class="text-center mb-5">
-        <h1 class="fw-bold">{{ config.inicio_titulo or 'Bienvenido a la Tienda Campesina' }}</h1>
-        <p class="lead">{{ config.inicio_subtitulo or 'Plataforma para visibilizar asociaciones rurales.' }}</p>
-        {% if not request.session.get("usuario") %}
-        <a href="/auth/login" class="btn btn-success btn-lg me-2">Iniciar sesión</a>
-        <button class="btn btn-outline-success btn-lg" data-bs-toggle="modal" data-bs-target="#modalRegistro">Registrarme</button>
-        {% endif %}
-    </div>
+{% block contenido %}
+<h1 class="mb-4">🌾 Bienvenido a la Tienda Campesina</h1>
 
-    <!-- Feed social de actividades -->
-    <h2 class="fw-bold mb-4">📢 Actividad reciente</h2>
-    {% if actividades %}
+{% if productos %}
+<div class="mb-5">
+    <h3>📢 Actividad reciente</h3>
     <div class="row">
-        {% for actividad in actividades %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <a href="{{ actividad.url }}" class="text-decoration-none text-dark">
-                <div class="card shadow-sm border-0 h-100">
-                    {% if actividad.imagen %}
-                    <img src="{{ actividad.imagen }}" class="card-img-top" alt="{{ actividad.texto }}" style="height:160px; object-fit:cover;">
-                    {% else %}
-                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:160px;">
-                        <span style="font-size:3rem;">{{ actividad.icono }}</span>
-                    </div>
-                    {% endif %}
-                    <div class="card-body">
-                        <p class="card-text fw-semibold">{{ actividad.texto }}</p>
-                        <small class="text-muted">{{ actividad.descripcion }}</small>
-                    </div>
-                    <div class="card-footer bg-white border-0 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark">{{ actividad.icono }} {{ actividad.tipo | replace('_', ' ') | title }}</span>
-                        <small class="text-muted">{{ actividad.fecha.strftime('%d/%m/%Y') if actividad.fecha else '' }}</small>
-                    </div>
+        {% for producto in productos %}
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <img src="{{ producto.imagen_url or '/static/placeholder.png' }}" 
+                     loading="lazy" 
+                     class="card-img-top" 
+                     alt="{{ producto.nombre }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ producto.nombre }}</h5>
+                    <p class="text-success fw-bold mb-1">
+                        ${{ "{:,.0f}".format(producto.precio) }} / {{ producto.tipo_precio if producto.tipo_precio else 'unidad' }}
+                    </p>
+                    <p class="card-text text-muted small">
+                        {{ producto.asociacion.nombre if producto.asociacion else 'Productor local' }}
+                    </p>
+                    <a href="/producto/{{ producto.id }}" class="btn btn-outline-success btn-sm">Ver detalle</a>
                 </div>
-            </a>
+            </div>
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <p class="text-muted">No hay actividad reciente. ¡Sé el primero en publicar!</p>
-    {% endif %}
+</div>
+{% else %}
+<div class="alert alert-info">Aún no hay productos publicados. ¡Sé el primero en ofrecer tu cosecha!</div>
+{% endif %}
 
-    <!-- Tarjeta de impulso -->
-    <div class="card mt-5">
-        <div class="card-body text-center">
-            <h5>{{ config.inicio_titulo_tarjeta or 'Impulsa tu producción local' }}</h5>
-            <p>{{ config.inicio_texto_tarjeta or 'Comparte tu historia, exhibe tus productos y fortalece la economía campesina.' }}</p>
+{% if asociaciones %}
+<div class="mt-5">
+    <h3>🏘️ Asociaciones participantes</h3>
+    <div class="row">
+        {% for asociacion in asociaciones %}
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card text-center h-100">
+                <img src="{{ asociacion.logo_url or '/static/placeholder.png' }}" 
+                     loading="lazy" 
+                     class="card-img-top p-3" 
+                     alt="{{ asociacion.nombre }}">
+                <div class="card-body">
+                    <h6 class="card-title">{{ asociacion.nombre }}</h6>
+                </div>
+            </div>
         </div>
+        {% endfor %}
     </div>
 </div>
-
-<script>
-    // Mantener actualizado el badge de notificaciones en la campanita sin recargar la página
-    setInterval(async () => {
-        try {
-            let resp = await fetch('/api/notificaciones');
-            let data = await resp.json();
-            let badge = document.getElementById('notif-badge');
-            if (badge && data.notificaciones) {
-                let unreadCount = data.notificaciones.filter(n => n.tipo === 'mensaje').length;
-                if (unreadCount > 0) {
-                    badge.textContent = unreadCount;
-                    badge.style.display = 'inline-block';
-                } else {
-                    badge.style.display = 'none';
-                }
-            }
-        } catch(e) {}
-    }, 15000);
-</script>
+{% endif %}
 {% endblock %}

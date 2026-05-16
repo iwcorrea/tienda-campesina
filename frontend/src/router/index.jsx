@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
 import HomeWrapper from '../screens/home/HomeWrapper';
 import CatalogWrapper from '../screens/catalog/CatalogWrapper';
 import ProductDetailWrapper from '../screens/product/ProductDetailWrapper';
@@ -19,7 +20,11 @@ export default function AppRouter() {
         <Route path="/pedidos/:id" element={<PedidoDetailWrapper />} />
         <Route path="/transportista" element={<TransportHomeWrapper />} />
         <Route path="/perfil" element={<ProfileWrapper />} />
-        <Route path="*" element={<div style={{padding:24, textAlign:'center'}}>Página no encontrada</div>} />
+        <Route path="*" element={
+          <div style={{ padding: 24, textAlign: 'center' }}>
+            Página no encontrada
+          </div>
+        } />
       </Routes>
     </BrowserRouter>
   );

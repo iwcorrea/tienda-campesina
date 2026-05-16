@@ -1,192 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Catálogo – {{ config.titulo_sitio or 'Tienda Campesina' }}{% endblock %}
-{% block head %}
-<style>
-    .product-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-        gap: 1.5rem;
-    }
-    .product-card {
-        background: #fff;
-        border-radius: 20px;
-        overflow: hidden;
-        transition: all 0.25s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        border: 1px solid #f0f0f0;
-        display: flex;
-        flex-direction: column;
-    }
-    .product-card:hover {
-        transform: translateY(-6px);
-        box-shadow: 0 16px 32px rgba(0,0,0,0.08);
-        border-color: #d4e6dc;
-    }
-    .product-img {
-        height: 180px;
-        object-fit: cover;
-        width: 100%;
-        background: #f8faf5;
-    }
-    .product-body {
-        padding: 1.25rem;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-    }
-    .product-title {
-        font-weight: 700;
-        font-size: 1.05rem;
-        margin-bottom: 0.5rem;
-        color: #1a1a1a;
-    }
-    .product-desc {
-        font-size: 0.85rem;
-        color: #6c757d;
-        flex: 1;
-    }
-    .product-footer {
-        padding: 0 1.25rem 1.25rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .price-tag {
-        font-weight: 800;
-        font-size: 1.3rem;
-        color: #2d6a4f;
-    }
-    .type-badge {
-        padding: 3px 12px;
-        border-radius: 20px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        letter-spacing: 0.3px;
-    }
-    .badge-producto { background: #e8f5e9; color: #2d6a4f; }
-    .badge-servicio { background: #e3f2fd; color: #1565c0; }
-    .pagination .page-link {
-        border-radius: 12px;
-        margin: 0 4px;
-        color: #2d6a4f;
-        border: none;
-        background: #f8faf5;
-    }
-    .pagination .page-item.active .page-link {
-        background: #2d6a4f;
-        color: #fff;
-    }
-    .search-bar {
-        border-radius: 30px;
-        padding: 12px 24px;
-        border: 1px solid #e9ecef;
-        transition: all 0.2s;
-    }
-    .search-bar:focus {
-        border-color: #2d6a4f;
-        box-shadow: 0 0 0 4px rgba(45,106,79,0.06);
-    }
-</style>
-{% endblock %}
-{% block content %}
-<div class="modern-section">
-    <h2 class="fw-bold mb-4" style="font-size:1.8rem;">🌱 Catálogo</h2>
+{% block contenido %}
+<h1 class="mb-4">🌱 Catálogo de productos</h1>
 
-    <!-- Filtros y búsqueda -->
-    <div class="row g-3 align-items-end mb-5">
-        <div class="col-md-6">
-            <form action="/catalogo" method="get" class="d-flex gap-2">
-                <input type="text" name="q" class="form-control search-bar" placeholder="Buscar productos o servicios..." value="{{ q }}">
-                <input type="hidden" name="tipo" value="{{ tipo }}">
-                <button type="submit" class="btn btn-success rounded-pill px-4">Buscar</button>
-            </form>
-        </div>
-        <div class="col-md-6">
-            <div class="d-flex gap-2 justify-content-md-end flex-wrap">
-                <a href="/catalogo?q={{ q }}&tipo_precio={{ tipo_precio }}" 
-                   class="btn btn-sm rounded-pill {% if not tipo %}btn-success text-white{% else %}btn-outline-success{% endif %}">Todos</a>
-                <a href="/catalogo?tipo=producto&q={{ q }}&tipo_precio={{ tipo_precio }}" 
-                   class="btn btn-sm rounded-pill {% if tipo == 'producto' %}btn-success text-white{% else %}btn-outline-success{% endif %}">Productos</a>
-                <a href="/catalogo?tipo=servicio&q={{ q }}&tipo_precio={{ tipo_precio }}" 
-                   class="btn btn-sm rounded-pill {% if tipo == 'servicio' %}btn-success text-white{% else %}btn-outline-success{% endif %}">Servicios</a>
+{% if productos %}
+<div class="row">
+    {% for producto in productos %}
+    <div class="col-md-4 col-6 mb-3">
+        <div class="card h-100">
+            <img src="{{ producto.imagen_url or '/static/placeholder.png' }}" 
+                 loading="lazy" 
+                 class="card-img-top" 
+                 alt="{{ producto.nombre }}">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ producto.nombre }}</h5>
+                <p class="text-success fw-bold mb-1">
+                    ${{ "{:,.0f}".format(producto.precio) }} / {{ producto.tipo_precio if producto.tipo_precio else 'unidad' }}
+                </p>
+                <p class="card-text text-muted small">
+                    {{ producto.asociacion.nombre if producto.asociacion else 'Productor local' }}
+                </p>
+                <a href="/producto/{{ producto.id }}" class="btn btn-outline-success btn-sm mt-auto">Ver detalle</a>
             </div>
         </div>
     </div>
-
-    <!-- Resultados -->
-    {% if productos %}
-    <div class="product-grid">
-        {% for producto in productos %}
-        <div class="product-card">
-            <img src="{{ producto.imagen }}" class="product-img" alt="{{ producto.nombre }}">
-            <div class="product-body">
-                <div class="product-title">{{ producto.nombre }}</div>
-                <p class="product-desc">{{ producto.descripcion[:100] }}{% if producto.descripcion|length > 100 %}...{% endif %}</p>
-                <div class="d-flex align-items-center gap-2 mt-2">
-                    <span class="type-badge badge-{{ 'producto' if producto.tipo == 'producto' else 'servicio' }}">{{ producto.tipo | capitalize }}</span>
-                    {% if producto.estrellas > 0 %}
-                    <small class="text-warning">⭐ {{ producto.estrellas }} ({{ producto.num_valoraciones }})</small>
-                    {% endif %}
-                </div>
-                <small class="text-muted mt-1">
-                    <a href="/perfil/{{ producto.asociacion_email }}" class="text-muted text-decoration-none">{{ producto.asociacion_nombre }}</a>
-                </small>
-            </div>
-            <div class="product-footer">
-                <span class="price-tag">${{ producto.precio }}</span>
-                <div class="d-flex gap-1">
-                    <a href="/perfil/{{ producto.asociacion_email }}" class="btn btn-sm btn-outline-secondary rounded-pill" title="Ver productor">🏢</a>
-                    {% if request.session.get("usuario") %}
-                        {% if producto.tipo == 'producto' %}
-                        <form method="post" action="/carrito/agregar/{{ producto.id }}" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-success rounded-pill">🛒</button>
-                        </form>
-                        {% else %}
-                        <form method="post" action="/pedidos/cotizar-servicio/{{ producto.id }}" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-warning rounded-pill">📋</button>
-                        </form>
-                        {% endif %}
-                    {% else %}
-                        <a href="/auth/login" class="btn btn-sm btn-outline-success rounded-pill">Iniciar sesión</a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    <!-- Paginación -->
-    {% if total_pages > 1 %}
-    <nav class="mt-5">
-        <ul class="pagination justify-content-center">
-            <li class="page-item {% if page == 1 %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page-1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">‹</a>
-            </li>
-            {% set start = [1, page - 2] | max %}
-            {% set end = [total_pages, page + 2] | min %}
-            {% if start > 1 %}
-                <li class="page-item disabled"><span class="page-link">…</span></li>
-            {% endif %}
-            {% for p in range(start, end + 1) %}
-            <li class="page-item {% if p == page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ p }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">{{ p }}</a>
-            </li>
-            {% endfor %}
-            {% if end < total_pages %}
-                <li class="page-item disabled"><span class="page-link">…</span></li>
-            {% endif %}
-            <li class="page-item {% if page == total_pages %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('catalogo') }}?page={{ page+1 }}&q={{ q }}&tipo={{ tipo }}&tipo_precio={{ tipo_precio }}">›</a>
-            </li>
-        </ul>
-    </nav>
-    {% endif %}
-
-    {% else %}
-    <div class="text-center py-5">
-        <div style="font-size:3rem;">🔍</div>
-        <p class="text-muted mt-3">No se encontraron productos con esos filtros.</p>
-    </div>
-    {% endif %}
+    {% endfor %}
 </div>
+{% else %}
+<div class="alert alert-info">No hay productos disponibles en este momento.</div>
+{% endif %}
 {% endblock %}

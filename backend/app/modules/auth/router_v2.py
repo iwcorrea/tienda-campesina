@@ -22,7 +22,7 @@ def login_v2(
     if not resultado:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
-    # autenticar_usuario retorna una tupla (tipo, nombre, es_admin)
+    # autenticar_usuario retorna (tipo, nombre, es_admin)
     tipo, nombre, es_admin = resultado
 
     request.session["usuario"] = email
@@ -30,7 +30,7 @@ def login_v2(
     if es_admin:
         request.session["es_admin"] = True
 
-    # Obtener el objeto para extraer la región
+    # Obtener región si existe
     region = None
     if tipo == "asociacion":
         usuario = db.query(Asociacion).filter(Asociacion.email == email).first()
@@ -64,6 +64,7 @@ def register_v2(
     region: str = Form(None),
     db: Session = Depends(get_db),
 ):
+    # Verificar email único
     for model in [Asociacion, Persona, Transportista]:
         if db.query(model).filter(model.email == email).first():
             raise HTTPException(status_code=400, detail="El email ya está registrado")
