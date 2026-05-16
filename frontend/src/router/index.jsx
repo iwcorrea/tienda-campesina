@@ -7,7 +7,6 @@ import DraftOrdersWrapper from '../screens/orders/DraftOrdersWrapper';
 import PedidoDetailWrapper from '../screens/pedido/PedidoDetailWrapper';
 import TransportHomeWrapper from '../screens/transport/TransportHomeWrapper';
 import ProfileWrapper from '../screens/profile/ProfileWrapper';
-// ... otros wrappers legacy
 
 export default function AppRouter() {
   return (
@@ -20,8 +19,7 @@ export default function AppRouter() {
         <Route path="/pedidos/:id" element={<PedidoDetailWrapper />} />
         <Route path="/transportista" element={<TransportHomeWrapper />} />
         <Route path="/perfil" element={<ProfileWrapper />} />
-        {/* Rutas legacy de auth y otras */}
-        <Route path="*" element={<div>Página no encontrada</div>} />
+        <Route path="*" element={<div style={{padding:24, textAlign:'center'}}>Página no encontrada</div>} />
       </Routes>
     </BrowserRouter>
   );
