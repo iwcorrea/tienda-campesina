@@ -3,6 +3,9 @@ from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime, JSON
 from app.database import Base
 
+# Importación de modelos adicionales para el registro de SQLAlchemy
+from app.modules.billing.models import Commission
+
 def generate_uuid():
     return str(uuid.uuid4())
 

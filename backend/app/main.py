@@ -36,6 +36,9 @@ from app.modules.orders.events import init_dispatcher
 # Routers v2 modulares
 from app.modules.orders import router_v2 as orders_v2
 from app.modules.transport import router_v2 as transport_v2
+from app.modules.products import router_v2 as products_v2
+from app.modules.dashboard import router_v2 as dashboard_v2
+from app.modules.admin import router_v2 as admin_v2
 
 logging.basicConfig(level=logging.INFO)
 
@@ -144,6 +147,15 @@ v2_modular_router.include_router(orders_v2.router, prefix="/orders", tags=["orde
 # Montar los endpoints v2 de transporte
 v2_modular_router.include_router(transport_v2.router, prefix="/transport", tags=["transport_v2"])
 
+# Montar los endpoints v2 de productos
+v2_modular_router.include_router(products_v2.router, prefix="/products", tags=["products_v2"])
+
+# Montar los endpoints v2 del dashboard
+v2_modular_router.include_router(dashboard_v2.router, prefix="/dashboard", tags=["dashboard_v2"])
+
+# Montar los endpoints v2 de administración
+v2_modular_router.include_router(admin_v2.router, prefix="/admin", tags=["admin_v2"])
+
 app.include_router(v2_modular_router)
 
 # =========================================================
@@ -161,7 +173,7 @@ def on_startup():
             text("SELECT column_name FROM information_schema.columns WHERE table_name='configuracion'")
         )
         for row in rows:
-            existing.add(row[0])
+            existing.add(row)
 
         if "permitir_registro" not in existing:
             conn.execute(text("ALTER TABLE configuracion ADD COLUMN permitir_registro BOOLEAN DEFAULT TRUE"))

@@ -2,17 +2,10 @@ const BASE_URL = '/api/v2/modular';
 
 const cache = {
   get(key) {
-    try {
-      const item = localStorage.getItem(`v2cache_${key}`);
-      return item ? JSON.parse(item) : null;
-    } catch {
-      return null;
-    }
+    try { const item = localStorage.getItem(`v2cache_${key}`); return item ? JSON.parse(item) : null; } catch { return null; }
   },
   set(key, data) {
-    try {
-      localStorage.setItem(`v2cache_${key}`, JSON.stringify(data));
-    } catch { /* ignorar */ }
+    try { localStorage.setItem(`v2cache_${key}`, JSON.stringify(data)); } catch {}
   }
 };
 
@@ -20,29 +13,34 @@ async function request(url, options = {}) {
   const fullUrl = `${BASE_URL}${url}`;
   try {
     const response = await fetch(fullUrl, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers: { 'Content-Type': 'application/json', ...options.headers },
       ...options,
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    if (!options.method || options.method === 'GET') {
-      cache.set(url, data);
-    }
+    if (!options.method || options.method === 'GET') cache.set(url, data);
     return data;
   } catch (error) {
     console.warn('[api/v2] Error, intentando cache:', error);
     const cached = cache.get(url);
-    if (cached) {
-      return { ...cached, _fromCache: true };
-    }
+    if (cached) return { ...cached, _fromCache: true };
     throw error;
   }
 }
 
-// ─── Pedidos ───────────────────────────────────────
+// ─── Productos ─────────────────────────────────────
+export async function fetchProducts(query = '', region = '') {
+  const params = new URLSearchParams();
+  if (query) params.append('q', query);
+  if (region) params.append('region', region);
+  return request(`/products?${params.toString()}`);
+}
+
+export async function fetchProduct(productId) {
+  return request(`/products/${productId}`);
+}
+
+// ─── Pedidos (orders) ─────────────────────────────
 export async function fetchOrderTimeline(orderId) {
   return request(`/orders/${orderId}/timeline`);
 }
@@ -51,17 +49,21 @@ export async function fetchOrder(orderId) {
   return request(`/orders/${orderId}`);
 }
 
+export async function fetchOrders(estado, region = '') {
+  const params = new URLSearchParams();
+  if (estado) params.append('estado', estado);
+  if (region) params.append('region', region);
+  return request(`/orders?${params.toString()}`);
+}
+
 export async function negotiateOrder(orderId, proposedQuantity, proposedPricePerKg) {
   return request(`/orders/${orderId}/negotiate`, {
     method: 'POST',
-    body: JSON.stringify({
-      proposed_quantity: proposedQuantity,
-      proposed_price_per_kg: proposedPricePerKg,
-    }),
+    body: JSON.stringify({ proposed_quantity: proposedQuantity, proposed_price_per_kg: proposedPricePerKg }),
   });
 }
 
-// ─── Transporte ─────────────────────────────────────
+// ─── Transporte ────────────────────────────────────
 export async function fetchTransportAssignments() {
   return request('/transport');
 }
@@ -72,4 +74,9 @@ export async function pickupTransport(transportId) {
 
 export async function deliverTransport(transportId) {
   return request(`/transport/${transportId}/deliver`, { method: 'POST' });
+}
+
+// ─── Dashboard ─────────────────────────────────────
+export async function fetchDashboard() {
+  return request('/dashboard');
 }

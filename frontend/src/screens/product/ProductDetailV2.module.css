@@ -1,0 +1,8 @@
+.container { padding: 16px; }
+.image { width: 100%; max-height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; }
+.name { font-size: 22px; margin: 0 0 8px; }
+.price { font-size: 20px; color: #2d6a4f; font-weight: 700; }
+.description { font-size: 14px; color: #444; margin: 12px 0; }
+.producer { font-size: 14px; color: #666; }
+.orderBtn { width: 100%; padding: 16px; background: #f9a825; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; margin-top: 16px; }
+.loading { text-align: center; margin-top: 32px; }
