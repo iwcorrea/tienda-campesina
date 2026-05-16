@@ -1,7 +1,7 @@
 import logging
 import os
 from fastapi import FastAPI, Request, APIRouter
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +17,6 @@ from app.modules.matching.router import router as matching_router
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
 from app.templates import templates
-from app.cloudinary_utils import delete_cloudinary_asset
 import cloudinary
 import time
 from sqlalchemy import text
@@ -33,7 +32,7 @@ from app.events.dispatcher import EventDispatcher
 from app.events.registry import register_all_listeners
 from app.modules.orders.events import init_dispatcher
 
-# Routers v2 modulares (todos existen)
+# Routers v2 modulares
 from app.modules.auth import router_v2 as auth_v2
 from app.modules.users import router_v2 as users_v2
 from app.modules.orders import router_v2 as orders_v2
@@ -49,10 +48,14 @@ app = FastAPI()
 cloudinary.config(cloudinary_url=os.getenv("CLOUDINARY_URL"))
 SECRET_KEY = os.getenv("SECRET_KEY", "dev_key")
 
+# ─── Middlewares ────────────────────────────────────
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logging.error(f"Error no manejado: {exc}", exc_info=True)
-    return HTMLResponse(content=templates.get_template("500.html").render({"request": request}), status_code=500)
+    return HTMLResponse(
+        content=templates.get_template("500.html").render({"request": request}),
+        status_code=500
+    )
 
 @app.middleware("http")
 async def timeout_y_configuracion(request: Request, call_next):
@@ -79,12 +82,13 @@ async def timeout_y_configuracion(request: Request, call_next):
 
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, same_site="lax", https_only=True)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+# ─── EventDispatcher ───────────────────────────────
 dispatcher = EventDispatcher()
 init_dispatcher(dispatcher)
 register_all_listeners(dispatcher)
 
+# ─── Routers API v1 (legacy) ───────────────────────
 def include_legacy_routers(target_app: FastAPI):
     target_app.include_router(auth_router, prefix="/auth")
     target_app.include_router(users_router)
@@ -107,6 +111,7 @@ v1_app = FastAPI(title="API v1 (Legacy)")
 include_legacy_routers(v1_app)
 app.mount("/api/v1", v1_app)
 
+# ─── Routers API v2 ────────────────────────────────
 v2_modular_router = APIRouter(prefix="/api/v2/modular")
 v2_modular_router.include_router(auth_v2.router, prefix="/auth", tags=["auth_v2"])
 v2_modular_router.include_router(users_v2.router, prefix="/users", tags=["users_v2"])
@@ -117,6 +122,44 @@ v2_modular_router.include_router(dashboard_v2.router, prefix="/dashboard", tags=
 v2_modular_router.include_router(admin_v2.router, prefix="/admin", tags=["admin_v2"])
 app.include_router(v2_modular_router)
 
+# ─── Estáticos del frontend React (SPA) ────────────
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
+FRONTEND_DIR = os.path.abspath(FRONTEND_DIR)
+
+if os.path.isdir(FRONTEND_DIR):
+    # Archivos de assets (JS, CSS, imágenes)
+    assets_dir = os.path.join(FRONTEND_DIR, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    # Otros estáticos sueltos (favicon, manifest, etc.)
+    for fname in os.listdir(FRONTEND_DIR):
+        fpath = os.path.join(FRONTEND_DIR, fname)
+        if os.path.isfile(fpath) and fname != "index.html":
+            # No montamos, los serviremos bajo demanda desde la raíz
+            pass
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str, request: Request):
+        """Sirve el frontend React para cualquier ruta que no sea API."""
+        # Si ya fue capturada por una ruta de API o archivos estáticos, no hacer nada
+        # (Los routers de API y StaticFiles ya respondieron antes de llegar aquí)
+        # Buscar el archivo en frontend/dist/
+        file_path = os.path.join(FRONTEND_DIR, full_path) if full_path else ""
+        if file_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+
+        # Fallback SPA: devolver index.html
+        index_path = os.path.join(FRONTEND_DIR, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+
+        raise Exception(status_code=404, detail="Not found")
+else:
+    # Si no existe la carpeta dist, servir templates Jinja2 (modo desarrollo/fallback)
+    pass
+
+# ─── Startup ───────────────────────────────────────
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
