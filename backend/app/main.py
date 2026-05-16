@@ -78,8 +78,9 @@ v2_modular_router.include_router(dashboard_v2.router, prefix="/dashboard", tags=
 v2_modular_router.include_router(admin_v2.router, prefix="/admin", tags=["admin_v2"])
 app.include_router(v2_modular_router)
 
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
-FRONTEND_DIR = os.path.abspath(FRONTEND_DIR)
+# Ruta absoluta al directorio dist del frontend calculada de forma segura
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", "frontend", "dist"))
 
 if os.path.isdir(FRONTEND_DIR):
     assets_dir = os.path.join(FRONTEND_DIR, "assets")
