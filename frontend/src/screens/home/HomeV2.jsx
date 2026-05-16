@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchDashboard } from '../../api/v2';
 import styles from './HomeV2.module.css';
 
@@ -13,10 +14,10 @@ export default function HomeV2() {
     <div className={styles.container}>
       <h1 className={styles.greeting}>Bienvenido</h1>
       <div className={styles.shortcuts}>
-        <a href="/catalogo" className={styles.shortcut}>🌱 Buscar cosechas</a>
-        <a href="/pedidos/borrador" className={styles.shortcut}>📋 Pedidos en curso</a>
+        <Link to="/catalogo" className={styles.shortcut}>🌱 Buscar cosechas</Link>
+        <Link to="/mis-pedidos" className={styles.shortcut}>📋 Mis pedidos</Link>
         {dashboard?.transportista && (
-          <a href="/transportista" className={styles.shortcut}>🚚 Viajes pendientes</a>
+          <Link to="/transportista" className={styles.shortcut}>🚚 Viajes pendientes</Link>
         )}
       </div>
       {dashboard && (

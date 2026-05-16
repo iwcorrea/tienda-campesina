@@ -1,9 +1,10 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import NavBar from '../components/NavBar';
 import LoginV2 from '../screens/auth/LoginV2';
 import RegisterV2 from '../screens/auth/RegisterV2';
+import HomeWrapper from '../screens/home/HomeWrapper';
 import CatalogWrapper from '../screens/catalog/CatalogWrapper';
 import ProductDetailWrapper from '../screens/product/ProductDetailWrapper';
 import OrdersListV2 from '../screens/orders/OrdersListV2';
@@ -26,7 +27,7 @@ export default function AppRouter() {
       <BrowserRouter>
         <Layout>
           <Routes>
-            <Route path="/" element={<Navigate to="/catalogo" />} />
+            <Route path="/" element={<HomeWrapper />} />
             <Route path="/login" element={<LoginV2 />} />
             <Route path="/register" element={<RegisterV2 />} />
             <Route path="/catalogo" element={<CatalogWrapper />} />
