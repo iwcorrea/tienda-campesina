@@ -15,6 +15,12 @@ def change_order_state(
     extra_data: Optional[Dict[str, Any]] = None
 ) -> Pedido:
     current_state = pedido.estado
+
+    # Idempotencia: si ya está en el estado deseado, no hacer nada
+    if current_state == new_state:
+        logger.info(f"Pedido {pedido.id}: estado ya es '{new_state}', cambio omitido.")
+        return pedido
+
     validate_transition(current_state, new_state)
 
     log = OrderStateLog(
