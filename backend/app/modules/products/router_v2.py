@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional
-from app.dependencies import get_db, get_current_user
-from app.models import Producto, Asociacion
+from app.dependencies import get_db
+from app.models import Producto
 
 router = APIRouter(prefix="/products", tags=["products_v2"])
 
@@ -27,46 +26,10 @@ def _format_producto(producto: Producto) -> dict:
     }
 
 @router.get("/")
-def list_products(
-    q: Optional[str] = Query(None),
-    region: Optional[str] = Query(None),
-    page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Lista productos.
-    - Si se envía ?region=, filtra por esa región.
-    - Si no, y el usuario tiene una región definida, se filtra automáticamente por ella.
-    - Si el usuario no tiene región, se muestran todos los productos.
-    """
-    query = db.query(Producto)
-
-    # Búsqueda por texto
-    if q:
-        q_lower = q.lower()
-        query = query.filter(
-            (Producto.nombre.ilike(f"%{q_lower}%")) |
-            (Producto.descripcion.ilike(f"%{q_lower}%"))
-        )
-
-    # Filtro por región (solo si se necesita)
-    effective_region = region
-    if not effective_region and current_user and current_user.get("region"):
-        effective_region = current_user["region"]
-
-    if effective_region:
-        # Usamos outerjoin para no perder productos sin asociación
-        query = query.outerjoin(Producto.asociacion).filter(
-            (Asociacion.region == effective_region) | (Asociacion.region == None)
-        )
-
-    # Paginación
-    start = (page - 1) * per_page
-    productos_pagina = query.order_by(Producto.fecha_creacion.desc()).offset(start).limit(per_page).all()
-
-    return [_format_producto(p) for p in productos_pagina]
+def list_products(db: Session = Depends(get_db)):
+    """Devuelve todos los productos sin ningún filtro (temporal para asegurar que se ven)."""
+    productos = db.query(Producto).order_by(Producto.fecha_creacion.desc()).all()
+    return [_format_producto(p) for p in productos]
 
 @router.get("/{product_id}")
 def get_product(product_id: str, db: Session = Depends(get_db)):
