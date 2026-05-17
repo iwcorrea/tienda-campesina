@@ -43,6 +43,7 @@ def list_products(
     """
     query = db.query(Producto)
 
+    # Búsqueda por texto
     if q:
         q_lower = q.lower()
         query = query.filter(
@@ -50,14 +51,18 @@ def list_products(
             (Producto.descripcion.ilike(f"%{q_lower}%"))
         )
 
-    # Determinar región efectiva: la explícita tiene prioridad; si no, la del usuario (si existe)
+    # Filtro por región (solo si se necesita)
     effective_region = region
     if not effective_region and current_user and current_user.get("region"):
         effective_region = current_user["region"]
 
     if effective_region:
-        query = query.join(Producto.asociacion).filter(Asociacion.region == effective_region)
+        # Usamos outerjoin para no perder productos sin asociación
+        query = query.outerjoin(Producto.asociacion).filter(
+            (Asociacion.region == effective_region) | (Asociacion.region == None)
+        )
 
+    # Paginación
     start = (page - 1) * per_page
     productos_pagina = query.order_by(Producto.fecha_creacion.desc()).offset(start).limit(per_page).all()
 
