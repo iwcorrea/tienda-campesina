@@ -1,16 +1,17 @@
+# main.py
 import logging
 import os
+import time
 from fastapi import FastAPI, Request, APIRouter
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.database import engine, Base, SessionLocal
 from app.models import Configuracion
 import cloudinary
-import time
-from sqlalchemy import text
 
 # EventDispatcher
 from app.events.dispatcher import EventDispatcher
@@ -84,6 +85,16 @@ app.include_router(v2_modular_router)
 
 # ─── Frontend React (SPA) ─────────────────────────
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+
+# Endpoint de depuración para Render
+@app.get("/debug-dist")
+def debug_dist():
+    return {
+        "frontend_dir": FRONTEND_DIR,
+        "exists": os.path.isdir(FRONTEND_DIR),
+        "index_exists": os.path.isfile(os.path.join(FRONTEND_DIR, "index.html")),
+        "files": os.listdir(FRONTEND_DIR) if os.path.isdir(FRONTEND_DIR) else []
+    }
 
 if os.path.isdir(FRONTEND_DIR):
     # Montar assets estáticos (JS, CSS)

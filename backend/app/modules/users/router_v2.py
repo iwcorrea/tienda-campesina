@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user
 from app.models import Asociacion, Persona, Transportista
 
-router = APIRouter(prefix="/users", tags=["users_v2"])
+router = APIRouter(tags=["users_v2"])
 
 @router.get("/me")
-def get_profile(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Devuelve el perfil del usuario autenticado."""
+def get_profile(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     if not current_user:
         raise HTTPException(status_code=401, detail="No autenticado")
 
@@ -30,8 +32,8 @@ def get_profile(current_user: dict = Depends(get_current_user), db: Session = De
         "email": usuario.email,
         "nombre": usuario.nombre,
         "tipo": tipo,
-        "region": usuario.region if hasattr(usuario, "region") else None,
-        "telefono": usuario.telefono if hasattr(usuario, "telefono") else "",
+        "region": getattr(usuario, "region", None),
+        "telefono": getattr(usuario, "telefono", ""),
     }
 
 @router.patch("/me")
@@ -42,9 +44,8 @@ def update_profile(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Actualiza campos del perfil."""
     if not current_user:
-        raise HTTPException(status_code=401)
+        raise HTTPException(status_code=401, detail="No autenticado")
 
     email = current_user["email"]
     tipo = current_user["tipo"]
@@ -56,7 +57,7 @@ def update_profile(
     elif tipo == "transportista":
         usuario = db.query(Transportista).filter(Transportista.email == email).first()
     else:
-        raise HTTPException(status_code=400, detail="Tipo de usuario desconocido")
+        raise HTTPException(status_code=400)
 
     if not usuario:
         raise HTTPException(status_code=404)

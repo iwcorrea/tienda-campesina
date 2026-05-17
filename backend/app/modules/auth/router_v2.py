@@ -6,7 +6,8 @@ from app.dependencies import get_db
 from app.modules.auth.service import autenticar_usuario
 from app.models import Asociacion, Persona, Transportista
 
-router = APIRouter(prefix="/auth", tags=["auth_v2"])
+# Ya NO lleva prefix aquí, se lo damos en main.py
+router = APIRouter(tags=["auth_v2"])
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
